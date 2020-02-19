@@ -1,6 +1,6 @@
 import numpy as np
 
-from .dice_tool import RollDiceCommond, SplitDiceCommand
+from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand
 from .utils import ReadJson, UpdateJson, Command, CommandType, ChineseToEnglishSymbol, TypeValueError
 from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate
 from .type_assert import TypeAssert
@@ -43,7 +43,7 @@ class Bot:
             reason = command.cArg[1]
             if len(reason) != 0:
                 reason = f'由于{reason},'
-            error, resultStr, resultVal = RollDiceCommond(command.cArg[0])
+            error, resultStr, resultValList = RollDiceCommond(command.cArg[0])
             if error:
                 return resultStr
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
@@ -112,11 +112,28 @@ class Bot:
                 return f'遇到了未知错误呢...请联系主人吧...#鞠躬'
         elif cType == CommandType.BOT:
             if not groupId: return '只有在群聊中才能使用该功能哦'
-            if not only_to_me: return '不指定我的话, 这个指令是无效的哦'
+            if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
             isTurnOn = command.cArg[0]
             result = self.__BotSwitch(groupId, isTurnOn)
             return result
+        elif cType == CommandType.DND:
+            try:
+                times = int(command.cArg[0])
+                assert times > 0 and times < 10
+            except:
+                times = 1
+            reason = command.cArg[1]
+            result = self.__DNDBuild(groupId, times)
+            result = f'{nickName}的初始属性: {reason}\n{result}'
+            return result
+
         return None
+
+
+
+
+
+
     
     def __UpdateNickName(self, personId, nickName) -> int:
         assert personId is not None, '用户名不能为空!'
@@ -228,13 +245,13 @@ class Bot:
             
         #initAdj 有两种情况, 一是调整值, 二是固定值
         if not initAdj or initAdj[0] in ['+','-'] or initAdj[:2] in ['优势','劣势']: #通过符号判断
-            error, resultStr, resultVal = RollDiceCommond('d20'+initAdj)
+            error, resultStr, resultValList = RollDiceCommond('d20'+initAdj)
             if error: return resultStr
-            initResult = resultVal
+            initResult = sum(resultValList)
         else:
-            error, resultStr, resultVal = RollDiceCommond(initAdj)
+            error, resultStr, resultValList = RollDiceCommond(initAdj)
             if error: return resultStr
-            initResult = resultVal
+            initResult = sum(resultValList)
             
         try: #尝试获取生命值信息
             if isPC:
@@ -259,6 +276,19 @@ class Bot:
         else:
             return '来啦~ 让我看看哪个小可爱能得到今日份的礼物'
 
+    @TypeAssert(times = int)
+    def __DNDBuild(self, groupId, times) -> str:
+        assert times > 0 and times < 10
+        
+        result = ''
+        for i in range(times):
+            error, resultStr, resultValList = RollDiceCommond(f'6#4d6k3')
+            result += f'力量:{resultValList[0][0]}  体质:{resultValList[1][0]}  敏捷:{resultValList[2][0]}'
+            result += f'智力:{resultValList[3][0]}  感知:{resultValList[4][0]}  魅力:{resultValList[5][0]}'
+            result += f'  共计:{sum([valList[0] for valList in resultValList])}'
+            if i != (times-1) and times != 1:
+                result += '\n'
+        return result
 
 @TypeAssert(str)
 def ParseInput(inputStr):
@@ -333,5 +363,8 @@ def ParseInput(inputStr):
             return Command(CommandType.BOT, ['False'])
         else:
             return None
+    elif commandType == 'dnd':
+        number, reason = SplitNumberCommand(commandStr)
+        return Command(CommandType.DND,[number, reason])
     return None
 

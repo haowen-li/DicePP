@@ -5,7 +5,7 @@ from .utils import *
 
 # 将一个字符串分割为一个骰子列表, 然后输出最终结果 [异常值， 结果字符串， 结果数值]
 @TypeAssert(str)
-def RollDiceCommond(diceCommand) -> (int, str, int):
+def RollDiceCommond(diceCommand) -> (int, str, list):
     diceCommand = diceCommand.upper()
     diceCommand = diceCommand.replace(' ', '')
     
@@ -55,35 +55,40 @@ def RollDiceCommond(diceCommand) -> (int, str, int):
             diceList[i] = diceList[i][:-2] + defaultDiceType + diceList[i][-2:]
             diceCommand = diceCommand[:length-2] + defaultDiceType + diceCommand[length-2:]
 
+
+    # 开始投骰
+    totalValueList = None
     if repeatTime == 1:
         # 如果不重复直接返回结果
-        error, answer, totalValue = RollDiceList(diceList)
+        error, answer, totalValueList = RollDiceList(diceList)
         if error != 0:
             return -1, answer, None
         output = f'{diceCommand}={answer}'
     else:
         # 重复多次则在结果中加入第x次的标注
+        totalValueList = []
         output = f'{repeatTime}次{diceCommand}=' + '{\n'
         for i in range(repeatTime):
-            error, answer, totalValue = RollDiceList(diceList)
+            error, answer, totalValueListCurrent = RollDiceList(diceList)
             if error != 0:
                 return -1, answer, None
             output += f'{answer}'
             if i != repeatTime-1:
                 output += '\n'
+            totalValueList.append(totalValueListCurrent)
 
         output += ' }'
-        totalValue = None
 
-    return 0, output, totalValue
+    return 0, output, totalValueList
 
 # 接受一个骰子列表, 返回结果字符串和总值
 @TypeAssert(list)
-def RollDiceList(diceList)->(int, str, int):
+def RollDiceList(diceList)->(int, str, list):
     # 生成随机种子
     np.random.seed(np.random.seed(datetime.datetime.now().microsecond+np.random.randint(10000)))
     finalAnswer = ''
     totalValue = 0
+    totalValueList = []
     answerList = []
 
     # diceList示例 ['+D20','-1', '+1D4', 'D']
@@ -93,6 +98,7 @@ def RollDiceList(diceList)->(int, str, int):
             return -1, f'执行{dice}时遇到了问题:{answer}', None
         answerList.append(answer)
         totalValue += value
+        totalValueList.append(value)
     length = len(answerList)
 
     finalAnswer += answerList[0]
@@ -104,7 +110,7 @@ def RollDiceList(diceList)->(int, str, int):
     # 如果结果个数多于一个, 显示总和
     if len(answerList) > 1 or answerList[0].find('(') != -1:
         finalAnswer += f'={totalValue}'
-    return 0, finalAnswer, totalValue
+    return 0, finalAnswer, totalValueList
 
 @TypeAssert(str)
 def RollDice(diceStr)->(int, str, int):
@@ -261,5 +267,20 @@ def SplitDiceCommand(inputStr)->(str, str):
                 splitIndex += 2
             except:
                 break
+                
+    return inputStr[:splitIndex], inputStr[splitIndex:]
+
+@TypeAssert(str)
+def SplitNumberCommand(inputStr)->(str, str):
+    # 将数字与后面的无关部分分开
+    # 如SplitDiceCommand('3人物作成')将返回('20', '人物作成')
+    singleKeywords = [str(i) for i in range(10)]
+    inputStr = inputStr.replace(' ', '')
+    splitIndex = 0 # splitIndex以及之后的内容都是无关内容
+    while splitIndex < len(inputStr):
+        if inputStr[splitIndex] in singleKeywords:
+            splitIndex += 1
+        else:
+            break
                 
     return inputStr[:splitIndex], inputStr[splitIndex:]
