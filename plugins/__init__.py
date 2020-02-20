@@ -48,22 +48,22 @@ async def _(session: NLPSession):
 @on_request('friend')
 async def _(session: RequestSession):
     # 判断验证信息是否符合要求
-    if session.ctx['comment'] == 'DND5E':
-        # 验证信息正确，同意
-        await session.approve()
-        return
-    await session.reject('请说正确的暗号')
+    # if session.ctx['comment'] == 'DND5E':
+    #     # 验证信息正确，同意
+    #     await session.approve()
+    # await session.reject('请说正确的暗号')
+    await session.approve()
 
 # 将函数注册为群请求处理器
 @on_request('group')
 async def _(session: RequestSession):
     # 判断验证信息是否符合要求
-    if session.ctx['sub_type'] == 'invite' and session.ctx['comment'] == 'DND5E':
-        # 验证信息正确，同意入群
-        await session.approve()
-        return
-    # 验证信息错误，拒绝入群
-    await session.reject('请说正确的暗号')
+    # if session.ctx['sub_type'] == 'invite' and session.ctx['comment'] == 'DND5E':
+    #     # 验证信息正确，同意入群
+    #     await session.approve()
+    # # 验证信息错误，拒绝入群
+    # await session.reject('请说正确的暗号')
+    await session.approve()
 
 @on_notice('group_increase')
 async def _(session: NoticeSession):
