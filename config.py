@@ -2,13 +2,13 @@ from nonebot.default_config import *
 
 SUPERUSERS = {821480843} # 超级用户
 
-COMMAND_START = {'_______'} # 命令起始字符
+COMMAND_START = {'sudo '} # 命令起始字符 (目前只应用于特殊命令)
 
 HOST = '0.0.0.0'
 PORT = 8080
 SUPERUSERS = {821480843}
 
-DEBUG = True
+DEBUG = False
 SHORT_MESSAGE_MAX_LENGTH = 50
 
 

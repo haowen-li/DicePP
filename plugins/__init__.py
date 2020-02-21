@@ -6,6 +6,7 @@ from nonebot import on_natural_language, NLPSession, IntentCommand
 from nonebot import on_request, RequestSession, on_notice, NoticeSession
 
 from .bot_tool import Bot
+from .custom_config import *
 
 bot = Bot()
 
@@ -42,6 +43,15 @@ async def _(session: NLPSession):
     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
         return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':True})
 
+# @on_natural_language(keywords={'.send', '。send'}, only_to_me=True)
+# async def _(session: NLPSession):
+#     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
+#     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
+#         if session.msg_text[1:5] == 'send':
+#             await session.send(result)
+
+
+
 
 
 # 将函数注册为好友请求处理器
@@ -69,11 +79,3 @@ async def _(session: RequestSession):
 async def _(session: NoticeSession):
     # 发送欢迎消息
     await session.send(f'欢迎新人~')
-
-@on_command('早', aliases=('早安', '早上好'), only_to_me=False)
-async def chat(session: CommandSession):
-    await session.send('早上好~')
-
-@on_command('晚安', aliases=('睡觉', '睡了', '睡咯'), only_to_me=False)
-async def chat(session: CommandSession):
-    await session.send('晚安!')

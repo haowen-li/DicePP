@@ -5,6 +5,93 @@ from .utils import ReadJson, UpdateJson, Command, CommandType, ChineseToEnglishS
 from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate
 from .type_assert import TypeAssert
 from .custom_config import LOCAL_NICKNAME_PATH, LOCAL_INITINFO_PATH, LOCAL_PCSTATE_PATH, LOCAL_GROUPINFO_PATH, GIFT_LIST
+from .help_info import *
+
+@TypeAssert(str)
+def ParseInput(inputStr):
+    # 接受用户的输入, 输出一个数组, 包含指令类型与对应参数
+    # 如不是命令则返回None
+    inputStr = inputStr.strip()
+    # 空字符串直接返回
+    if not inputStr:
+        return None
+    # 先将符号转为英文(半角)
+    try:
+        inputStr = ChineseToEnglishSymbol(inputStr)
+    except TypeValueError:
+        print(e)
+        raise e
+    first_char = inputStr[0]
+    # 首字符不是 '.' 说明不是命令
+    if first_char != '.':
+        return None
+    
+    # 跳过'.' 并转为小写
+    commandStr = inputStr[1:].strip().lower()
+    # 判断指令类型, 指令后面跟着参数
+    splitIndex = -1
+    # 从commandKeywordList中依次匹配命令
+    for i in range(len(commandKeywordList)):
+        commandKeyword = commandKeywordList[i]
+        splitIndex = commandStr.find(commandKeyword)
+        if splitIndex == 0:
+            commandType = commandStr[:len(commandKeyword)] # 类型
+            commandStr = commandStr[len(commandKeyword):].strip() # 参数
+            break
+    # 无法找到匹配的关键字则直接返回
+    if splitIndex != 0:
+        return None
+    
+    # 判断命令类型, 解析参数, 生成Command类的实例并返回
+    # 掷骰命令
+    if commandType == 'r':
+#         # 参数包含两部分, 骰子表达式与原因, 原因为可选项
+        diceCommand, reason = SplitDiceCommand(commandStr)
+        return Command(CommandType.Roll,[diceCommand, reason])
+    # 更改昵称命令
+    elif commandType == 'nn':
+        nickName = commandStr
+        return Command(CommandType.NickName,[nickName])
+    # 今日人品命令
+    elif commandType == 'jrrp':
+        return Command(CommandType.JRRP, [])
+    # 先攻列表命令
+    elif commandType == 'init':
+        # commandStr 可能为 '', 'clr' 
+        return Command(CommandType.INIT,[commandStr])
+    elif commandType == 'ri':
+#         # 参数包含两部分, 骰子表达式(加值)与名称, 名称为可选项
+        diceCommand, name = SplitDiceCommand(commandStr)
+        return Command(CommandType.RI,[diceCommand, name])
+    elif commandType == 'sethp':
+        splitIndex = commandStr.strip().find('/')
+
+        if splitIndex != -1:
+            hpStr = commandStr[:splitIndex]
+            maxhpStr = commandStr[splitIndex+1:]
+        else:
+            hpStr = commandStr
+            maxhpStr = commandStr
+        return Command(CommandType.SETHP, [hpStr, maxhpStr])
+    elif commandType == 'bot':
+        if commandStr.find('on') != -1:
+            return Command(CommandType.BOT, ['True'])
+        elif commandStr.find('off') != -1:
+            return Command(CommandType.BOT, ['False'])
+        else:
+            return None
+    elif commandType == 'dnd':
+        number, reason = SplitNumberCommand(commandStr)
+        return Command(CommandType.DND,[number, reason])
+    elif commandType == 'help':
+        # subType 可能为 '', '指令', '源码', '协议' 
+        subType = commandStr.replace(' ', '')
+        return Command(CommandType.HELP,[subType])
+    return None
+
+
+
+
 
 class Bot:
     def __init__(self):
@@ -126,6 +213,10 @@ class Bot:
             result = self.__DNDBuild(groupId, times)
             result = f'{nickName}的初始属性: {reason}\n{result}'
             return result
+        elif cType == CommandType.HELP:
+            subType = str(command.cArg[0])
+            helpInfo = self.__GetHelpInfo(subType)
+            return helpInfo
 
         return None
 
@@ -290,81 +381,15 @@ class Bot:
                 result += '\n'
         return result
 
-@TypeAssert(str)
-def ParseInput(inputStr):
-    # 接受用户的输入, 输出一个数组, 包含指令类型与对应参数
-    # 如不是命令则返回None
-    inputStr = inputStr.strip()
-    # 空字符串直接返回
-    if not inputStr:
-        return None
-    # 先将符号转为英文(半角)
-    try:
-        inputStr = ChineseToEnglishSymbol(inputStr)
-    except TypeValueError:
-        print(e)
-        raise e
-    first_char = inputStr[0]
-    # 首字符不是 '.' 说明不是命令
-    if first_char != '.':
-        return None
-    
-    # 跳过'.' 并转为小写
-    commandStr = inputStr[1:].strip().lower()
-    # 判断指令类型, 指令后面跟着参数
-    splitIndex = -1
-    # 从commandKeywordList中依次匹配命令
-    for i in range(len(commandKeywordList)):
-        commandKeyword = commandKeywordList[i]
-        splitIndex = commandStr.find(commandKeyword)
-        if splitIndex == 0:
-            commandType = commandStr[:len(commandKeyword)] # 类型
-            commandStr = commandStr[len(commandKeyword):].strip() # 参数
-            break
-    # 无法找到匹配的关键字则直接返回
-    if splitIndex != 0:
-        return None
-    
-    # 判断命令类型, 解析参数, 生成Command类的实例并返回
-    # 掷骰命令
-    if commandType == 'r':
-#         # 参数包含两部分, 骰子表达式与原因, 原因为可选项
-        diceCommand, reason = SplitDiceCommand(commandStr)
-        return Command(CommandType.Roll,[diceCommand, reason])
-    # 更改昵称命令
-    elif commandType == 'nn':
-        nickName = commandStr
-        return Command(CommandType.NickName,[nickName])
-    # 今日人品命令
-    elif commandType == 'jrrp':
-        return Command(CommandType.JRRP, [])
-    # 先攻列表命令
-    elif commandType == 'init':
-        # commandStr 可能为 '', 'clr' 
-        return Command(CommandType.INIT,[commandStr])
-    elif commandType == 'ri':
-#         # 参数包含两部分, 骰子表达式(加值)与名称, 名称为可选项
-        diceCommand, name = SplitDiceCommand(commandStr)
-        return Command(CommandType.RI,[diceCommand, name])
-    elif commandType == 'sethp':
-        splitIndex = commandStr.strip().find('/')
-
-        if splitIndex != -1:
-            hpStr = commandStr[:splitIndex]
-            maxhpStr = commandStr[splitIndex+1:]
-        else:
-            hpStr = commandStr
-            maxhpStr = commandStr
-        return Command(CommandType.SETHP, [hpStr, maxhpStr])
-    elif commandType == 'bot':
-        if commandStr.find('on') != -1:
-            return Command(CommandType.BOT, ['True'])
-        elif commandStr.find('off') != -1:
-            return Command(CommandType.BOT, ['False'])
+    @TypeAssert(subType = str)
+    def __GetHelpInfo(self, subType) -> str:
+        if subType == '':
+            return HELP_STR
+        elif subType == '指令':
+            return HELP_COMMAND_STR
+        elif subType == '链接':
+            return HELP_LINK_STR
+        elif subType == '协议':
+            return HELP_AGREEMENT_STR
         else:
             return None
-    elif commandType == 'dnd':
-        number, reason = SplitNumberCommand(commandStr)
-        return Command(CommandType.DND,[number, reason])
-    return None
-

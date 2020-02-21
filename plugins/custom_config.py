@@ -2,6 +2,8 @@ import os
 
 from .utils import ReadJson, UpdateJson
 
+MASTER = ['821480843']
+
 LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
 LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nickname.json')
 LOCAL_INITINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'initinfo.json')
