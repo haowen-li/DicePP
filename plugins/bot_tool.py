@@ -4,7 +4,7 @@ from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand
 from .utils import ReadJson, UpdateJson, Command, CommandType, ChineseToEnglishSymbol, TypeValueError
 from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate
 from .type_assert import TypeAssert
-from .custom_config import LOCAL_NICKNAME_PATH, LOCAL_INITINFO_PATH, LOCAL_PCSTATE_PATH, LOCAL_GROUPINFO_PATH, GIFT_LIST
+from .custom_config import *
 from .help_info import *
 
 @TypeAssert(str)
@@ -87,7 +87,12 @@ def ParseInput(inputStr):
         # subType 可能为 '', '指令', '源码', '协议' 
         subType = commandStr.replace(' ', '')
         return Command(CommandType.HELP,[subType])
+    elif commandType == '查询':
+        target = commandStr.replace(' ', '')
+        return Command(CommandType.QUERY,[target])
     return None
+
+
 
 
 
@@ -99,6 +104,12 @@ class Bot:
         self.initInfoDict = ReadJson(LOCAL_INITINFO_PATH)
         self.pcStateDict = ReadJson(LOCAL_PCSTATE_PATH)
         self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
+        try:
+            self.queryInfoDict = ReadJson(LOCAL_QUERYINFO_PATH)
+            self.queryInfoDict['MaxEntryLength'] = max([len(k) for k in self.queryInfoDict.keys()])
+            UpdateJson(self.queryInfoDict, LOCAL_QUERYINFO_PATH)
+        except:
+            self.queryInfoDict = None
     
     # 接受输入字符串，返回输出字符串
     def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False):
@@ -217,8 +228,14 @@ class Bot:
             subType = str(command.cArg[0])
             helpInfo = self.__GetHelpInfo(subType)
             return helpInfo
+        elif cType == CommandType.QUERY:
+            targetStr = str(command.cArg[0])
+            queryResult = self.__QueryInfo(targetStr)
+            return queryResult
 
         return None
+
+
 
 
 
@@ -280,19 +297,24 @@ class Bot:
         
         sortedInfo = sorted(initInfo['initList'].items(), key = lambda i: i[1]['init'], reverse=True)
         result = '先攻列表:'
+        index = 1
         for info in sortedInfo:
             # 更新PC生命值
             if info[1]['isPC']:
                 try:
+                    personId = info[1]['id']
                     pcState = self.pcStateDict[personId]
-                    info[1]["hp"] = pcState['hp']
-                    info[1]["maxhp"] = pcState['maxhp']
+                    info[1]['hp'] = pcState['hp']
+                    info[1]['maxhp'] = pcState['maxhp']
                 except:
                     pass
 
-            result += f'\n{info[0]} {info[1]["init"]} '
-            if info[1]['maxhp'] != 0: result += f'HP:{info[1]["hp"]}/{info[1]["maxhp"]}'
-            else: result += f'已损失HP:{info[1]["hp"]}'
+            result += f'\n{index}. {info[0]} {info[1]["init"]} '
+            if info[1]['maxhp'] != 0:
+                result += f'HP:{info[1]["hp"]}/{info[1]["maxhp"]}'
+            else:
+                result += f'已损失HP:{info[1]["hp"]}'
+            index += 1
         return result
     
     def __ClearInitList(self, groupId) -> str:
@@ -393,3 +415,17 @@ class Bot:
             return HELP_AGREEMENT_STR
         else:
             return None
+
+    @TypeAssert(targetStr = str)
+    def __QueryInfo(self, targetStr) -> str:
+        if not self.queryInfoDict:
+            return '呃啊, 记忆好像不见了... 怎么办...'
+        
+        if len(targetStr) > self.queryInfoDict['MaxEntryLength']:
+            return '记忆中好像没有这么长的条目呢...'
+
+        try:
+            result = self.queryInfoDict[targetStr]
+            return result
+        except:
+            return '唔...找不到呢...'

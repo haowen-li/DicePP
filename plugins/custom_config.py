@@ -5,10 +5,13 @@ from .utils import ReadJson, UpdateJson
 MASTER = ['821480843']
 
 LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
-LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nickname.json')
-LOCAL_INITINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'initinfo.json')
-LOCAL_PCSTATE_PATH = os.path.join(LOCAL_DATA_PATH, 'pcstate.json')
-LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'groupinfo.json')
+LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nick_name.json')
+LOCAL_INITINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'init_info.json')
+LOCAL_PCSTATE_PATH = os.path.join(LOCAL_DATA_PATH, 'pc_state.json')
+LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_info.json')
+
+LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
+LOCAL_QUERYINFO_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info.json')
 
 GIFT_LIST = ['小鱼干', '鲨鱼干', '白珍珠', '黑珍珠', '好看的玻璃球', '漂亮的珊瑚', '白色小贝壳', '小海螺',
  '珍贵的水晶球', '水果硬糖', '水果软糖', '小木梳', '锋利的匕首', '幽蓝魔杖', '生锈的三戟叉', '迷你皇冠', '漂亮的鳞片',

@@ -7,7 +7,7 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询']
 
 @unique
 class CommandType(Enum):
@@ -20,6 +20,7 @@ class CommandType(Enum):
     BOT = 6
     DND = 7
     HELP = 8
+    QUERY = 9
     
 # @TypeAssert(CommandType, list)
 class Command():
