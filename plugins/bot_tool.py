@@ -1,4 +1,5 @@
 import numpy as np
+import os
 
 from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand
 from .utils import ReadJson, UpdateJson, Command, CommandType, ChineseToEnglishSymbol, TypeValueError
@@ -64,15 +65,37 @@ def ParseInput(inputStr):
         diceCommand, name = SplitDiceCommand(commandStr)
         return Command(CommandType.RI,[diceCommand, name])
     elif commandType == 'sethp':
-        splitIndex = commandStr.strip().find('/')
-
+        subType = None
+        targetStr = None
+        hpCommand = None
+        commandStr = commandStr.strip()
+        if len(commandStr) == 0:
+            return Command(CommandType.SETHP, [None])
+        #是否显式指定了指令类型
+        for i in range(len(commandStr)): 
+            if commandStr[i] in ['+', '-', '=']:
+                subType = commandStr[i]
+                targetStr = commandStr[:i].strip()
+                hpCommand = commandStr[i+1:].strip()
+                break
+        #不指定指令类型则默认为'='
+        if not subType:
+            for i in range(len(commandStr)):
+                if commandStr[i] in (['d']+[str(n) for n in range(0,10)]):
+                    subType = '='
+                    targetStr = commandStr[:i].strip()
+                    hpCommand = commandStr[i:].strip()
+                    break
+        if not subType:
+            return None
+        splitIndex = hpCommand.rfind('/')
         if splitIndex != -1:
-            hpStr = commandStr[:splitIndex]
-            maxhpStr = commandStr[splitIndex+1:]
+            hpStr = hpCommand[:splitIndex]
+            maxhpStr = hpCommand[splitIndex+1:]
         else:
-            hpStr = commandStr
-            maxhpStr = commandStr
-        return Command(CommandType.SETHP, [hpStr, maxhpStr])
+            hpStr = hpCommand
+            maxhpStr = ''
+        return Command(CommandType.SETHP, [targetStr, subType , hpStr, maxhpStr])
     elif commandType == 'bot':
         if commandStr.find('on') != -1:
             return Command(CommandType.BOT, ['True'])
@@ -105,10 +128,20 @@ class Bot:
         self.pcStateDict = ReadJson(LOCAL_PCSTATE_PATH)
         self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
         try:
-            self.queryInfoDict = ReadJson(LOCAL_QUERYINFO_PATH)
-            self.queryInfoDict['MaxEntryLength'] = max([len(k) for k in self.queryInfoDict.keys()])
-            UpdateJson(self.queryInfoDict, LOCAL_QUERYINFO_PATH)
-        except:
+            filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH) #读取所有文件名
+            self.queryInfoDict = {}
+            for fp in filesPath:
+                try:
+                    assert fp[-5:] == '.json'
+
+                    absPath = os.path.join(LOCAL_QUERYINFO_DIR_PATH, fp)
+                    currentQueryInfoDict = ReadJson(absPath)
+                    self.queryInfoDict.update(currentQueryInfoDict)
+                except:
+                    pass
+            assert len(self.queryInfoDict) > 0
+            self.queryInfoDict['最长条目长度'] = max([len(k) for k in self.queryInfoDict.keys()])
+        except: 
             self.queryInfoDict = None
     
     # 接受输入字符串，返回输出字符串
@@ -134,9 +167,12 @@ class Bot:
         command.groupId = groupId
 
         try:
-            nickName = self.nickNameDict[personId]
+            nickName = self.nickNameDict[groupId][personId]
         except:
-            nickName = personName
+            try:
+                nickName = self.nickNameDict['Default'][personId]
+            except:
+                nickName = personName
         if cType == CommandType.Roll:
             reason = command.cArg[1]
             if len(reason) != 0:
@@ -147,8 +183,9 @@ class Bot:
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
             return finalResult
         elif cType == CommandType.NickName:
+            if not groupId: groupId = 'Default'
             nickName = command.cArg[0]
-            result = self.__UpdateNickName(personId, nickName)
+            result = self.__UpdateNickName(groupId, personId, nickName)
             if result == 1:
                 return f'要用本来的名字称呼你吗? 了解!'
             elif result == 0:
@@ -187,27 +224,15 @@ class Bot:
             result = self.__JoinInitList(command.groupId, command.personId, name, initAdj, isPC)
             return result
         elif cType == CommandType.SETHP:
+            if not groupId: return '只有在群聊中才能使用该功能哦'
             result = None
-            if not command.cArg[0]: # hp为空说明要清除生命值记录
-                hp, maxhp = '', ''
-            else: # 检查hp 和 maxhp 的有效性
-                try:
-                    hp = int(command.cArg[0])
-                except:
-                    return f'{command.cArg[0]}不是有效的生命值'
-                try:
-                    maxhp = int(command.cArg[1])
-                except:
-                    return f'{command.cArg[1]}不是有效的生命值'
-            result = self.__UpdateHP(personId, hp, maxhp)
-            if result == 0:
-                return f'{nickName}的生命值是{hp}, 最大生命值是{maxhp}吗? 了解!'
-            elif result == 1:
+            # Args: [targetStr, subType , hpStr, maxhpStr]
+            if command.cArg[0] is None: # 第一个参数为None说明要清除生命值记录
+                result = self.__ClearHP(groupId, personId)
                 return f'已经忘记了{nickName}的生命值...'
-            elif result == 2:
-                return f'{nickName}好像还没有设置过生命值呢...'
             else:
-                return f'遇到了未知错误呢...请联系主人吧...#鞠躬'
+                result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
+                return result
         elif cType == CommandType.BOT:
             if not groupId: return '只有在群聊中才能使用该功能哦'
             if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
@@ -241,43 +266,193 @@ class Bot:
 
 
 
-
     
-    def __UpdateNickName(self, personId, nickName) -> int:
-        assert personId is not None, '用户名不能为空!'
+    def __UpdateNickName(self, groupId, personId, nickName) -> int:
+        try:
+            assert type(self.nickNameDict[groupId]) == dict
+        except:
+            self.nickNameDict[groupId] = {}
+
         if nickName: # 如果指定了昵称, 则更新昵称
-            self.nickNameDict[personId] = nickName
+            self.nickNameDict[groupId][personId] = nickName
             UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
             return 0
         else: # 否则移除原有的昵称
             try:
-                self.nickNameDict.pop(personId)
+                self.nickNameDict[groupId].pop(personId)
             except:
                 return 1
             UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
             return 1
         
-    def __UpdateHP(self, personId, hp, maxhp) -> int:
-        assert personId is not None, '用户名不能为空!'
-        result = -1
-        if hp:
+    def __UpdateHP(self, groupId, personId, targetStr, subType, hpStr, maxhpStr, nickName) -> str:
+        hp = None
+        maxhp = None
+        if subType != '=' and maxhpStr:
+            return '增加或减少生命值的时候不能修改最大生命值哦'
+        # 先尝试解读hpStr和maxhpStr
+        error, resultStrHp, resultValListHp = RollDiceCommond(hpStr)
+        if error: return error
+        try:
+            hp = sum(resultValListHp)
+        except:
+            return f'无法解释生命值参数{hpStr}呢...'
+        if hp < 0:
+            return f'hp数值{resultStrHp}为负数, 没有修改hp数值'
+
+        if maxhpStr:
             try:
-                pcState = self.pcStateDict[personId]
+                maxhp = int(maxhpStr)
+                assert maxhp > 0
+            except:
+                return f'无法解释最大生命值参数{maxhpStr}呢...'
+
+        if not targetStr: # 不指定目标说明要修改自己的生命值信息
+            try:
+                pcState = self.pcStateDict[groupId][personId]
+            except:
+                self.__CreateHP(groupId, personId, 0)
+                pcState = self.pcStateDict[groupId][personId]
+
+            if subType == '=':
                 pcState['hp'] = hp
-                pcState['maxhp'] = maxhp
-            except:
-                pcState = {'personId':personId, 'hp':hp, 'maxhp':maxhp}
-            self.pcStateDict[personId] = pcState
-            result = 0 #修改成功
-        else: # 清除生命值记录
-            try:
-                del self.pcStateDict[personId]
-                result = 1 #清除成功
-            except:
-                result = 2 #清除失败
+                pcState['alive'] = True
+                result = f'成功将{nickName}的生命值设置为{resultStrHp}'
+                if maxhpStr:
+                    pcState['maxhp'] = maxhp
+                    result += f', 最大生命值是{maxhp}'
+            elif subType == '+':
+                pcState['hp'] += hp
+                pcState['alive'] = True
+                result = f'{nickName}的生命值增加了{resultStrHp}'
+            elif subType == '-':
+                if pcState['alive']:
+                    if pcState['hp'] > 0 and hp > pcState['hp']:
+                        pcState['hp'] = 0
+                        pcState['alive'] = False
+                        result = f'{nickName}的生命值降至0, {nickName}昏迷/死亡了!'
+                    else:
+                        pcState['hp'] -= hp
+                        result = f'{nickName}的生命值减少了{resultStrHp}'
+                else:
+                    result = f'{nickName}的生命值已经减少至0, 无法再减少了'
+            else:
+                result = '不太对劲呢...'
+
+            self.pcStateDict[groupId][personId] = pcState
+            UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+            return result
+        else:
+            # 尝试对先攻列中的目标修改生命值信息
+            try: #查找已存在的先攻信息
+                initInfo = self.initInfoDict[groupId]
+            except: #如未找到, 返回错误信息
+                return '只能指定在先攻列表中的其他角色, 请先建立先攻列表吧~'
+
+            # 尝试搜索targetStr有关的信息
+            if not targetStr in initInfo['initList'].keys(): 
+                possName = []
+                for k in initInfo['initList'].keys():
+                    if k.find(targetStr) != -1:
+                        possName.append(k)
+                if len(possName) == 0:
+                    return f'在先攻列表中找不到与"{targetStr}"相关的名字哦'
+                elif len(possName) > 1:
+                    return f'在先攻列表找到多个可能的名字: {[ n for n in possName]}'
+                else:
+                    targetStr = possName[0]
+
+            targetInfo = initInfo['initList'][targetStr]
+            # 如果指定的目标是pc, 则直接修改pcStateDict然后返回
+            if targetInfo['isPC']:
+                targetId = targetInfo['id']
+                try:
+                    pcState = self.pcStateDict[groupId][targetId]
+                except:
+                    self.__CreateHP(groupId, targetId, 0)
+                    pcState = self.pcStateDict[groupId][targetId]
+
+                if subType == '=':
+                    pcState['hp'] = hp
+                    pcState['alive'] = True
+                    result = f'成功将{targetStr}的生命值设置为{resultStrHp}'
+                    if maxhpStr:
+                        pcState['maxhp'] = maxhp
+                        result += f', 最大生命值是{maxhp}'
+                elif subType == '+':
+                    pcState['hp'] += hp
+                    pcState['alive'] = True
+                    result = f'{targetStr}的生命值增加了{resultStrHp}'
+                elif subType == '-':
+                    if pcState['alive']:
+                        if pcState['hp'] > 0 and hp > pcState['hp']:
+                            pcState['hp'] = 0
+                            pcState['alive'] = False
+                            result = f'{targetStr}的生命值降至0, {targetStr}昏迷/死亡了!'
+                        else:
+                            pcState['hp'] -= hp
+                            result = f'{targetStr}的生命值减少了{resultStrHp}'
+                    else:
+                        result = f'{targetStr}的生命值已经减少至0, 无法再减少了'
+                else:
+                    result = '有些不对劲呢...'
+                self.pcStateDict[groupId][targetId] = pcState
+                UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+                return result
+            # 否则修改先攻列表中的信息并保存
+            else:
+                if subType == '=':
+                    targetInfo['hp'] = hp
+                    targetInfo['alive'] = True
+                    if maxhpStr:
+                        targetInfo['maxhp'] = maxhp
+                    elif targetInfo['maxhp'] == -1:
+                        targetInfo['maxhp'] = 0
+                    result = f'成功将{targetStr}的生命值设置为{resultStrHp}'
+                    if maxhpStr:
+                        result += f', 最大生命值是{maxhp}'
+                    return result
+                elif subType == '+':
+                    targetInfo['hp'] += hp
+                    targetInfo['alive'] = True
+                    result = f'{targetStr}的生命值增加了{resultStrHp}'
+                elif subType == '-':
+                    if targetInfo['alive']:
+                        if targetInfo['hp'] > 0 and hp > targetInfo['hp']:
+                            targetInfo['hp'] = 0
+                            targetInfo['alive'] = False
+                            result = f'{targetStr}的生命值降至0, {targetStr}昏迷/死亡了!'
+                        else:
+                            targetInfo['hp'] -= hp
+                            result = f'{targetStr}的生命值减少了{resultStrHp}'
+                    else:
+                        result = f'{targetStr}的生命值已经减少至0, 无法再减少了'
+
+                else:
+                    result = '有些不对劲呢...'
+                self.initInfoDict[groupId]['initList'][targetStr] = targetInfo
+                UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
+                return result
+
+        return '未知的错误发生了'
+
+    def __CreateHP(self, groupId, personId, hp, maxhp=0):
+        try:
+            assert type(self.pcStateDict[groupId]) == dict
+        except:
+            self.pcStateDict[groupId] = {}
+        pcState = {'personId':personId, 'hp':hp, 'maxhp':maxhp, 'alive':True}
+        self.pcStateDict[groupId][personId] = pcState
+        UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+
+    def __ClearHP(self, groupId, personId) -> str:
+        try:
+            del self.pcStateDict[groupId][personId]
+        except:
+            return '好像还没有设置过生命值呢'
         
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-        return result
+        return '成功清除生命值信息!'
         
     def __GetJRRP(self, personId, date) -> int:
         seed = 0
@@ -299,21 +474,32 @@ class Bot:
         result = '先攻列表:'
         index = 1
         for info in sortedInfo:
-            # 更新PC生命值
+            result += f'\n{index}.{info[0]} 先攻{info[1]["init"]} '
+
+            # 获取生命值信息
             if info[1]['isPC']:
                 try:
                     personId = info[1]['id']
-                    pcState = self.pcStateDict[personId]
-                    info[1]['hp'] = pcState['hp']
-                    info[1]['maxhp'] = pcState['maxhp']
+                    pcState = self.pcStateDict[groupId][personId]
+                    hp = pcState['hp']
+                    maxhp = pcState['maxhp']
+                    alive = pcState['alive']
                 except:
-                    pass
-
-            result += f'\n{index}. {info[0]} {info[1]["init"]} '
-            if info[1]['maxhp'] != 0:
-                result += f'HP:{info[1]["hp"]}/{info[1]["maxhp"]}'
+                    hp = 0
+                    maxhp = 0
+                    alive = True
             else:
-                result += f'已损失HP:{info[1]["hp"]}'
+                hp = info[1]['hp']
+                maxhp = info[1]['maxhp']
+                alive = info[1]['alive']
+            if not alive:
+                result += f'昏迷/死亡'
+            elif hp >= 0 and maxhp > 0:
+                result += f'HP:{hp}/{maxhp}'
+            elif hp >= 0 and maxhp == 0:
+                result += f'HP:{hp}'
+            elif hp < 0 and maxhp == 0:
+                result += f'已损失HP:{-1*hp}'
             index += 1
         return result
     
@@ -366,16 +552,12 @@ class Bot:
             if error: return resultStr
             initResult = sum(resultValList)
             
-        try: #尝试获取生命值信息
-            if isPC:
-                pcState = self.pcStateDict[personId]
-                hp, maxhp = (pcState['hp'], pcState['maxhp'])
-            else:
-                hp, maxhp = (0, 0)
-        except:
-            hp, maxhp = (0, 0)
+        if isPC: # maxhp = 0 或 -1 影响先攻列表的显示与否
+            hp, maxhp = (0, -1)
+        else:
+            hp, maxhp = (0, -1)
         
-        initInfo['initList'][name] = {'id':personId, 'init':initResult, 'hp':hp, 'maxhp':maxhp, 'isPC':isPC}
+        initInfo['initList'][name] = {'id':personId, 'init':initResult, 'hp':hp, 'maxhp':maxhp, 'alive':True, 'isPC':isPC}
         self.initInfoDict[groupId] = initInfo
         UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
         
@@ -421,11 +603,26 @@ class Bot:
         if not self.queryInfoDict:
             return '呃啊, 记忆好像不见了... 怎么办...'
         
-        if len(targetStr) > self.queryInfoDict['MaxEntryLength']:
+        if len(targetStr) > self.queryInfoDict['最长条目长度']:
             return '记忆中好像没有这么长的条目呢...'
 
         try:
-            result = self.queryInfoDict[targetStr]
+            result = str(self.queryInfoDict[targetStr])
             return result
         except:
-            return '唔...找不到呢...'
+            possResult = []
+            for k in self.queryInfoDict.keys():
+                if k.find(targetStr) != -1:
+                    possResult.append(k)
+            if len(possResult) > 1:
+                if len(possResult) <= 20:
+                    result = f'找到多个匹配的条目: {possResult}'
+                else:
+                    result = f'找到多个匹配的条目: {possResult[:20]}等, 共{len(possResult)}个条目'
+                return result
+            elif len(possResult) == 1:
+                result = str(self.queryInfoDict[possResult[0]])
+                result = f'要找的难道是{possResult[0]}吗? \n{result}'
+                return result
+            else:
+                return '唔...找不到呢...'
