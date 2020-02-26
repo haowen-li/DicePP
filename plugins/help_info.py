@@ -1,4 +1,4 @@
-HELP_STR = 'Dice++ by 梨子 Ver 0.2.1\n'
+HELP_STR = 'Dice++ by 梨子 Ver 0.2.2\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
 HELP_STR += '.help指令 查看指令列表\n'
 HELP_STR += '.help链接 查看源码地址\n'
@@ -7,8 +7,7 @@ HELP_STR += '.help更新 查看最近更新内容与预告\n'
 HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除指定先攻条目, 记录生命值信息, 可部分匹配的查询功能\n'
 HELP_STR += '交流群:861919492'
 
-HELP_COMMAND_UPDATE_STR =  '本次更新内容:\n'
-# HELP_COMMAND_UPDATE_STR += ''
+HELP_COMMAND_UPDATE_STR =  '本次更新内容:\n1.新增了'
 
 HELP_COMMAND_STR = '多数指令需要后接参数, 主要指令包括:\n'
 HELP_COMMAND_STR += '.bot 开关\n'
@@ -64,7 +63,7 @@ HELP_COMMAND_INIT_STR += '.init del 地精 //在先攻列表中删除地精'
 
 HELP_COMMAND_QUERY_STR =  '查询资料: .查询 查询目标\n'
 HELP_COMMAND_QUERY_STR += '查询指令支持部分匹配\n'
-HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 全拓展法术, 全拓展专长, DMG魔法物品(by花作噫), PHB与DMG生物(by花作噫)'
+HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 全拓展法术, 全拓展专长, DMG魔法物品(by花作噫), PHB与DMG生物(by花作噫), PHB工具(by赵小安), PHB武器与护甲(by邪恶)'
 
 HELP_COMMAND_SETHP_STR =  '记录/调整生命值: .sethp ([调整目标])([符号]) [骰子表达式/数值](/[最大生命值])\n'
 HELP_COMMAND_SETHP_STR += '生命值信息将在.init的结果中显示\n'

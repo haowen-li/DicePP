@@ -3,6 +3,8 @@ version: "3"
 services:
   coolq:
     image: richardchien/cqhttp:latest
+    ports:
+      - "9000:9000"
     volumes:
       - "./coolq:/home/user/coolq"
     environment:
@@ -12,8 +14,8 @@ services:
       - CQHTTP_USE_HTTP=false
       - CQHTTP_USE_WS=false
       - CQHTTP_USE_WS_REVERSE=true
-      - CQHTTP_WS_REVERSE_API_URL=ws://nonebot:8080/ws/api/
-      - CQHTTP_WS_REVERSE_EVENT_URL=ws://nonebot:8080/ws/event/
+      - CQHTTP_WS_REVERSE_API_URL=ws://dicepp:8080/ws/api/
+      - CQHTTP_WS_REVERSE_EVENT_URL=ws://dicepp:8080/ws/event/
     depends_on: 
       - dicepp
 

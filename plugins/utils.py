@@ -80,6 +80,7 @@ def ChineseToEnglishSymbol(inputStr):
     inputStr = inputStr.replace('＋', '+')
     inputStr = inputStr.replace('－', '-')
     inputStr = inputStr.replace('＃', '#')
+    inputStr = inputStr.replace('：', ':')
 #     newStr = inputStr
 #     for i in range(len(inputStr)):
 #         char = inputStr[i]

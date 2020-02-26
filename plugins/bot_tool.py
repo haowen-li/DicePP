@@ -607,7 +607,7 @@ class Bot:
         elif subType == '查询':
             return HELP_COMMAND_QUERY_STR
         elif subType == 'sethp':
-            return HELP_COMMAND_QUERY_STR
+            return HELP_COMMAND_SETHP_STR
         elif subType == 'jrrp':
             return HELP_COMMAND_JRRP_STR
         else:
