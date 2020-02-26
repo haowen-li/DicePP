@@ -1,0 +1,27 @@
+version: "3"
+
+services:
+  coolq:
+    image: richardchien/cqhttp:latest
+    volumes:
+      - "./coolq:/home/user/coolq"
+    environment:
+      - COOLQ_ACCOUNT=2192720436
+      # 要登录的 QQ 账号，可选但建议填
+      - FORCE_ENV=true
+      - CQHTTP_USE_HTTP=false
+      - CQHTTP_USE_WS=false
+      - CQHTTP_USE_WS_REVERSE=true
+      - CQHTTP_WS_REVERSE_API_URL=ws://nonebot:8080/ws/api/
+      - CQHTTP_WS_REVERSE_EVENT_URL=ws://nonebot:8080/ws/event/
+    depends_on: 
+      - dicepp
+
+  dicepp:
+    build: ./DicePP
+    volumes:
+      - "./DicePP:/home/user/DicePP"
+    expose:
+      - "8080"
+    environment:
+      - TZ=Asia/Shanghai

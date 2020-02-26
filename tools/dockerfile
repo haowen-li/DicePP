@@ -1,0 +1,7 @@
+FROM alpine
+COPY . /home/user/DicePP
+RUN apk add --no-cache tzdata python3 py3-multidict py3-yarl && \
+    pip3 install --no-cache-dir "nonebot[scheduler]" && \
+    pip3 install -r /home/user/DicePP/requirements.txt
+
+CMD ["python", "/home/user/DicePP/dicepp.py"]

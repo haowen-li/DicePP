@@ -7,6 +7,9 @@ HELP_STR += '.help更新 查看最近更新内容与预告\n'
 HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除指定先攻条目, 记录生命值信息, 可部分匹配的查询功能\n'
 HELP_STR += '交流群:861919492'
 
+HELP_COMMAND_UPDATE_STR =  '本次更新内容:\n'
+# HELP_COMMAND_UPDATE_STR += ''
+
 HELP_COMMAND_STR = '多数指令需要后接参数, 主要指令包括:\n'
 HELP_COMMAND_STR += '.bot 开关\n'
 HELP_COMMAND_STR += '.r 掷骰\n'
