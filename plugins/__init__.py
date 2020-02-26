@@ -4,6 +4,8 @@ __all__ = ["bot_tool"]
 from nonebot import on_command, CommandSession
 from nonebot import on_natural_language, NLPSession, IntentCommand
 from nonebot import on_request, RequestSession, on_notice, NoticeSession
+from nonebot.permission import PRIVATE_FRIEND,PRIVATE_GROUP, PRIVATE_DISCUSS, PRIVATE_OTHER, PRIVATE
+from nonebot.permission import DISCUSS, GROUP_MEMBER, GROUP_ADMIN, GROUP_OWNER, GROUP, SUPERUSER, EVERYBODY
 
 from .bot_tool import Bot
 from .custom_config import *
