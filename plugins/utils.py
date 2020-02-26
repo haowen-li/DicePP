@@ -103,7 +103,7 @@ def int2str(value, with_symbol = True):
     
 def UpdateJson(jsonFile, path):
     with open(path,"w") as f:
-        json.dump(jsonFile,f)
+        json.dump(jsonFile,f,ensure_ascii=False)
 
 def ReadJson(path):
     with open(path,"r") as f:

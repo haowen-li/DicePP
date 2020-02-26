@@ -56,18 +56,21 @@ async def _(session: NLPSession):
 #             await session.send(result)
 
 
-@on_command('RADIO', only_to_me=True, permission = SUPERUSER)
+@on_command('RADIO', permission = SUPERUSER)
 async def processCommand(session: CommandSession):
-    msg = session.msg_text
-    bot = session.get_bot()
+    msg = session.current_arg_text
+    nonebot = session.bot
     try:
-        info = await bot.get_group_list()
+        info = await nonebot.get_group_list()
     except CQHttpError:
         pass
 
-    for group_id in info.keys():
-        await bot.send_group_msg(group_id=group_id, message=msg)
-        print(f'RADIO to {group_id}:{msg}')
+    for groupInfo in info:
+        try:
+            await nonebot.send_group_msg(group_id=groupInfo['group_id'], message=msg)
+            # print(f'RADIO to {groupInfo['group_name']} {groupInfo['group_id']}:{msg}')
+        except:
+            pass
     await session.send(result)
 
 
