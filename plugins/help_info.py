@@ -1,10 +1,10 @@
-HELP_STR = 'Dice++ by 梨子 Ver 0.2\n'
-# HELP_STR += '@骰娘 .dismiss 使骰娘退群退讨论组\n'
+HELP_STR = 'Dice++ by 梨子 Ver 0.2.1\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
 HELP_STR += '.help指令 查看指令列表\n'
 HELP_STR += '.help链接 查看源码地址\n'
 HELP_STR += '.help协议 查看使用协议\n'
-HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除指定先攻条目, 记录生命值信息\n'
+HELP_STR += '.help更新 查看最近更新内容与预告\n'
+HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除指定先攻条目, 记录生命值信息, 可部分匹配的查询功能\n'
 HELP_STR += '交流群:861919492'
 
 HELP_COMMAND_STR = '多数指令需要后接参数, 主要指令包括:\n'

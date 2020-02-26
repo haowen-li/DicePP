@@ -54,7 +54,19 @@ async def _(session: NLPSession):
 #             await session.send(result)
 
 
+@on_command('RADIO', only_to_me=True, permission = SUPERUSER)
+async def processCommand(session: CommandSession):
+    msg = session.msg_text
+    bot = session.get_bot()
+    try:
+        info = await bot.get_group_list()
+    except CQHttpError:
+        pass
 
+    for group_id in info.keys():
+        await bot.send_group_msg(group_id=group_id, message=msg)
+        print(f'RADIO to {group_id}:{msg}')
+    await session.send(result)
 
 
 # 将函数注册为好友请求处理器
