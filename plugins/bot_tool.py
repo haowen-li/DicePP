@@ -137,6 +137,7 @@ class Bot:
                     absPath = os.path.join(LOCAL_QUERYINFO_DIR_PATH, fp)
                     currentQueryInfoDict = ReadJson(absPath)
                     self.queryInfoDict.update(currentQueryInfoDict)
+                    print(f'成功读取{fp}, 共{len(currentQueryInfoDict)}个条目')
                 except:
                     pass
             assert len(self.queryInfoDict) > 0
@@ -494,7 +495,7 @@ class Bot:
                 alive = info[1]['alive']
             if not alive:
                 result += f'昏迷/死亡'
-            elif hp >= 0 and maxhp > 0:
+            elif hp > 0 and maxhp > 0:
                 result += f'HP:{hp}/{maxhp}'
             elif hp >= 0 and maxhp == 0:
                 result += f'HP:{hp}'
@@ -553,9 +554,9 @@ class Bot:
             initResult = sum(resultValList)
             
         if isPC: # maxhp = 0 或 -1 影响先攻列表的显示与否
-            hp, maxhp = (0, -1)
+            hp, maxhp = (0, 0)
         else:
-            hp, maxhp = (0, -1)
+            hp, maxhp = (0, 0)
         
         initInfo['initList'][name] = {'id':personId, 'init':initResult, 'hp':hp, 'maxhp':maxhp, 'alive':True, 'isPC':isPC}
         self.initInfoDict[groupId] = initInfo
@@ -595,6 +596,20 @@ class Bot:
             return HELP_LINK_STR
         elif subType == '协议':
             return HELP_AGREEMENT_STR
+        elif subType == 'r':
+            return HELP_COMMAND_R_STR
+        elif subType == 'nn':
+            return HELP_COMMAND_NN_STR
+        elif subType == 'ri':
+            return HELP_COMMAND_RI_STR
+        elif subType == 'init':
+            return HELP_COMMAND_INIT_STR
+        elif subType == '查询':
+            return HELP_COMMAND_QUERY_STR
+        elif subType == 'sethp':
+            return HELP_COMMAND_QUERY_STR
+        elif subType == 'jrrp':
+            return HELP_COMMAND_JRRP_STR
         else:
             return None
 
@@ -605,6 +620,8 @@ class Bot:
         
         if len(targetStr) > self.queryInfoDict['最长条目长度']:
             return '记忆中好像没有这么长的条目呢...'
+        elif not targetStr:
+            return f'现在的记忆中共有{len(self.queryInfoDict)}个条目呢, 可查询内容请输入 .help查询 查看'
 
         try:
             result = str(self.queryInfoDict[targetStr])
