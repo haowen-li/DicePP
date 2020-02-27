@@ -118,31 +118,32 @@ def ParseInput(inputStr):
 
 
 
-
-
-
 class Bot:
     def __init__(self):
         self.nickNameDict = ReadJson(LOCAL_NICKNAME_PATH)
         self.initInfoDict = ReadJson(LOCAL_INITINFO_PATH)
         self.pcStateDict = ReadJson(LOCAL_PCSTATE_PATH)
         self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
+        print(f'个人资料库加载成功!')
         try:
             filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH) #读取所有文件名
+            print(f'找到以下查询资料: {filesPath}')
             self.queryInfoDict = {}
             for fp in filesPath:
                 try:
                     assert fp[-5:] == '.json'
-
                     absPath = os.path.join(LOCAL_QUERYINFO_DIR_PATH, fp)
+                    print(f'尝试加载{fp}')
                     currentQueryInfoDict = ReadJson(absPath)
                     self.queryInfoDict.update(currentQueryInfoDict)
-                    print(f'成功读取{fp}, 共{len(currentQueryInfoDict)}个条目')
-                except:
-                    pass
+                    print(f'成功加载{fp}, 共{len(currentQueryInfoDict)}个条目')
+                except Exception as e:
+                    print(e)
             assert len(self.queryInfoDict) > 0
             self.queryInfoDict['最长条目长度'] = max([len(k) for k in self.queryInfoDict.keys()])
+            print(f'查询资料库加载成功! 共{len(self.queryInfoDict)}个条目')
         except: 
+            print(f'查询资料库加载失败!')
             self.queryInfoDict = None
     
     # 接受输入字符串，返回输出字符串
@@ -331,12 +332,12 @@ class Bot:
                     if pcState['hp'] > 0 and hp > pcState['hp']:
                         pcState['hp'] = 0
                         pcState['alive'] = False
-                        result = f'{nickName}的生命值降至0, {nickName}昏迷/死亡了!'
+                        result = f'{nickName}的生命值减少了{resultStrHp}\n因为生命值降至0, {nickName}昏迷/死亡了!'
                     else:
                         pcState['hp'] -= hp
                         result = f'{nickName}的生命值减少了{resultStrHp}'
                 else:
-                    result = f'{nickName}的生命值已经减少至0, 无法再减少了'
+                    result = f'{nickName}的生命值减少了{resultStrHp}\n{nickName}当前生命值已经是0, 无法再减少了'
             else:
                 result = '不太对劲呢...'
 
@@ -389,12 +390,12 @@ class Bot:
                         if pcState['hp'] > 0 and hp > pcState['hp']:
                             pcState['hp'] = 0
                             pcState['alive'] = False
-                            result = f'{targetStr}的生命值降至0, {targetStr}昏迷/死亡了!'
+                            result = f'{targetStr}的生命值减少了{resultStrHp}\n因为生命值降至0, {targetStr}昏迷/死亡了!'
                         else:
                             pcState['hp'] -= hp
                             result = f'{targetStr}的生命值减少了{resultStrHp}'
                     else:
-                        result = f'{targetStr}的生命值已经减少至0, 无法再减少了'
+                        result = f'{targetStr}的生命值减少了{resultStrHp}\n{targetStr}当前生命值已经是0, 无法再减少了'
                 else:
                     result = '有些不对劲呢...'
                 self.pcStateDict[groupId][targetId] = pcState
@@ -422,12 +423,12 @@ class Bot:
                         if targetInfo['hp'] > 0 and hp > targetInfo['hp']:
                             targetInfo['hp'] = 0
                             targetInfo['alive'] = False
-                            result = f'{targetStr}的生命值降至0, {targetStr}昏迷/死亡了!'
+                            result = f'{targetStr}的生命值减少了{resultStrHp}\n因为生命值降至0, {targetStr}昏迷/死亡了!'
                         else:
                             targetInfo['hp'] -= hp
                             result = f'{targetStr}的生命值减少了{resultStrHp}'
                     else:
-                        result = f'{targetStr}的生命值已经减少至0, 无法再减少了'
+                        result = f'{targetStr}的生命值减少了{resultStrHp}\n{targetStr}当前生命值已经是0, 无法再减少了'
 
                 else:
                     result = '有些不对劲呢...'
@@ -497,7 +498,7 @@ class Bot:
                 result += f'昏迷/死亡'
             elif hp > 0 and maxhp > 0:
                 result += f'HP:{hp}/{maxhp}'
-            elif hp >= 0 and maxhp == 0:
+            elif hp > 0 and maxhp == 0:
                 result += f'HP:{hp}'
             elif hp < 0 and maxhp == 0:
                 result += f'已损失HP:{-1*hp}'
@@ -596,6 +597,8 @@ class Bot:
             return HELP_LINK_STR
         elif subType == '协议':
             return HELP_AGREEMENT_STR
+        elif subType == '更新':
+            return HELP_COMMAND_UPDATE_STR
         elif subType == 'r':
             return HELP_COMMAND_R_STR
         elif subType == 'nn':

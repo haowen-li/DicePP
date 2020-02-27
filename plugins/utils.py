@@ -102,11 +102,11 @@ def int2str(value, with_symbol = True):
         return str(value)
     
 def UpdateJson(jsonFile, path):
-    with open(path,"w") as f:
+    with open(path,"w", encoding='utf-8') as f:
         json.dump(jsonFile,f,ensure_ascii=False)
 
 def ReadJson(path):
-    with open(path,"r") as f:
+    with open(path,"r", encoding='utf-8') as f:
         js = f.read()
         jsonFile = json.loads(js)
         return jsonFile

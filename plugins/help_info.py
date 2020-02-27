@@ -7,7 +7,7 @@ HELP_STR += '.help更新 查看最近更新内容与预告\n'
 HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除指定先攻条目, 记录生命值信息, 可部分匹配的查询功能\n'
 HELP_STR += '交流群:861919492'
 
-# HELP_COMMAND_UPDATE_STR =  '本次更新内容:\n1.新增了'
+HELP_COMMAND_UPDATE_STR = '本次更新内容:\n1.新增了武器,护甲,工具的查询\n2.完善了.sethp功能\n3.增加了广播功能(仅master可用)\n下次更新预告:\n1.增加暗骰功能\n\n更多画饼请在交流群:861919492查看!'
 
 HELP_COMMAND_STR = '多数指令需要后接参数, 主要指令包括:\n'
 HELP_COMMAND_STR += '.bot 开关\n'
@@ -18,7 +18,7 @@ HELP_COMMAND_STR += '.init 先攻列表\n'
 HELP_COMMAND_STR += '.sethp 记录/调整生命值\n'
 HELP_COMMAND_STR += '.jrrp 今日人品\n'
 HELP_COMMAND_STR += '.查询 查询资料\n'
-HELP_COMMAND_STR += 'ps:骰娘会自动去掉大多数空格以及转换小写'
+HELP_COMMAND_STR += 'ps:骰娘会自动去掉大多数空格以及转换小写, 详细用法请输入.help[指令名]查询, 如.help r'
 
 HELP_LINK_STR = 'Dice++是基于Python, NoneBot和酷Q的骰子机器人项目\n'
 HELP_LINK_STR += '项目地址: https://github.com/haowen-li/DicePP'
