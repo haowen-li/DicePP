@@ -12,7 +12,28 @@ def RollDiceCommond(diceCommand) -> (int, str, list):
     if len(diceCommand) == 0:
         return -1, '命令表达式为空!', None
     
-    diceList = []
+    surfix = ''
+
+    # 处理抗性/易伤
+    totalScale = 1
+    scaleIndex = diceCommand.find('抗性')
+    # 若没有找到抗性则尝试寻找易伤
+    if scaleIndex == -1:
+        scaleIndex = diceCommand.find('易伤')
+        if scaleIndex != -1:
+            if scaleIndex == len(diceCommand) - 2:
+                totalScale = 2
+                surfix = '易伤'
+                diceCommand = diceCommand[:-2]
+            else:
+                return -1, f'易伤标记只能出现在表达式末尾!', None
+    else:
+        if scaleIndex == len(diceCommand) - 2:
+            totalScale = 0.5
+            surfix = '抗性'
+            diceCommand = diceCommand[:-2]
+        else:
+            return -1, f'抗性标记只能出现在表达式末尾!', None
 
     # 处理关于 # 的部分
     repeatTime = 1
@@ -31,7 +52,7 @@ def RollDiceCommond(diceCommand) -> (int, str, list):
             return -1, f'#后的内容必须为有效的骰子表达式', None
 
     splitKeys = ['+', '-']
-    
+    diceList = []
     splitIndex = 0
     # 利用分隔符将不同投骰部分分隔开
     for i in range(1, len(diceCommand)):
@@ -54,22 +75,27 @@ def RollDiceCommond(diceCommand) -> (int, str, list):
         elif len(diceList[i])>=3 and (diceList[i][-3:] == 'D优势' or diceList[i][-3:] == 'D劣势'):
             diceList[i] = diceList[i][:-2] + defaultDiceType + diceList[i][-2:]
             diceCommand = diceCommand[:length-2] + defaultDiceType + diceCommand[length-2:]
+        elif diceList[i].find('DK') != -1:
+            index = diceList[i].find('DK')
+            commandIndex = length-len(diceList[i])+index+1
+            diceList[i] = diceList[i][:index+1] + defaultDiceType + diceList[i][index+1:]
+            diceCommand = diceCommand[:commandIndex] + defaultDiceType + diceCommand[commandIndex:]
 
 
-    # 开始投骰
+    # 开始投骰并输出结果
     totalValueList = None
     if repeatTime == 1:
         # 如果不重复直接返回结果
-        error, answer, totalValueList = RollDiceList(diceList)
+        error, answer, totalValueList = RollDiceList(diceList, totalScale)
         if error != 0:
             return -1, answer, None
-        output = f'{diceCommand}={answer}'
+        output = f'{diceCommand}{surfix}={answer}'
     else:
         # 重复多次则在结果中加入第x次的标注
         totalValueList = []
-        output = f'{repeatTime}次{diceCommand}=' + '{\n'
+        output = f'{repeatTime}次{diceCommand}{surfix}=' + '{\n'
         for i in range(repeatTime):
-            error, answer, totalValueListCurrent = RollDiceList(diceList)
+            error, answer, totalValueListCurrent = RollDiceList(diceList, totalScale)
             if error != 0:
                 return -1, answer, None
             output += f'{answer}'
@@ -81,11 +107,14 @@ def RollDiceCommond(diceCommand) -> (int, str, list):
 
     return 0, output, totalValueList
 
-# 接受一个骰子列表, 返回结果字符串和总值
-@TypeAssert(list)
-def RollDiceList(diceList)->(int, str, list):
+# 接受一个骰子列表和比例, 返回结果字符串和结果数组
+# 注意! 由于抗性要减半并向下取整不方便逐个处理. 比例只会影响字符串而不会影响数组元素的值! 请在函数外自己处理!!!
+@TypeAssert(diceList = list)
+def RollDiceList(diceList, scale = 1)->(int, str, list):
+    if not scale in [0.5, 1, 2]:
+        return -1, f'比例不在可选择的范围内, 请向开发者报告', None
     # 生成随机种子
-    np.random.seed(np.random.seed(datetime.datetime.now().microsecond+np.random.randint(10000)))
+    np.random.seed(datetime.datetime.now().microsecond+np.random.randint(10000))
     finalAnswer = ''
     totalValue = 0
     totalValueList = []
@@ -101,15 +130,30 @@ def RollDiceList(diceList)->(int, str, list):
         totalValueList.append(value)
     length = len(answerList)
 
+    # 组装结果字符串
     finalAnswer += answerList[0]
     for i in range(1,length):
         if answerList[i][0] != '-':
             finalAnswer += '+'
         finalAnswer += answerList[i]
 
+    if scale != 1:
+        totalValue = int(np.floor(totalValue * scale))
+
     # 如果结果个数多于一个, 显示总和
     if len(answerList) > 1 or answerList[0].find('(') != -1:
-        finalAnswer += f'={totalValue}'
+        if scale == 1:
+            finalAnswer += f'={totalValue}'
+        elif scale == 2:
+            finalAnswer = f'({finalAnswer})X2={totalValue}'
+        else:
+            finalAnswer = f'({finalAnswer})/2={totalValue}'
+    else:
+        if scale == 2:
+            finalAnswer = f'{finalAnswer}X2={totalValue}'
+        elif scale == 0.5:
+            finalAnswer = f'{finalAnswer}/2={totalValue}'
+
     return 0, finalAnswer, totalValueList
 
 @TypeAssert(str)
@@ -203,10 +247,10 @@ def RollDice(diceStr)->(int, str, int):
     else:
         if advIndex != -1: # 优势
             final = max(result[0], result[1])
-            return 0, f'Max{result[0], result[1]}', final
+            return 0, f'Max({result[0]},{result[1]})', final
         elif disadvIndex != -1: # 劣势
             final = min(result[0], result[1])
-            return 0, f'Min{result[0], result[1]}', final
+            return 0, f'Min({result[0]},{result[1]})', final
         elif keepIndex != -1: # 保留的情况
             if len(result) < 20: # 总骰子数小于20个
                 final = 0
@@ -216,16 +260,16 @@ def RollDice(diceStr)->(int, str, int):
                 if answer[0] =='+':
                     answer = answer[1:]
                 result = sorted(result, reverse = True)[:keepMaxNum]
-                keepAnswer = ''
+                #keepAnswer = ''
                 for r in result:
                     final += r
-                    keepAnswer += int2str(r)
-                if keepAnswer[0] =='+':
-                    keepAnswer = keepAnswer[1:]
+                #    keepAnswer += int2str(r)
+                #if keepAnswer[0] =='+':
+                #    keepAnswer = keepAnswer[1:]
                 if keepMaxNum == 1:
-                    answer = f'Max({answer})={keepAnswer}'
+                    answer = f'Max({answer})'#={keepAnswer}'
                 else:
-                    answer = f'Max{keepMaxNum}({answer})={keepAnswer}'
+                    answer = f'Max{keepMaxNum}({answer})'#={keepAnswer}'
                 return 0, f'{answer}', final
             else:
                 final = 0
@@ -255,7 +299,7 @@ def SplitDiceCommand(inputStr)->(str, str):
     # 将投掷表达式与后面的无关部分分开
     # 如SplitDiceCommand('d20优势+5攻击地精')将返回('d20优势+5', '攻击地精')
     singleKeywords = ['+', '-', 'k', 'd', '#', ' ', '\n'] + [str(i) for i in range(10)]
-    doubleKeywords = ['优势', '劣势']
+    doubleKeywords = ['优势', '劣势', '抗性', '易伤']
     inputStr = inputStr.replace(' ', '')
     splitIndex = 0 # splitIndex以及之后的内容都是无关内容
     while splitIndex < len(inputStr):

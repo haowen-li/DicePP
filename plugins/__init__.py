@@ -11,12 +11,27 @@ from .bot_tool import Bot
 from .custom_config import *
 
 bot = Bot()
+DEBUG_MODE = False
 
 @on_command('PROCESS_COMMAND', only_to_me=True)
 async def processCommand(session: CommandSession):
-    result = session.get('result')
-    print(f'Output:{result}')
-    await session.send(result)
+    commandResult = session.get('result')
+    print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
+
+    # 如果群聊列表不为空, 则对指定的群发送消息
+    if commandResult.groupIdList:
+        for gId in commandResult.groupIdList:
+            nonebot = session.bot
+            await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
+    else:
+        # 如果用户列表不为空, 则对指定的用户发送消息
+        if commandResult.personIdList:
+            nonebot = session.bot
+            for pId in commandResult.personIdList:
+                await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
+        # 否则原样返回
+        else:
+            await session.send(result)
 
 @processCommand.args_parser
 async def _(session: CommandSession):
@@ -26,12 +41,12 @@ async def _(session: CommandSession):
     uid = str(session.ctx['user_id'])
     uname = session.ctx['sender']['nickname']
     if 'group_id' not in session.ctx.keys():
-        result = bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
+        commandResult = bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
     else:
         groupId = str(session.ctx['group_id'])
-        result = bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
+        commandResult = bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
 
-    session.state['result'] = result
+    session.state['result'] = commandResult
 
 @on_natural_language(keywords={'.', '。'}, only_to_me=False)
 async def _(session: NLPSession):
@@ -71,7 +86,13 @@ async def processCommand(session: CommandSession):
             # print(f'RADIO to {groupInfo['group_name']} {groupInfo['group_id']}:{msg}')
         except:
             pass
-    await session.send(result)
+
+@on_command('DEBUG', permission = SUPERUSER)
+async def processCommand(session: CommandSession):
+    if DEBUG_MODE == True:
+        DEBUG_MODE = False
+    else:
+        DEBUG_MODE = True
 
 
 # 将函数注册为好友请求处理器

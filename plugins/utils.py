@@ -33,9 +33,6 @@ class Command():
         self.personId = personId
         self.groupId = groupId
         
-        if cType == CommandType.Roll:
-            assert len(cArg) == 2, '投骰命令必须有两个参数!'
-        
     def equal(self, otherCommand, info = True):
         if self.cType != otherCommand.cType:
             if info:
@@ -57,6 +54,13 @@ class Command():
     
     def show(self):
         return (self.cType, self.cArg, self.personId, self.groupId)
+
+class CommandResult():
+    @TypeAssert(resultStr = str, personIdList = list, groupIdList = list)
+    def __init__(self, resultStr, personIdList = None, groupIdList = None):
+        self.resultStr = resultStr
+        self.personIdList = personIdList
+        self.groupIdList = groupIdList
 
 class TypeValueError(Exception):
     # 自定义的错误类型, 可以通过方法增加错误信息

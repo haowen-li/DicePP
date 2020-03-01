@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand
-from .utils import ReadJson, UpdateJson, Command, CommandType, ChineseToEnglishSymbol, TypeValueError
+from .utils import ReadJson, UpdateJson, Command, CommandType, CommandResult, ChineseToEnglishSymbol, TypeValueError
 from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate
 from .type_assert import TypeAssert
 from .custom_config import *
@@ -47,8 +47,12 @@ def ParseInput(inputStr):
     # 掷骰命令
     if commandType == 'r':
 #         # 参数包含两部分, 骰子表达式与原因, 原因为可选项
+        isHide = False
+        if commandStr and commandStr[0] == 'h':
+            commandStr = commandStr[1:]
+            isHide = True
         diceCommand, reason = SplitDiceCommand(commandStr)
-        return Command(CommandType.Roll,[diceCommand, reason])
+        return Command(CommandType.Roll,[diceCommand, reason, isHide])
     # 更改昵称命令
     elif commandType == 'nn':
         nickName = commandStr
@@ -147,7 +151,7 @@ class Bot:
             self.queryInfoDict = None
     
     # 接受输入字符串，返回输出字符串
-    def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False):
+    def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> CommandResult:
         command = ParseInput(inputStr)
         if command is None:
             return None
@@ -176,22 +180,28 @@ class Bot:
             except:
                 nickName = personName
         if cType == CommandType.Roll:
+            diceCommand = command.cArg[0]
             reason = command.cArg[1]
+            isHide = command.cArg[2]
             if len(reason) != 0:
                 reason = f'由于{reason},'
-            error, resultStr, resultValList = RollDiceCommond(command.cArg[0])
-            if error:
-                return resultStr
+            error, resultStr, resultValList = RollDiceCommond(diceCommand)
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
-            return finalResult
+            if error:
+                return CommandResult(resultStr)
+            if isHide:
+                finalResult = f'暗骰结果:{finalResult}'
+                return CommandResult(finalResult, personIdList = [personId])
+            else:
+                return CommandResult(finalResult)
         elif cType == CommandType.NickName:
             if not groupId: groupId = 'Default'
             nickName = command.cArg[0]
             result = self.__UpdateNickName(groupId, personId, nickName)
             if result == 1:
-                return f'要用本来的名字称呼你吗? 了解!'
+                return CommandResult(f'要用本来的名字称呼你吗? 了解!')
             elif result == 0:
-                return f'要称呼{personName}为{nickName}吗? 没问题!'
+                return CommandResult(f'要称呼{personName}为{nickName}吗? 没问题!')
         elif cType == CommandType.JRRP:
             date = GetCurrentDateRaw()
             value = self.__GetJRRP(personId, date)
@@ -201,21 +211,21 @@ class Bot:
             elif value <= 20:
                 gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
                 answer += f', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~'
-            return answer
+            return CommandResult(answer)
         elif cType == CommandType.INIT:
             subType = command.cArg[0]
-            if not groupId: return '只有在群聊中才能使用该功能哦'
+            if not groupId: return CommandResult('只有在群聊中才能使用该功能哦')
             if not subType:
                 initInfo = self.__GetInitList(command.groupId)
-                return initInfo
+                return CommandResult(initInfo)
             elif subType == 'clr':
                 result = self.__ClearInitList(command.groupId)
-                return result
+                return CommandResult(result)
             elif subType[:3] == 'del':
                 result =  self.__RemoveInitList(command.groupId, subType[3:].strip())
-                return result
+                return CommandResult(result)
         elif cType == CommandType.RI:
-            if not groupId: return '只有在群聊中才能使用该功能哦'
+            if not groupId: return CommandResult('只有在群聊中才能使用该功能哦')
             initAdj = command.cArg[0]
             name = command.cArg[1]
             if not name:
@@ -224,23 +234,23 @@ class Bot:
             else:
                 isPC = False
             result = self.__JoinInitList(command.groupId, command.personId, name, initAdj, isPC)
-            return result
+            return CommandResult(result)
         elif cType == CommandType.SETHP:
             if not groupId: return '只有在群聊中才能使用该功能哦'
             result = None
             # Args: [targetStr, subType , hpStr, maxhpStr]
             if command.cArg[0] is None: # 第一个参数为None说明要清除生命值记录
                 result = self.__ClearHP(groupId, personId)
-                return f'已经忘记了{nickName}的生命值...'
+                return CommandResult(f'已经忘记了{nickName}的生命值...')
             else:
                 result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
-                return result
+                return CommandResult(result)
         elif cType == CommandType.BOT:
-            if not groupId: return '只有在群聊中才能使用该功能哦'
+            if not groupId: return CommandResult('只有在群聊中才能使用该功能哦')
             if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
             isTurnOn = command.cArg[0]
             result = self.__BotSwitch(groupId, isTurnOn)
-            return result
+            return CommandResult(result)
         elif cType == CommandType.DND:
             try:
                 times = int(command.cArg[0])
@@ -250,15 +260,15 @@ class Bot:
             reason = command.cArg[1]
             result = self.__DNDBuild(groupId, times)
             result = f'{nickName}的初始属性: {reason}\n{result}'
-            return result
+            return CommandResult(result)
         elif cType == CommandType.HELP:
             subType = str(command.cArg[0])
             helpInfo = self.__GetHelpInfo(subType)
-            return helpInfo
+            return CommandResult(helpInfo)
         elif cType == CommandType.QUERY:
             targetStr = str(command.cArg[0])
             queryResult = self.__QueryInfo(targetStr)
-            return queryResult
+            return CommandResult(queryResult)
 
         return None
 
