@@ -303,6 +303,8 @@ class Bot:
         if subType != '=' and maxhpStr:
             return '增加或减少生命值的时候不能修改最大生命值哦'
         # 先尝试解读hpStr和maxhpStr
+        if hpStr.find('抗性') != -1 or hpStr.find('易伤') != -1:
+            return '抗性与易伤关键字不能出现在此处!'
         error, resultStrHp, resultValListHp = RollDiceCommond(hpStr)
         if error: return error
         try:
@@ -468,9 +470,13 @@ class Bot:
         
     def __GetJRRP(self, personId, date) -> int:
         seed = 0
-        seed += date.year + date.month + date.day
+        temp = 1
+        seed += date.year + date.month*13 + date.day*6
         for c in personId:
-            seed += ord(c)
+            seed += ord(c) * temp
+            temp += 3
+            if temp > 10:
+                temp = -4
         seed = int(seed)
         np.random.seed(seed)
         value = np.random.randint(0,101)
@@ -553,6 +559,9 @@ class Bot:
             initInfo = self.initInfoDict[groupId]
         except: #如未找到, 创建一个新的先攻信息
             initInfo = {'date': GetCurrentDate(), 'initList':{}}
+
+        if initAdj.find('抗性') != -1 or initAdj.find('易伤') != -1:
+            return '抗性与易伤关键字不能出现在此处!'
             
         #initAdj 有两种情况, 一是调整值, 二是固定值
         if not initAdj or initAdj[0] in ['+','-'] or initAdj[:2] in ['优势','劣势']: #通过符号判断

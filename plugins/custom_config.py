@@ -13,10 +13,11 @@ LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_info.json')
 LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
 
-GIFT_LIST = ['小鱼干', '鲨鱼干', '鲸鱼干', '好看的玻璃球', '漂亮的珊瑚', '小螺号',
- '珍贵的水晶球', '水果硬糖', '水果软糖', '小木梳', '锋利的匕首', '幽蓝魔杖', '生锈的三戟叉', '迷你皇冠', '漂亮的鳞片',
- '椰蛋树牌椰汁', '苹果12袋', '最新的海底八卦杂志', 
- '隔壁家的WiFi密码', '咸鱼味果冻', '美白精华', '一瓶海水']
+GIFT_LIST = ['秘制蜜汁小鱼干', '秘制蜜汁鲨鱼干', '秘制蜜汁鲸鱼干', '吹起来特别好听的小螺号', '特别美味的大螃蟹',
+ '珍贵的水晶球(听说吞下去可以转运)', '最喜欢的水果硬糖', '最喜欢的水果软糖', '偷偷带出来的淬毒匕首', '父皇宝库里的幽蓝魔杖',
+ '路上随便捡的一把生锈三叉戟', '超迷你皇冠(拇指大小,建国666周年纪念品)', '漂亮的鳞片(来源不明)',
+ '椰蛋树牌椰汁', '最新的海底八卦杂志', '皇宫大殿的WiFi密码', '咸鱼味果冻', '母后偷偷在用的美白精华', '一瓶从六核之洋深处取来的海水',
+ '古老的青铜镜子(边框上刻着铭文"阿罗德斯")']
 
 if os.path.exists(LOCAL_DATA_PATH) == False:
     os.makedirs(LOCAL_DATA_PATH)
