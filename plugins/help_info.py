@@ -8,10 +8,10 @@ HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除�
 HELP_STR += '交流群:861919492'
 
 HELP_COMMAND_UPDATE_STR = '2020/3/2 本次更新内容:\n1.实装了暗骰功能\n2.实装了骰子表达式中的"抗性", "易伤"标记\n3.修改了今日人品的算法,更新了礼物池\n4.修复了一些错误\n\n'
-HELP_COMMAND_UPDATE_STR += '下次更新预告:\n1.识别不友善行为与黑名单2.烹饪与点菜功能\n\n'
+HELP_COMMAND_UPDATE_STR += '下次更新预告:\n1.识别不友善行为与黑名单\n2.烹饪与点菜功能\n\n'
 HELP_COMMAND_UPDATE_STR += '更多画饼请在交流群:861919492查看!'
 
-HELP_COMMAND_STR = '多数指令需要后接参数, 主要指令包括:\n'
+HELP_COMMAND_STR = '主要指令包括:\n'
 HELP_COMMAND_STR += '.bot 开关\n'
 HELP_COMMAND_STR += '.r 掷骰\n'
 HELP_COMMAND_STR += '.nn 设置昵称\n'
@@ -21,7 +21,7 @@ HELP_COMMAND_STR += '.sethp 记录/调整生命值\n'
 HELP_COMMAND_STR += '.jrrp 今日人品\n'
 HELP_COMMAND_STR += '.查询 查询资料\n'
 HELP_COMMAND_STR += '.dnd 初始属性作成\n'
-HELP_COMMAND_STR += 'ps:骰娘会自动去掉大多数空格以及转换小写, 详细用法请输入.help[指令名]查询, 如.help r'
+HELP_COMMAND_STR += '骰娘会自动去掉大多数空格以及转换小写, 多数指令需要后接参数, 详细用法请输入.help[指令名]查询, 如.help r'
 
 HELP_LINK_STR = 'Dice++是基于Python, NoneBot和酷Q的骰子机器人项目\n'
 HELP_LINK_STR += '项目地址: https://github.com/haowen-li/DicePP'
@@ -40,6 +40,7 @@ HELP_AGREEMENT_STR += '9.Dice++参考了Dice! by 溯洄 Shiki的部分文字和�
 HELP_AGREEMENT_STR += '10.本服务最终解释权归服务提供方所有。'
 
 HELP_COMMAND_R_STR =  '掷骰：.r[掷骰表达式]([掷骰原因]) [掷骰表达式]：([轮数]#)[个数]d面数(优/劣势)(k[取点数最大的骰子数])不带面数时视为掷一个默认的20面骰\n'
+HELP_COMMAND_R_STR += 'r后加h即为暗骰\n'
 HELP_COMMAND_R_STR += '示例:\n'
 HELP_COMMAND_R_STR += '.rd20+1d4+4\n'
 HELP_COMMAND_R_STR += '.r4#d    //投4次d20\n'
@@ -68,7 +69,7 @@ HELP_COMMAND_INIT_STR += '.init del 地精 //在先攻列表中删除地精'
 
 HELP_COMMAND_QUERY_STR =  '查询资料: .查询 查询目标\n'
 HELP_COMMAND_QUERY_STR += '查询指令支持部分匹配\n'
-HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 全拓展法术, 全拓展专长, DMG魔法物品(by花作噫), PHB与DMG生物(by花作噫), PHB工具(by赵小安), PHB武器与护甲(by邪恶)'
+HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 全拓展法术, 全拓展专长, DMG魔法物品(by花作噫), PHB与DMG生物(by花作噫), PHB工具(by赵小安), PHB武器与护甲(by邪恶), PHB和DMG基础规则(by梨子)'
 
 HELP_COMMAND_SETHP_STR =  '记录/调整生命值: .sethp ([调整目标])([符号]) [骰子表达式/数值](/[最大生命值])\n'
 HELP_COMMAND_SETHP_STR += '生命值信息将在.init的结果中显示\n'

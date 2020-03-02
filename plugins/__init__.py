@@ -20,6 +20,8 @@ async def processCommand(session: CommandSession):
     commandResult = session.get('result')
     if DEBUG_MODE:
         print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
+    if commandResult.resultStr is None:
+        return
 
     # 如果群聊列表不为空, 则对指定的群发送消息
     if commandResult.groupIdList:
