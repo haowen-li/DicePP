@@ -1,5 +1,7 @@
 __all__ = ["bot_tool"]
 
+import time
+from time import sleep
 
 from nonebot import on_command, CommandSession
 from nonebot import on_natural_language, NLPSession, IntentCommand
@@ -16,7 +18,8 @@ DEBUG_MODE = False
 @on_command('PROCESS_COMMAND', only_to_me=True)
 async def processCommand(session: CommandSession):
     commandResult = session.get('result')
-    print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
+    if DEBUG_MODE:
+        print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
 
     # 如果群聊列表不为空, 则对指定的群发送消息
     if commandResult.groupIdList:
@@ -31,13 +34,14 @@ async def processCommand(session: CommandSession):
                 await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
         # 否则原样返回
         else:
-            await session.send(result)
+            await session.send(commandResult.resultStr)
 
 @processCommand.args_parser
 async def _(session: CommandSession):
     content = session.current_arg['arg']
     only_to_me = session.current_arg['only_to_me']
-    print(f'Input:{content}')
+    if DEBUG_MODE:
+        print(f'Input:{content}')
     uid = str(session.ctx['user_id'])
     uname = session.ctx['sender']['nickname']
     if 'group_id' not in session.ctx.keys():
@@ -63,13 +67,6 @@ async def _(session: NLPSession):
     if index != -1:
         return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text[index:], 'only_to_me':True})
 
-# @on_natural_language(keywords={'.send', '。send'}, only_to_me=True)
-# async def _(session: NLPSession):
-#     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
-#     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
-#         if session.msg_text[1:5] == 'send':
-#             await session.send(result)
-
 
 @on_command('RADIO', permission = SUPERUSER)
 async def processCommand(session: CommandSession):
@@ -83,6 +80,7 @@ async def processCommand(session: CommandSession):
     for groupInfo in info:
         try:
             await nonebot.send_group_msg(group_id=groupInfo['group_id'], message=msg)
+            sleep(10)
             # print(f'RADIO to {groupInfo['group_name']} {groupInfo['group_id']}:{msg}')
         except:
             pass
@@ -90,8 +88,10 @@ async def processCommand(session: CommandSession):
 @on_command('DEBUG', permission = SUPERUSER)
 async def processCommand(session: CommandSession):
     if DEBUG_MODE == True:
+        await session.send('关闭调试模式')
         DEBUG_MODE = False
     else:
+        await session.send('开启调试模式')
         DEBUG_MODE = True
 
 
@@ -109,14 +109,23 @@ async def _(session: RequestSession):
 @on_request('group')
 async def _(session: RequestSession):
     # 判断验证信息是否符合要求
-    # if session.ctx['sub_type'] == 'invite' and session.ctx['comment'] == 'DND5E':
-    #     # 验证信息正确，同意入群
-    #     await session.approve()
-    # # 验证信息错误，拒绝入群
-    # await session.reject('请说正确的暗号')
-    await session.approve()
+    if session.ctx['sub_type'] == 'invite':
+        if session.ctx['comment'] == GROUP_PASSWORD:
+            # # 验证信息正确，同意入群
+            try:
+                # for mId in MASTER:
+                #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
+                for gId in MASTER_GROUP:
+                    await nonebot.send_group_msg(group_id=gId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
+            except:
+                pass
+            await session.approve()
+        # 验证信息错误，拒绝入群
+        else:
+            await session.reject('请输入正确的暗号')
 
 @on_notice('group_increase')
 async def _(session: NoticeSession):
     # 发送欢迎消息
-    await session.send(f'欢迎新人~')
+    if session.ctx['user_id'] != SELF_ID:
+        await session.send(f'欢迎新人~')

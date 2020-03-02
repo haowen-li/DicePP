@@ -2,7 +2,11 @@ import os
 
 from .utils import ReadJson, UpdateJson
 
+SELF_ID = '2192720436'
 MASTER = ['821480843']
+MASTER_GROUP = ['861919492']
+
+GROUP_PASSWORD = 'dnd5e-pear'
 
 LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
 LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nick_name.json')
