@@ -282,7 +282,7 @@ class Bot:
         elif cType == CommandType.DND:
             try:
                 times = int(command.cArg[0])
-                assert times > 0 and times < 10
+                assert times > 0 and times <= 10
             except:
                 times = 1
             reason = command.cArg[1]
@@ -665,6 +665,8 @@ class Bot:
             return HELP_COMMAND_SETHP_STR
         elif subType == 'jrrp':
             return HELP_COMMAND_JRRP_STR
+        elif subType == 'draw':
+            return HELP_COMMAND_DRAW_STR
         else:
             return None
 
@@ -714,7 +716,7 @@ class Bot:
         if not self.deckDict:
             return '呃啊, 记忆好像不见了... 怎么办...'
         if not targetStr:
-            return f'现在的记忆中共有{len(self.deckDict)}个牌堆呢, 分别是{self.deckDict.keys()}, 详情请输入 .help draw 查看'
+            return f'现在的记忆中共有{len(self.deckDict)}个牌堆呢, 分别是{list(self.deckDict.keys())}'
 
         try:
             deckList = self.deckDict[targetStr]
