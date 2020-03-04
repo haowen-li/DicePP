@@ -7,7 +7,7 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss', 'draw']
 
 @unique
 class CommandType(Enum):
@@ -22,6 +22,7 @@ class CommandType(Enum):
     HELP = 8
     QUERY = 9
     DISMISS = 10
+    DRAW = 11
 
 @unique
 class CoolqCommandType(Enum):

@@ -119,6 +119,9 @@ def ParseInput(inputStr):
         return Command(CommandType.QUERY,[target])
     elif commandType == 'dismiss':
         return Command(CommandType.DISMISS, [])
+    elif commandType == 'draw':
+        target = commandStr.replace(' ', '')
+        return Command(CommandType.DRAW, [target])
     return None
 
 
@@ -131,6 +134,7 @@ class Bot:
         self.pcStateDict = ReadJson(LOCAL_PCSTATE_PATH)
         self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
         print(f'个人资料库加载成功!')
+        # 尝试加载查询资料库
         try:
             filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH) #读取所有文件名
             print(f'找到以下查询资料: {filesPath}')
@@ -146,12 +150,34 @@ class Bot:
                 except Exception as e:
                     print(e)
             assert len(self.queryInfoDict) > 0
-            self.queryInfoDict['最长条目长度'] = max([len(k) for k in self.queryInfoDict.keys()])
+            # self.queryInfoDict['最长条目长度'] = max([len(k) for k in self.queryInfoDict.keys()])
             print(f'查询资料库加载成功! 共{len(self.queryInfoDict)}个条目')
         except: 
             print(f'查询资料库加载失败!')
             self.queryInfoDict = None
-    
+        # 尝试加载牌库
+        try:
+            filesPath = os.listdir(LOCAL_DECKINFO_DIR_PATH) #读取所有文件名
+            print(f'找到以下牌堆: {filesPath}')
+            self.deckDict = {}
+            for fp in filesPath:
+                try:
+                    assert fp[-5:] == '.json'
+                    absPath = os.path.join(LOCAL_DECKINFO_DIR_PATH, fp)
+                    print(f'尝试加载{fp}')
+                    currentDeckDict = ReadJson(absPath)
+                    assert len(currentDeckDict['list']) > 0, f'{fp}是一个空牌堆!'
+                    self.deckDict[currentDeckDict['title']] = currentDeckDict['list']
+                    print(f'成功加载{fp}, 牌堆名为{currentDeckDict["title"]}, 共{len(currentDeckDict["list"])}个条目')
+                except Exception as e:
+                    print(e)
+            assert len(self.deckDict) > 0
+            print(f'牌库加载成功! 共{len(self.deckDict)}个牌堆')
+        except:
+            print(f'牌库加载失败!')
+            self.deckDict = None
+
+
     # 接受输入字符串，返回输出字符串
     def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> CommandResult:
         command = ParseInput(inputStr)
@@ -273,7 +299,10 @@ class Bot:
             return CommandResult(CoolqCommandType.MESSAGE, queryResult)
         elif cType == CommandType.DISMISS:
             return CommandResult(CoolqCommandType.DISMISS, '再见咯, 期待我们下次的相遇~' ,groupIdList = [groupId])
-
+        elif cType == CommandType.DRAW:
+            targetStr = str(command.cArg[0])
+            drawResult = self.__DrawInfo(targetStr)
+            return CommandResult(CoolqCommandType.MESSAGE, drawResult)
         return None
 
 
@@ -668,7 +697,7 @@ class Bot:
                     possResult.append(k)
 
             if len(possResult) > 1:
-                if len(possResult) <= 20:
+                if len(possResult) <= 30:
                     result = f'找到多个匹配的条目: {possResult}'
                 else:
                     result = f'找到多个匹配的条目: {possResult[:30]}等, 共{len(possResult)}个条目'
@@ -676,6 +705,55 @@ class Bot:
             elif len(possResult) == 1:
                 result = str(self.queryInfoDict[possResult[0]])
                 result = f'要找的难道是{possResult[0]}吗? \n{result}'
+                return result
+            else:
+                return '唔...找不到呢...'
+
+    @TypeAssert(targetStr = str)
+    def __DrawInfo(self, targetStr) -> str:
+        if not self.deckDict:
+            return '呃啊, 记忆好像不见了... 怎么办...'
+        if not targetStr:
+            return f'现在的记忆中共有{len(self.deckDict)}个牌堆呢, 分别是{self.deckDict.keys()}, 详情请输入 .help draw 查看'
+
+        try:
+            deckList = self.deckDict[targetStr]
+            size = len(deckList)
+            error, resultStr, resultValList = RollDiceCommond(f'd{size}')
+            if error: return resultStr
+            index = sum(resultValList)-1
+            result = f'从{possResult[0]}中抽取的结果: \n{deckList[index]}'
+            return result
+        except:
+            # 无法直接找到结果, 尝试搜索
+            possResult = []
+            keywordList = [k for k in targetStr.split('/') if k]
+            if len(keywordList) > 5:
+                return f'指定的关键词太多咯'
+
+            # 开始逐个搜索
+            for k in self.deckDict.keys():
+                isPoss = True
+                for keyword in keywordList:
+                    if k.find(keyword) == -1:
+                        isPoss = False
+                        break
+                if isPoss:
+                    possResult.append(k)
+
+            if len(possResult) > 1:
+                if len(possResult) <= 30:
+                    result = f'找到多个匹配的牌堆: {possResult}'
+                else:
+                    result = f'找到多个匹配的牌堆: {possResult[:30]}等, 共{len(possResult)}个牌堆'
+                return result
+            elif len(possResult) == 1:
+                deckList = self.deckDict[possResult[0]]
+                size = len(deckList)
+                error, resultStr, resultValList = RollDiceCommond(f'd{size}')
+                if error: return resultStr
+                index = sum(resultValList)-1
+                result = f'从{possResult[0]}中抽取的结果: \n{deckList[index]}'
                 return result
             else:
                 return '唔...找不到呢...'

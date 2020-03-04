@@ -9,9 +9,8 @@ from nonebot import on_request, RequestSession, on_notice, NoticeSession
 from nonebot.permission import PRIVATE_FRIEND,PRIVATE_GROUP, PRIVATE_DISCUSS, PRIVATE_OTHER, PRIVATE
 from nonebot.permission import DISCUSS, GROUP_MEMBER, GROUP_ADMIN, GROUP_OWNER, GROUP, SUPERUSER, EVERYBODY
 
-from .bot_tool import Bot
+from .bot_tool import Bot, CoolqCommandType
 from .custom_config import *
-from .utils import CoolqCommandType
 
 bot = Bot()
 DEBUG_MODE = False

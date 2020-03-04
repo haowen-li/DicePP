@@ -16,6 +16,7 @@ LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_info.json')
 
 LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
+LOCAL_DECKINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'deck_info')
 
 GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',
  '珍贵的水晶球(听说吞下去可以转运)', '偷偷带出来的淬毒匕首', '父皇宝库里的幽蓝魔杖',
