@@ -11,6 +11,7 @@ from nonebot.permission import DISCUSS, GROUP_MEMBER, GROUP_ADMIN, GROUP_OWNER, 
 
 from .bot_tool import Bot
 from .custom_config import *
+from .utils import CoolqCommandType
 
 bot = Bot()
 DEBUG_MODE = False
