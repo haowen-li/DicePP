@@ -21,23 +21,33 @@ async def processCommand(session: CommandSession):
     commandResult = session.get('result')
     if DEBUG_MODE:
         print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
-    if commandResult.resultStr is None:
+    if commandResult is None:
         return
 
-    # 如果群聊列表不为空, 则对指定的群发送消息
-    if commandResult.groupIdList:
-        for gId in commandResult.groupIdList:
+    if commandResult.coolqCommand == CoolqCommandType.MESSAGE:
+        # 如果群聊列表不为空, 则对指定的群发送消息
+        if commandResult.groupIdList:
             nonebot = session.bot
-            await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
-    else:
-        # 如果用户列表不为空, 则对指定的用户发送消息
-        if commandResult.personIdList:
-            nonebot = session.bot
-            for pId in commandResult.personIdList:
-                await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
-        # 否则原样返回
+            for gId in commandResult.groupIdList:
+                await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
         else:
-            await session.send(commandResult.resultStr)
+            # 如果用户列表不为空, 则对指定的用户发送消息
+            nonebot = session.bot
+            if commandResult.personIdList:
+                for pId in commandResult.personIdList:
+                    await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
+            # 否则原样返回
+            else:
+                await session.send(commandResult.resultStr)
+    elif commandResult.coolqCommand == CoolqCommandType.DISMISS:
+        try:
+            nonebot = session.bot
+            for gId in commandResult.groupIdList:
+                await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
+                await nonebot.set_group_leave(group_id = gId)
+        except:
+            pass
+
 
 @processCommand.args_parser
 async def _(session: CommandSession):
@@ -130,6 +140,7 @@ async def _(session: RequestSession):
             try:
                 # for mId in MASTER:
                 #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
+                nonebot = session.bot
                 for gId in MASTER_GROUP:
                     await nonebot.send_group_msg(group_id=gId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
             except:

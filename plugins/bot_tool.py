@@ -2,7 +2,7 @@ import numpy as np
 import os
 
 from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand
-from .utils import ReadJson, UpdateJson, Command, CommandType, CommandResult, ChineseToEnglishSymbol, TypeValueError
+from .utils import ReadJson, UpdateJson, Command, CommandType, CoolqCommandType, CommandResult, ChineseToEnglishSymbol, TypeValueError
 from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate
 from .type_assert import TypeAssert
 from .custom_config import *
@@ -117,6 +117,8 @@ def ParseInput(inputStr):
     elif commandType == '查询':
         target = commandStr.replace(' ', '')
         return Command(CommandType.QUERY,[target])
+    elif commandType == 'dismiss':
+        return Command(CommandType.DISMISS, [])
     return None
 
 
@@ -188,20 +190,20 @@ class Bot:
             error, resultStr, resultValList = RollDiceCommond(diceCommand)
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
             if error:
-                return CommandResult(resultStr)
+                return CommandResult(CoolqCommandType.MESSAGE, resultStr)
             if isHide:
                 finalResult = f'暗骰结果:{finalResult}'
-                return CommandResult(finalResult, personIdList = [personId])
+                return CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList = [personId])
             else:
-                return CommandResult(finalResult)
+                return CommandResult(CoolqCommandType.MESSAGE, finalResult)
         elif cType == CommandType.NickName:
             if not groupId: groupId = 'Default'
             nickName = command.cArg[0]
             result = self.__UpdateNickName(groupId, personId, nickName)
             if result == 1:
-                return CommandResult(f'要用本来的名字称呼你吗? 了解!')
+                return CommandResult(CoolqCommandType.MESSAGE, f'要用本来的名字称呼你吗? 了解!')
             elif result == 0:
-                return CommandResult(f'要称呼{personName}为{nickName}吗? 没问题!')
+                return CommandResult(CoolqCommandType.MESSAGE, f'要称呼{personName}为{nickName}吗? 没问题!')
         elif cType == CommandType.JRRP:
             date = GetCurrentDateRaw()
             value = self.__GetJRRP(personId, date)
@@ -211,21 +213,21 @@ class Bot:
             elif value <= 20:
                 gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
                 answer += f', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~'
-            return CommandResult(answer)
+            return CommandResult(CoolqCommandType.MESSAGE, answer)
         elif cType == CommandType.INIT:
             subType = command.cArg[0]
-            if not groupId: return CommandResult('只有在群聊中才能使用该功能哦')
+            if not groupId: return CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')
             if not subType:
                 initInfo = self.__GetInitList(command.groupId)
-                return CommandResult(initInfo)
+                return CommandResult(CoolqCommandType.MESSAGE, initInfo)
             elif subType == 'clr':
                 result = self.__ClearInitList(command.groupId)
-                return CommandResult(result)
+                return CommandResult(CoolqCommandType.MESSAGE, result)
             elif subType[:3] == 'del':
                 result =  self.__RemoveInitList(command.groupId, subType[3:].strip())
-                return CommandResult(result)
+                return CommandResult(CoolqCommandType.MESSAGE, result)
         elif cType == CommandType.RI:
-            if not groupId: return CommandResult('只有在群聊中才能使用该功能哦')
+            if not groupId: return CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')
             initAdj = command.cArg[0]
             name = command.cArg[1]
             if not name:
@@ -234,23 +236,23 @@ class Bot:
             else:
                 isPC = False
             result = self.__JoinInitList(command.groupId, command.personId, name, initAdj, isPC)
-            return CommandResult(result)
+            return CommandResult(CoolqCommandType.MESSAGE, result)
         elif cType == CommandType.SETHP:
             if not groupId: return '只有在群聊中才能使用该功能哦'
             result = None
             # Args: [targetStr, subType , hpStr, maxhpStr]
             if command.cArg[0] is None: # 第一个参数为None说明要清除生命值记录
                 result = self.__ClearHP(groupId, personId)
-                return CommandResult(f'已经忘记了{nickName}的生命值...')
+                return CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')
             else:
                 result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
-                return CommandResult(result)
+                return CommandResult(CoolqCommandType.MESSAGE, result)
         elif cType == CommandType.BOT:
-            if not groupId: return CommandResult('只有在群聊中才能使用该功能哦')
+            if not groupId: return CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')
             if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
             isTurnOn = command.cArg[0]
             result = self.__BotSwitch(groupId, isTurnOn)
-            return CommandResult(result)
+            return CommandResult(CoolqCommandType.MESSAGE, result)
         elif cType == CommandType.DND:
             try:
                 times = int(command.cArg[0])
@@ -260,15 +262,17 @@ class Bot:
             reason = command.cArg[1]
             result = self.__DNDBuild(groupId, times)
             result = f'{nickName}的初始属性: {reason}\n{result}'
-            return CommandResult(result)
+            return CommandResult(CoolqCommandType.MESSAGE, result)
         elif cType == CommandType.HELP:
             subType = str(command.cArg[0])
             helpInfo = self.__GetHelpInfo(subType)
-            return CommandResult(helpInfo)
+            return CommandResult(CoolqCommandType.MESSAGE, helpInfo)
         elif cType == CommandType.QUERY:
             targetStr = str(command.cArg[0])
             queryResult = self.__QueryInfo(targetStr)
-            return CommandResult(queryResult)
+            return CommandResult(CoolqCommandType.MESSAGE, queryResult)
+        elif cType == CommandType.DISMISS:
+            return CommandResult(CoolqCommandType.DISMISS, '再见咯, 期待我们下次的相遇~' ,groupIdList = [groupId])
 
         return None
 
@@ -399,7 +403,7 @@ class Bot:
                     result = f'{targetStr}的生命值增加了{resultStrHp}'
                 elif subType == '-':
                     if pcState['alive']:
-                        if pcState['hp'] > 0 and hp > pcState['hp']:
+                        if pcState['hp'] > 0 and hp >= pcState['hp']:
                             pcState['hp'] = 0
                             pcState['alive'] = False
                             result = f'{targetStr}的生命值减少了{resultStrHp}\n因为生命值降至0, {targetStr}昏迷/死亡了!'
@@ -640,24 +644,34 @@ class Bot:
         if not self.queryInfoDict:
             return '呃啊, 记忆好像不见了... 怎么办...'
         
-        if len(targetStr) > self.queryInfoDict['最长条目长度']:
-            return '记忆中好像没有这么长的条目呢...'
-        elif not targetStr:
+        if not targetStr:
             return f'现在的记忆中共有{len(self.queryInfoDict)}个条目呢, 可查询内容请输入 .help查询 查看'
 
         try:
             result = str(self.queryInfoDict[targetStr])
             return result
         except:
+            # 无法直接找到结果, 尝试搜索
             possResult = []
+            keywordList = [k for k in targetStr.split('/') if k]
+            if len(keywordList) > 5:
+                return f'指定的关键词太多咯'
+
+            # 开始逐个搜索
             for k in self.queryInfoDict.keys():
-                if k.find(targetStr) != -1:
+                isPoss = True
+                for keyword in keywordList:
+                    if k.find(keyword) == -1:
+                        isPoss = False
+                        break
+                if isPoss:
                     possResult.append(k)
+
             if len(possResult) > 1:
                 if len(possResult) <= 20:
                     result = f'找到多个匹配的条目: {possResult}'
                 else:
-                    result = f'找到多个匹配的条目: {possResult[:20]}等, 共{len(possResult)}个条目'
+                    result = f'找到多个匹配的条目: {possResult[:30]}等, 共{len(possResult)}个条目'
                 return result
             elif len(possResult) == 1:
                 result = str(self.queryInfoDict[possResult[0]])
