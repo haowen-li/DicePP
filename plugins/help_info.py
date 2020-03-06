@@ -8,7 +8,6 @@ HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除�
 HELP_STR += '交流群:861919492'
 
 HELP_COMMAND_UPDATE_STR = '2020/3/4 v0.3.2 本次更新内容:\n1.在查询时可以用/区分多个关键字\n2.修复了hp正好降到0时会产生的错误\n3.增加了.dismiss功能\n增加了.draw功能\n\n'
-HELP_COMMAND_UPDATE_STR += '下次更新预告:\n1.识别不友善行为与黑名单\n2.增加抽卡.draw功能\n'
 HELP_COMMAND_UPDATE_STR += '更多画饼请在交流群:861919492查看!'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
