@@ -1,13 +1,14 @@
 import json
 import datetime
 import os
+import numpy as np
 from collections import namedtuple
 from enum import Enum, unique
 
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss', 'draw']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss', 'draw', '烹饪']
 
 @unique
 class CommandType(Enum):
@@ -23,6 +24,7 @@ class CommandType(Enum):
     QUERY = 9
     DISMISS = 10
     DRAW = 11
+    COOK = 12
 
 @unique
 class CoolqCommandType(Enum):
@@ -132,3 +134,10 @@ def GetCurrentDateRaw():
     china_tz = datetime.timezone(datetime.timedelta(hours=8), '北京时间')
     current_date = datetime.datetime.now(china_tz)
     return current_date
+
+def SetNumpyRandomSeed():
+    np.random.seed(np.random.randint(10000))
+
+@TypeAssert(inputList = list)
+def RandomSelectList(inputList):
+    return inputList[np.random.randint(len(inputList))]

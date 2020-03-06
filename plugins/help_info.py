@@ -1,3 +1,4 @@
+from .custom_config import MENU_KEYWORD_LIST
 HELP_STR = 'Dice++ by 梨子 Ver 0.3.2\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
 HELP_STR += '.help指令 查看指令列表\n'
@@ -7,7 +8,8 @@ HELP_STR += '.help更新 查看最近更新内容与预告\n'
 HELP_STR += '本骰娘的特色功能包括但不限于:优劣势投骰, 删除指定先攻条目, 记录生命值信息, 可部分匹配的查询功能\n'
 HELP_STR += '交流群:861919492'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/4 v0.3.2 本次更新内容:\n1.在查询时可以用/区分多个关键字\n2.修复了hp正好降到0时会产生的错误\n3.增加了.dismiss功能\n增加了.draw功能\n\n'
+HELP_COMMAND_UPDATE_STR = '2020/3/6 v0.4.0 本次更新内容:\n1.加入了烹饪功能\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/4 v0.3.2 本次更新内容:\n1.在查询时可以用/区分多个关键字 2.修复了hp正好降到0时会产生的错误 3.增加了.dismiss功能 4.增加了.draw功能\n'
 HELP_COMMAND_UPDATE_STR += '更多画饼请在交流群:861919492查看!'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
@@ -55,6 +57,12 @@ HELP_COMMAND_NN_STR += '示例:\n'
 HELP_COMMAND_NN_STR += '.nn	//视为删除昵称\n'
 HELP_COMMAND_NN_STR += '.nn dm //将昵称设置为dm'
 
+HELP_COMMAND_COOK_STR =  '烹饪菜肴：.烹饪([优劣势][加值]) (用/分隔的关键词列表)\n'
+HELP_COMMAND_COOK_STR += f'可用关键词为: {MENU_KEYWORD_LIST}'
+HELP_COMMAND_COOK_STR += '示例:\n'
+HELP_COMMAND_COOK_STR += '.烹饪 //随机烹饪食物, 可能遇到黑暗料理\n'
+HELP_COMMAND_COOK_STR += '.烹饪优势 经典/野炊 //以优势烹饪含有经典与野炊关键字的食物'
+
 HELP_COMMAND_RI_STR =  '加入先攻(群聊限定)：.ri([优劣势][加值]) ([名称])\n'
 HELP_COMMAND_RI_STR += '示例:\n'
 HELP_COMMAND_RI_STR += '.ri优势+1 //以昵称加入先攻列表\n'
@@ -73,6 +81,7 @@ HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 全拓展法术, 全拓�
 
 HELP_COMMAND_DRAW_STR =  '抽取牌库: .draw 目标牌库\n'
 HELP_COMMAND_DRAW_STR += '目标牌库支持部分匹配\n'
+HELP_COMMAND_DRAW_STR += '查看支持的牌库请输入.draw'
 
 HELP_COMMAND_SETHP_STR =  '记录/调整生命值: .sethp ([调整目标])([符号]) [骰子表达式/数值](/[最大生命值])\n'
 HELP_COMMAND_SETHP_STR += '生命值信息将在.init的结果中显示\n'

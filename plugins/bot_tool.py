@@ -3,7 +3,7 @@ import os
 
 from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand
 from .utils import ReadJson, UpdateJson, Command, CommandType, CoolqCommandType, CommandResult, ChineseToEnglishSymbol, TypeValueError
-from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate
+from .utils import commandKeywordList, GetCurrentDateRaw, GetCurrentDate, SetNumpyRandomSeed, RandomSelectList
 from .type_assert import TypeAssert
 from .custom_config import *
 from .help_info import *
@@ -122,6 +122,13 @@ def ParseInput(inputStr):
     elif commandType == 'draw':
         target = commandStr.replace(' ', '')
         return Command(CommandType.DRAW, [target])
+    elif commandType == '烹饪':
+        diceCommand, keywrods = SplitDiceCommand(commandStr)
+        if keywrods == '':
+            keywrodList = None
+        else:
+            keywrodList = [k.strip() for k in keywrods.split('/') if k.strip()]
+        return Command(CommandType.COOK, [diceCommand, keywrodList])
     return None
 
 
@@ -173,9 +180,55 @@ class Bot:
                     print(e)
             assert len(self.deckDict) > 0
             print(f'牌库加载成功! 共{len(self.deckDict)}个牌堆')
-        except:
-            print(f'牌库加载失败!')
+        except Exception as e:
+            print(f'牌库加载失败! {e}')
             self.deckDict = None
+
+        # 尝试加载菜谱资料库
+        try:
+            filesPath = os.listdir(LOCAL_MENUINFO_DIR_PATH) #读取所有文件名
+            print(f'找到以下菜谱: {filesPath}')
+            self.menuDict = {}
+            for fp in filesPath:
+                try:
+                    assert fp[-5:] == '.json'
+                    absPath = os.path.join(LOCAL_MENUINFO_DIR_PATH, fp)
+                    print(f'尝试加载{fp}')
+                    currentMenuDict = ReadJson(absPath)
+                    self.menuDict.update(currentMenuDict)
+                    print(f'成功加载{fp}, 共{len(currentMenuDict)}个菜谱')
+                except Exception as e:
+                    print(e)
+            assert len(self.menuDict) > 0
+            invalidDish = []
+            for dishName in self.menuDict.keys():
+                try:
+                    dishInfo = self.menuDict[dishName]
+                    dishInfo['美味'] = int(dishInfo['美味'])
+                    dishInfo['难度'] = int(dishInfo['难度'])
+                    assert len(dishName)<50, '名称过长'
+                    assert len(dishInfo['描述'])<400, '描述过长'
+                    assert dishInfo['美味'] >= -20 and dishInfo['美味'] <= 40, '美味数值不正确'
+                    assert dishInfo['难度'] >= -20 and dishInfo['难度'] <= 40, '难度数值不正确'
+                    assert len(dishInfo['价格'])<50
+                    for key in dishInfo['菜系']:
+                        assert key in MENU_CUISINE_LIST, f'{key}不是有效的关键词'
+                    for key in dishInfo['种类']:
+                        assert key in MENU_TYPE_LIST, f'{key}不是有效的关键词'
+                    for key in dishInfo['风格']:
+                        assert key in MENU_STYLE_LIST, f'{key}不是有效的关键词'
+                    for key in dishInfo['关键词']:
+                        assert key in MENU_KEYWORD_LIST, f'{key}不是有效的关键词'
+                    self.menuDict[dishName] = dishInfo
+                except Exception as e:
+                    print (f'菜谱{dishName}无效 {e}')
+                    invalidDish.append(dishName)
+            for dishName in invalidDish:
+                del self.menuDict[dishName]
+            print(f'菜谱资料库加载成功! 共{len(self.menuDict)}个菜谱')
+        except Exception as e:
+            print(f'菜谱资料库加载失败! {e}')
+            self.menuDict = None
 
 
     # 接受输入字符串，返回输出字符串
@@ -303,11 +356,16 @@ class Bot:
             targetStr = str(command.cArg[0])
             drawResult = self.__DrawInfo(targetStr)
             return CommandResult(CoolqCommandType.MESSAGE, drawResult)
+        elif cType == CommandType.COOK:
+            if not groupId: return CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')
+            cookAdj = command.cArg[0]
+            keywordList = command.cArg[1]
+            error, cookResult = self.__CookCheck(cookAdj, keywordList)
+            if error == -1:
+                return CommandResult(CoolqCommandType.MESSAGE, cookResult)
+            cookResult = f'{nickName}的烹饪结果是:\n{cookResult}'
+            return CommandResult(CoolqCommandType.MESSAGE, cookResult)
         return None
-
-
-
-
 
 
 
@@ -617,13 +675,104 @@ class Bot:
         
         return f'{name}先攻:{resultStr}'
 
+    #第一个返回值是执行状况, -1为异常, 0为正常
+    def __CookCheck(self, cookAdj, keywordList)->(int, str):
+        result = ''
+        #cookAdj 有两种情况, 一是调整值, 二是固定值
+        if not cookAdj or cookAdj[0] in ['+','-'] or cookAdj[:2] in ['优势','劣势']: #通过符号判断
+            error, resultStr, resultValList = RollDiceCommond('d20'+cookAdj)
+            if error: return resultStr
+            cookValue = sum(resultValList)
+        else:
+            error, resultStr, resultValList = RollDiceCommond(cookAdj)
+            if error: return resultStr
+            cookValue = sum(resultValList)
+        result = f'在检定时掷出了{resultStr}\n'
+
+        try:
+            assert self.menuDict
+        except:
+            return -1, '菜谱资料库好像加载失败了呢...'
+
+        possDish = []
+        if keywordList:
+            if len(keywordList) > 5:
+                return -1, f'至多指定5个关键词噢~'
+            for key in keywordList:
+                if not key in MENU_KEYWORD_LIST:
+                    return -1, f'{key}不是有效的关键词, 请查看.help烹饪'
+            possDish, delKeyList = self.__FindDishList(keywordList)
+            if len(possDish) == 0:
+                return -1, f'想不到满足要求的东西呢...'
+            if len(delKeyList) != 0:
+                result += f'在无视了关键词{delKeyList}后, '
+        else:
+            possDish = list(self.menuDict.keys())
+
+        SetNumpyRandomSeed()
+        dishName = RandomSelectList(possDish)
+        result += f'于{len(possDish)}个备选中选择了{dishName}\n'
+        dishInfo = self.menuDict[dishName]
+
+        deliValue = 0
+        if cookValue >= dishInfo['难度']:
+            if cookValue >= dishInfo['难度']+10:
+                result += '完美!\n'
+                deliValue += 10
+            elif cookValue >= dishInfo['难度']+5:
+                result += '非常成功\n'
+                deliValue += 5
+            else:
+                result += '比较成功\n'
+        else:
+            if cookValue <= dishInfo['难度'] - 10:
+                result += '大失败!\n'
+                if keywordList:
+                    possDish, delKeyList = self.__FindDishList(['黑暗']+keywordList)
+                else:
+                    possDish, delKeyList = self.__FindDishList(['黑暗'])
+                dishName = RandomSelectList(possDish)
+                dishInfo = self.menuDict[dishName]
+                result += f'{RandomSelectList(COOK_FAIL_STR_LIST)}, 临时改为制作{dishName}\n'
+                deliValue -= 10
+            elif cookValue <= dishInfo['难度'] - 5:
+                result += '非常失败!\n'
+                deliValue -= 5
+            else:
+                result += '比较失败!\n'
+                deliValue -= 2
+        deliValue += dishInfo['美味']
+        result += dishInfo['描述'] + '\n成品会因检定结果有所改变。\n'
+        result += f'美味程度:{deliValue}'
+        return 0, result
+            
+
+    def __FindDishList(self, keywordList) -> (list, list):
+        possDish = []
+        delKeyList = []
+        while len(keywordList) > 0:
+            for dishName in self.menuDict.keys():
+                isValid = True
+                for key in keywordList:
+                    if not key in self.menuDict[dishName]['关键词']:
+                        isValid = False
+                        break
+                if isValid:
+                    possDish.append(dishName)
+            if len(possDish) == 0: # 如果没有找到一个合适的菜肴, 尝试删掉最后一个关键词
+                delKeyList.append(keywordList.pop())
+            else:
+                break # 停止寻找
+        return possDish, delKeyList
+
+
     def __BotSwitch(self, groupId, activeState) -> str:
         self.groupInfoDict[groupId]['Active'] = activeState
         UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
         if activeState == 'False':
-            return '那我就不说话咯'
+            return '那我就不说话咯~ #潜入水中 (咕嘟咕嘟)'
         else:
-            return '来啦~ 让我看看哪个小可爱能得到今日份的礼物'
+            return '伊丽莎白来啦~'
 
     @TypeAssert(times = int)
     def __DNDBuild(self, groupId, times) -> str:
@@ -667,6 +816,8 @@ class Bot:
             return HELP_COMMAND_JRRP_STR
         elif subType == 'draw':
             return HELP_COMMAND_DRAW_STR
+        elif subType == '烹饪':
+            return HELP_COMMAND_COOK_STR
         else:
             return None
 
