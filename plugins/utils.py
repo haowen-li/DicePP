@@ -8,7 +8,7 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss', 'draw', '烹饪']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单']
 
 @unique
 class CommandType(Enum):
@@ -25,6 +25,8 @@ class CommandType(Enum):
     DISMISS = 10
     DRAW = 11
     COOK = 12
+    ORDER = 13
+    TodayMenu = 14
 
 @unique
 class CoolqCommandType(Enum):
@@ -139,5 +141,17 @@ def SetNumpyRandomSeed():
     np.random.seed(np.random.randint(10000))
 
 @TypeAssert(inputList = list)
-def RandomSelectList(inputList):
-    return inputList[np.random.randint(len(inputList))]
+def RandomSelectList(inputList, num=1):
+    assert num >= 1
+    length = len(inputList)
+    if num == 1:
+        return [inputList[np.random.randint(length)]]
+    else:
+        result = []
+        if length <= num:
+            for i in np.random.permutation(length):
+                result.append(inputList[i])
+        else:
+            for i in np.random.permutation(length)[:num]:
+                result.append(inputList[i])
+        return result

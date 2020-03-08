@@ -129,6 +129,15 @@ def ParseInput(inputStr):
         else:
             keywrodList = [k.strip() for k in keywrods.split('/') if k.strip()]
         return Command(CommandType.COOK, [diceCommand, keywrodList])
+    elif commandType == '点菜':
+        diceCommand, keywrods = SplitDiceCommand(commandStr)
+        if keywrods == '':
+            keywrodList = None
+        else:
+            keywrodList = [k.strip() for k in keywrods.split('/') if k.strip()]
+        return Command(CommandType.ORDER, [diceCommand, keywrodList])
+    elif commandType == '今日菜单':
+        return Command(CommandType.TodayMenu, [])
     return None
 
 
@@ -365,6 +374,20 @@ class Bot:
                 return CommandResult(CoolqCommandType.MESSAGE, cookResult)
             cookResult = f'{nickName}的烹饪结果是:\n{cookResult}'
             return CommandResult(CoolqCommandType.MESSAGE, cookResult)
+        elif cType == CommandType.ORDER:
+            if not groupId: return CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')
+            number = command.cArg[0]
+            keywordList = command.cArg[1]
+            error, orderResult = self.__OrderDish(number, keywordList)
+            if error == -1:
+                return CommandResult(CoolqCommandType.MESSAGE, orderResult)
+            orderResult = f'{nickName}的菜单:\n{orderResult}'
+            return CommandResult(CoolqCommandType.MESSAGE, orderResult)
+        elif cType == CommandType.TodayMenu:
+            date = GetCurrentDateRaw()
+            result = self.__GetTodayMenu(personId, date)
+            result = f'{nickName}的{result}'
+            return CommandResult(CoolqCommandType.MESSAGE, result)
         return None
 
 
@@ -572,6 +595,81 @@ class Bot:
         np.random.seed(seed)
         value = np.random.randint(0,101)
         return value
+
+    def __GetTodayMenu(self, personId, date) -> str:
+        seed = 0
+        temp = 1
+        seed += date.year + date.month*13 + date.day*6
+        for c in personId:
+            seed += ord(c) * temp
+            temp += 3
+            if temp > 10:
+                temp = -4
+        seed = int(seed)
+        np.random.seed(seed)
+
+        try:
+            assert self.menuDict
+        except:
+            return '菜谱资料库加载失败了呢...'
+
+        result = ''
+        todayCuisine = RandomSelectList(MENU_CUISINE_LIST)[0]
+        todayStyle = RandomSelectList(MENU_STYLE_LIST)[0]
+        result += f'今日菜单主题是{todayCuisine}与{todayStyle}噢~\n'
+
+        possDish, delKeyList = self.__FindDishList(['小菜', todayCuisine, todayStyle])
+        if len(possDish) != 0 and len(delKeyList) <= 1:
+            dishNameList = RandomSelectList(possDish, 1)
+            result += f'小菜:'
+            for dishName in dishNameList:
+                dishInfo = self.menuDict[dishName]
+                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+
+        possDish, delKeyList = self.__FindDishList(['主菜', todayCuisine, todayStyle])
+        if len(possDish) != 0 and len(delKeyList) <= 1:
+            dishNameList = RandomSelectList(possDish, 1)
+            result += f'主食:'
+            for dishName in dishNameList:
+                dishInfo = self.menuDict[dishName]
+                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+
+        possDish, delKeyList = self.__FindDishList(['汤', todayCuisine, todayStyle])
+        if len(possDish) != 0 and len(delKeyList) <= 1:
+            dishNameList = RandomSelectList(possDish, 1)
+            result += f'汤:'
+            for dishName in dishNameList:
+                dishInfo = self.menuDict[dishName]
+                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+
+        possDish, delKeyList = self.__FindDishList(['甜品', todayCuisine, todayStyle])
+        if len(possDish) != 0 and len(delKeyList) <= 1:
+            dishNameList = RandomSelectList(possDish, 1)
+            result += f'餐后甜点:'
+            for dishName in dishNameList:
+                dishInfo = self.menuDict[dishName]
+                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+
+        possDish, delKeyList = self.__FindDishList(['酒', todayCuisine, todayStyle])
+        if len(possDish) != 0 and len(delKeyList) <= 1:
+            dishNameList = RandomSelectList(possDish, 1)
+            result += f'酒:'
+            for dishName in dishNameList:
+                dishInfo = self.menuDict[dishName]
+                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+
+        possDish, delKeyList = self.__FindDishList(['饮料', todayCuisine, todayStyle])
+        if len(possDish) != 0 and len(delKeyList) <= 1:
+            dishNameList = RandomSelectList(possDish, 1)
+            result += f'饮料:'
+            for dishName in dishNameList:
+                dishInfo = self.menuDict[dishName]
+                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+
+        return result[:-1]
+        
+
+
     
     def __GetInitList(self, groupId) -> str:
         try: #查找已存在的先攻信息
@@ -681,18 +779,17 @@ class Bot:
         #cookAdj 有两种情况, 一是调整值, 二是固定值
         if not cookAdj or cookAdj[0] in ['+','-'] or cookAdj[:2] in ['优势','劣势']: #通过符号判断
             error, resultStr, resultValList = RollDiceCommond('d20'+cookAdj)
-            if error: return resultStr
+            if error: return -1, resultStr
             cookValue = sum(resultValList)
         else:
             error, resultStr, resultValList = RollDiceCommond(cookAdj)
-            if error: return resultStr
+            if error: return -1, resultStr
             cookValue = sum(resultValList)
-        result = f'在检定时掷出了{resultStr}\n'
 
         try:
             assert self.menuDict
         except:
-            return -1, '菜谱资料库好像加载失败了呢...'
+            return -1, '菜谱资料库加载失败了呢...'
 
         possDish = []
         if keywordList:
@@ -703,18 +800,19 @@ class Bot:
                     return -1, f'{key}不是有效的关键词, 请查看.help烹饪'
             possDish, delKeyList = self.__FindDishList(keywordList)
             if len(possDish) == 0:
-                return -1, f'想不到满足要求的东西呢...'
+                return -1, f'想不到满足要求的食物呢...'
             if len(delKeyList) != 0:
                 result += f'在无视了关键词{delKeyList}后, '
         else:
             possDish = list(self.menuDict.keys())
 
         SetNumpyRandomSeed()
-        dishName = RandomSelectList(possDish)
+        dishName = RandomSelectList(possDish)[0]
         result += f'于{len(possDish)}个备选中选择了{dishName}\n'
         dishInfo = self.menuDict[dishName]
 
         deliValue = 0
+        result += f'在检定时掷出了{resultStr} '
         if cookValue >= dishInfo['难度']:
             if cookValue >= dishInfo['难度']+10:
                 result += '完美!\n'
@@ -731,20 +829,60 @@ class Bot:
                     possDish, delKeyList = self.__FindDishList(['黑暗']+keywordList)
                 else:
                     possDish, delKeyList = self.__FindDishList(['黑暗'])
-                dishName = RandomSelectList(possDish)
+                dishName = RandomSelectList(possDish)[0]
                 dishInfo = self.menuDict[dishName]
-                result += f'{RandomSelectList(COOK_FAIL_STR_LIST)}, 临时改为制作{dishName}\n'
+                result += f'{RandomSelectList(COOK_FAIL_STR_LIST)[0]} 在原来的基础上略加调整, 制作出了{dishName}\n'
                 deliValue -= 10
             elif cookValue <= dishInfo['难度'] - 5:
                 result += '非常失败!\n'
-                deliValue -= 5
+                deliValue -= 8
             else:
                 result += '比较失败!\n'
-                deliValue -= 2
+                deliValue -= 5
         deliValue += dishInfo['美味']
         result += dishInfo['描述'] + '\n成品会因检定结果有所改变。\n'
         result += f'美味程度:{deliValue}'
         return 0, result
+
+    def __OrderDish(self, numberStr, keywordList)->(int,str):
+        result = ''
+        number = 1
+        if numberStr:
+            error, resultStr, resultValList = RollDiceCommond(numberStr)
+            if error: return -1, resultStr
+            number = sum(resultValList)
+            if number < 1:
+                return -1, '呃,您要不要点菜呢?'
+            if number > 5:
+                return -1, '一个人点那么多会浪费的吧, 请将数量控制在5以内哦'
+        try:
+            assert self.menuDict
+        except:
+            return -1, '菜谱资料库加载失败了呢...'
+
+        possDish = []
+        if keywordList:
+            if len(keywordList) > 5:
+                return -1, f'至多指定5个关键词噢~'
+            for key in keywordList:
+                if not key in MENU_KEYWORD_LIST:
+                    return -1, f'{key}不是有效的关键词, 请查看.help烹饪'
+            possDish, delKeyList = self.__FindDishList(keywordList)
+            if len(possDish) == 0:
+                return -1, f'想不到满足要求的食物呢...'
+            if len(delKeyList) != 0:
+                result += f'在无视了关键词{delKeyList}后, '
+        else:
+            possDish = list(self.menuDict.keys())
+
+        SetNumpyRandomSeed()
+        dishNameList = RandomSelectList(possDish, number)
+        result += f'于{len(possDish)}个备选中选择了{len(dishNameList)}种食物:\n'
+        for dishName in dishNameList:
+            dishInfo = self.menuDict[dishName]
+            result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+        return 0, result[:-1]
+
             
 
     def __FindDishList(self, keywordList) -> (list, list):
@@ -818,6 +956,10 @@ class Bot:
             return HELP_COMMAND_DRAW_STR
         elif subType == '烹饪':
             return HELP_COMMAND_COOK_STR
+        elif subType == '点菜':
+            return HELP_COMMAND_ORDER_STR
+        elif subType == '今日菜单':
+            return HELP_COMMAND_MENU_STR
         else:
             return None
 
@@ -857,7 +999,7 @@ class Bot:
                 return result
             elif len(possResult) == 1:
                 result = str(self.queryInfoDict[possResult[0]])
-                result = f'要找的难道是{possResult[0]}吗? \n{result}'
+                result = f'要找的是{possResult[0]}吗? \n{result}'
                 return result
             else:
                 return '唔...找不到呢...'

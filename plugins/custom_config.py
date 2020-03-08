@@ -30,7 +30,7 @@ MENU_TYPE_LIST = ['小菜', '主菜', '汤', '甜品', '酒', '饮料']
 MENU_STYLE_LIST = ['黑暗', '野炊', '酒馆', '奢侈']
 MENU_KEYWORD_LIST = MENU_CUISINE_LIST + MENU_TYPE_LIST + MENU_STYLE_LIST
 
-COOK_FAIL_STR_LIST = ['略加思索', '灵机一动', '毫不犹豫', '啊!就是这个!', '不如这样...']
+COOK_FAIL_STR_LIST = ['略加思索', '灵机一动', '毫不犹豫', '啊!就是这个', '不如这样']
 
 
 if os.path.exists(LOCAL_DATA_PATH) == False:

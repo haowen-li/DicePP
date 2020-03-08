@@ -61,6 +61,13 @@ async def _(session: CommandSession):
         commandResult = bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
     else:
         groupId = str(session.ctx['group_id'])
+        try:
+            nonebot = session.bot
+            memberInfo = nonebot.get_group_member_info(groupId, uid)
+            if memberInfo['card']:
+                uname = memberInfo['card']
+        except:
+            pass
         commandResult = bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
 
     session.state['result'] = commandResult
@@ -141,8 +148,10 @@ async def _(session: RequestSession):
                 # for mId in MASTER:
                 #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
                 nonebot = session.bot
+                strangerInfo = nonebot.get_stranger_info(user_id = session.ctx["user_id"])
+                groupInfo = nonebot.get_group_info (group_id = session.ctx["group_id"])
                 for gId in MASTER_GROUP:
-                    await nonebot.send_group_msg(group_id=gId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
+                    await nonebot.send_group_msg(group_id=gId, message=f'经{strangerInfo["nickname"]} {session.ctx["user_id"]}邀请, 加入群{groupInfo["group_name"]}{session.ctx["group_id"]}')
             except:
                 pass
             await session.approve()
