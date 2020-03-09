@@ -18,35 +18,35 @@ LIMIT_MODE = False
 
 @on_command('PROCESS_COMMAND', only_to_me=True)
 async def processCommand(session: CommandSession):
-    commandResult = session.get('result')
+    commandResultList = session.get('result')
     if DEBUG_MODE:
         print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
     if commandResult is None:
         return
-
-    if commandResult.coolqCommand == CoolqCommandType.MESSAGE:
-        # 如果群聊列表不为空, 则对指定的群发送消息
-        if commandResult.groupIdList:
-            nonebot = session.bot
-            for gId in commandResult.groupIdList:
-                await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
-        else:
-            # 如果用户列表不为空, 则对指定的用户发送消息
-            nonebot = session.bot
-            if commandResult.personIdList:
-                for pId in commandResult.personIdList:
-                    await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
-            # 否则原样返回
+    for commandResult in commandResultList:
+        if commandResult.coolqCommand == CoolqCommandType.MESSAGE:
+            # 如果群聊列表不为空, 则对指定的群发送消息
+            if commandResult.groupIdList:
+                nonebot = session.bot
+                for gId in commandResult.groupIdList:
+                    await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
             else:
-                await session.send(commandResult.resultStr)
-    elif commandResult.coolqCommand == CoolqCommandType.DISMISS:
-        try:
-            nonebot = session.bot
-            for gId in commandResult.groupIdList:
-                await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
-                await nonebot.set_group_leave(group_id = gId)
-        except:
-            pass
+                # 如果用户列表不为空, 则对指定的用户发送消息
+                nonebot = session.bot
+                if commandResult.personIdList:
+                    for pId in commandResult.personIdList:
+                        await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
+                # 否则原样返回
+                else:
+                    await session.send(commandResult.resultStr)
+        elif commandResult.coolqCommand == CoolqCommandType.DISMISS:
+            try:
+                nonebot = session.bot
+                for gId in commandResult.groupIdList:
+                    await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
+                    await nonebot.set_group_leave(group_id = gId)
+            except:
+                pass
 
 
 @processCommand.args_parser
@@ -61,6 +61,7 @@ async def _(session: CommandSession):
         commandResult = bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
     else:
         groupId = str(session.ctx['group_id'])
+        # 如果来自群聊, 尝试查询用户的群名片
         try:
             nonebot = session.bot
             memberInfo = nonebot.get_group_member_info(groupId, uid)
@@ -148,12 +149,15 @@ async def _(session: RequestSession):
                 # for mId in MASTER:
                 #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
                 nonebot = session.bot
-                strangerInfo = nonebot.get_stranger_info(user_id = session.ctx["user_id"])
-                groupInfo = nonebot.get_group_info (group_id = session.ctx["group_id"])
+                strangerInfo = await nonebot.get_stranger_info(user_id = session.ctx["user_id"])
+                groupInfo = await nonebot.get_group_info (group_id = session.ctx["group_id"])
                 for gId in MASTER_GROUP:
                     await nonebot.send_group_msg(group_id=gId, message=f'经{strangerInfo["nickname"]} {session.ctx["user_id"]}邀请, 加入群{groupInfo["group_name"]}{session.ctx["group_id"]}')
-            except:
-                pass
+            except Exception as e:
+                try:
+                    await nonebot.send_private_msg(user_id=mId, message=str(e))
+                except:
+                    pass
             await session.approve()
 
 @on_notice('group_increase')

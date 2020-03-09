@@ -317,7 +317,7 @@ def SplitDiceCommand(inputStr)->(str, str):
 @TypeAssert(str)
 def SplitNumberCommand(inputStr)->(str, str):
     # 将数字与后面的无关部分分开
-    # 如SplitDiceCommand('3人物作成')将返回('20', '人物作成')
+    # 如SplitDiceCommand('3人物作成')将返回('3', '人物作成')
     singleKeywords = [str(i) for i in range(10)]
     inputStr = inputStr.replace(' ', '')
     splitIndex = 0 # splitIndex以及之后的内容都是无关内容
@@ -328,3 +328,22 @@ def SplitNumberCommand(inputStr)->(str, str):
             break
                 
     return inputStr[:splitIndex], inputStr[splitIndex:]
+
+@TypeAssert(str)
+def isDiceCommand(inputStr)->(bool):
+    # 判断一个字符串是不是合法的投骰表达式
+    singleKeywords = ['+', '-', 'k', 'd', '#', ' ', '\n'] + [str(i) for i in range(10)]
+    doubleKeywords = ['优势', '劣势', '抗性', '易伤']
+    inputStr = inputStr.replace(' ', '')
+    splitIndex = 0
+    while splitIndex < len(inputStr):
+        if inputStr[splitIndex] in singleKeywords:
+            splitIndex += 1
+        else:
+            try:
+                assert inputStr[splitIndex:splitIndex+2] in doubleKeywords
+                splitIndex += 2
+            except:
+                return False
+                
+    return True

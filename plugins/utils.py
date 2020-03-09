@@ -8,7 +8,24 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'sethp', 'bot', 'dnd', 'help', '查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'hp', 'bot', 'dnd', 'help']
+commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '角色卡']
+commandKeywordReList = ['.*检定', '.*豁免']
+
+pcAbilityDict = {'力量':'力量调整值', '敏捷':'敏捷调整值', '体质':'体质调整值',
+                '智力':'智力调整值', '感知':'感知调整值', '魅力':'魅力调整值'}
+# pcSkillList = ['运动', '体操', '巧手', '隐匿', '先攻', '奥秘', '历史', '调查', '自然', '宗教']
+# pcSkillList += ['驯兽', '洞悉', '医药', '察觉', '求生', '欺瞒', '威吓', '表演', '游说']
+pcSavingDict = {'力量豁免':'力量调整值', '敏捷豁免':'敏捷调整值', '体质豁免':'体质调整值',
+                '智力豁免':'智力调整值', '感知豁免':'感知调整值', '魅力豁免':'魅力调整值'}
+pcSkillDict = {'运动':'力量调整值', '体操':'敏捷调整值', '巧手':'敏捷调整值', '隐匿':'敏捷调整值', '先攻':'敏捷调整值',
+               '奥秘':'智力调整值', '历史':'智力调整值', '调查':'智力调整值', '自然':'智力调整值', '宗教':'智力调整值',
+               '驯兽':'感知调整值', '洞悉':'感知调整值', '医药':'感知调整值', '察觉':'感知调整值', '求生':'感知调整值',
+               '欺瞒':'感知调整值', '威吓':'感知调整值', '表演':'感知调整值', '游说':'感知调整值'}
+pcCheckDictShort = {**pcSavingDict, **pcSkillDict}
+pcCheckDictLong = {**pcAbilityDict, **pcCheckDictShort}
+
+pcSheetTemplate = '姓名:约翰 hp:30/30\n力量:10 敏捷:10 体质:10 智力:10 感知:10 魅力:10\n熟练加值:2 熟练项:[属性]豁免/[技能]\n额外加值:[属性]豁免+[表达式]/[技能]+[表达式]'
 
 @unique
 class CommandType(Enum):
@@ -27,13 +44,15 @@ class CommandType(Enum):
     COOK = 12
     ORDER = 13
     TodayMenu = 14
+    PC = 15
+    CHECK = 16
+
 
 @unique
 class CoolqCommandType(Enum):
     DISMISS = 0
     MESSAGE = 1
     
-# @TypeAssert(CommandType, list)
 class Command():
     # 命令类, 用来存放命令类型和参数
     def __init__(self, cType, cArg, personId = None, groupId = None):
@@ -68,7 +87,7 @@ class Command():
 
 class CommandResult():
     @TypeAssert(coolqCommand = CoolqCommandType, resultStr = str, personIdList = list, groupIdList = list)
-    def __init__(self, coolqCommand, resultStr, personIdList = None, groupIdList = None):
+    def __init__(self, coolqCommand, resultStr = None, personIdList = None, groupIdList = None):
         self.coolqCommand = coolqCommand
         self.resultStr = resultStr
         self.personIdList = personIdList
