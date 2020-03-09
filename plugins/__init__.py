@@ -20,8 +20,8 @@ LIMIT_MODE = False
 async def processCommand(session: CommandSession):
     commandResultList = session.get('result')
     if DEBUG_MODE:
-        print(f'Output:{commandResult.resultStr} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
-    if commandResult is None:
+        print(f'Output:{[commandResult.resultStr for commandResult in commandResultList]} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
+    if commandResultList is None:
         return
     for commandResult in commandResultList:
         if commandResult.coolqCommand == CoolqCommandType.MESSAGE:
