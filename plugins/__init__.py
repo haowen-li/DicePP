@@ -20,7 +20,7 @@ LIMIT_MODE = False
 async def processCommand(session: CommandSession):
     commandResultList = session.get('result')
     if DEBUG_MODE:
-        print(f'Output:{[commandResult.resultStr for commandResult in commandResultList]} Person:{commandResult.personIdList} Group:{commandResult.groupIdList}')
+        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
     if commandResultList is None:
         return
     for commandResult in commandResultList:

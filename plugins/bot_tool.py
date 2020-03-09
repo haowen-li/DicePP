@@ -160,8 +160,8 @@ def ParseInput(inputStr):
             subType = '删除'
         elif commandStr[:2] == '模板':
             subType = '模板'
-        elif commandStr[:4] == '完整查看':
-            subType = '完整查看'
+        elif commandStr[:4] == '完整':
+            subType = '完整'
         return Command(CommandType.PC, [subType, commandStr])
     elif '检定' in commandType:
         diceCommand, reason = SplitDiceCommand(commandStr)
@@ -383,7 +383,7 @@ class Bot:
                 result = self.__SetPlayerInfo(groupId, personId, infoStr)
             elif subType == '查看':
                 result = self.__GetPlayerInfo(groupId, personId, nickName)
-            elif subType == '完整查看':
+            elif subType == '完整':
                 result = self.__GetPlayerInfoFull(groupId, personId, nickName)
             elif subType == '删除':
                 self.__ClearPlayerInfo(groupId, personId)
@@ -663,6 +663,7 @@ class Bot:
             pass
 
     def __SetPlayerInfo(self, groupId, personId, infoStr) -> str:
+        print("start")
         try:
             pcState = self.pcStateDict[groupId][personId]
         except:
@@ -686,6 +687,7 @@ class Bot:
                 else:
                     break
             abilityVal = infoStr[index:lastIndex].strip()
+            print(ability, abilityVal)
             try:
                 abilityVal = int(abilityVal)
                 assert abilityVal >=0 and abilityVal <= 99
@@ -693,15 +695,12 @@ class Bot:
                 pcState['额外'+ability] = ''
             except:
                 return f'关键词"{ability}"对应的属性值"{abilityVal}"无效, 请查看.角色卡模板'
-
         for ability in pcAbilityList:
             pcState[ability+'调整值'] = math.floor((pcState[ability]-10)/2)
-
         checkKeywordList = list(pcCheckDictShort.keys())
         for key in checkKeywordList:
             pcState[key] = pcState[pcCheckDictShort[key]]
             pcState['额外'+key] = ''
-
         index = infoStr.find('熟练项:')
         lastIndex = infoStr[index:].find('\n')
         if index == -1:
@@ -721,11 +720,11 @@ class Bot:
                 pcState['熟练项'].append(profItem)
             else:
                 return f'{profItem}不是有效的熟练关键词, 请查看.角色卡模板'
-
         pcState['额外加值'] = []
+        linesep = os.linesep
         if '额外加值:' in infoStr:
             index = infoStr.find('额外加值:') + 5
-            lastIndex = infoStr[index:].find('\n')
+            lastIndex = infoStr[index:].find(linesep)
             if lastIndex == -1:
                 lastIndex = infoLength
             else:
@@ -747,19 +746,23 @@ class Bot:
                 elif checkItem == '豁免':  # 如: 豁免+2
                     for saving in pcSavingDict.keys():
                         pcState['额外'+saving] += addStr
-                elif checkItem in pcAbilityDict.keys(): # 如: 力量+2
-                    pcState['额外'+checkItem] += addStr
-                    pcState['额外'+checkItem+'豁免'] += addStr
+                elif checkItem == '检定':  # 如: 豁免+2
+                    for ability in pcAbilityDict.keys():
+                        pcState['额外'+ability] += addStr
                     for skill in pcSkillDict.keys():
-                        if checkItem in pcSkillDict[skill]:
-                            pcState['额外'+skill] += addStr
+                        pcState['额外'+skill] += addStr
+                # elif checkItem in pcAbilityDict.keys(): # 如: 力量+2
+                #     pcState['额外'+checkItem] += addStr
+                #     pcState['额外'+checkItem+'豁免'] += addStr
+                #     for skill in pcSkillDict.keys():
+                #         if checkItem in pcSkillDict[skill]:
+                #             pcState['额外'+skill] += addStr
                 else:
                     return f'额外加值中的{checkItem}不是有效的熟练关键词, 请查看.角色卡模板'
                 pcState['额外加值'].append(additionItem)
-
         if 'hp:' in infoStr:
             index = infoStr.find('hp:') + 3
-            lastIndex = infoStr[index:].find('\n')
+            lastIndex = infoStr[index:].find(linesep)
             if lastIndex == -1:
                 lastIndex = infoLength
             else:
@@ -773,7 +776,7 @@ class Bot:
 
         if '姓名' in infoStr:
             index = infoStr.find('姓名:') + 3
-            lastIndex = infoStr[index:].find('\n')
+            lastIndex = infoStr[index:].find(linesep)
             if lastIndex == -1:
                 lastIndex = infoLength
             else:
@@ -781,7 +784,6 @@ class Bot:
             nickName = infoStr[index:lastIndex].strip()
             if nickName:
                 self.__UpdateNickName(groupId, personId, nickName)
-
         self.pcStateDict[groupId][personId] = pcState
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
         return '角色卡录入成功, 查看角色卡请输入.角色卡'
@@ -793,7 +795,7 @@ class Bot:
         except:
             return '现在还没有录入角色卡呢~'
 
-        result = f'姓名:{name} '
+        result = f'姓名:{name}\n'
         if pcState['hp'] != 0 and pcState['maxhp'] != 0:
             result += f'hp:{pcState["hp"]}/{pcState["maxhp"]}\n'
 
@@ -827,9 +829,12 @@ class Bot:
             result += f'{ability}:{pcState[ability]} {ability}调整值:{pcState[ability+"调整值"]} '
             result += f'{ability}检定:{pcState[ability+"调整值"]}{pcState["额外"+ability]} {ability}豁免:{pcState[ability+"豁免"]}{pcState["额外"+ability+"豁免"]}\n'
         result += f'技能:\n'
+        current = '力量调整值'
         for skill in pcSkillDict.keys():
-            result += f'{skill}:{pcState[skill]}{pcState["额外"+skill]}\n'
-        return result
+            if pcSkillDict[skill] != current:
+                result += '\n'
+            result += f'{skill}:{pcState[skill]}{pcState["额外"+skill]}  '
+        return result[:-2]
         
     def __PlayerCheck(self, groupId, personId, item, diceCommand) -> (int, str):
         try:
@@ -1200,6 +1205,8 @@ class Bot:
             return HELP_COMMAND_PC_STR
         elif subType == '检定':
             return HELP_COMMAND_CHECK_STR
+        elif subType == '技能':
+            return HELP_COMMAND_SKILL_STR
         else:
             return None
 

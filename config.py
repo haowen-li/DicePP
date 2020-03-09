@@ -9,7 +9,7 @@ PORT = 8080
 SUPERUSERS = {821480843}
 
 DEBUG = False
-SHORT_MESSAGE_MAX_LENGTH = 50
+SHORT_MESSAGE_MAX_LENGTH = 800
 
 
 #sudo docker run --name=coolq -d -p 8080:9000 -v /coolq-data:/home/user/coolq -e VNC_PASSWD=12345678 -e COOLQ_ACCOUNT=2418715861 coolq/wine-coolq
