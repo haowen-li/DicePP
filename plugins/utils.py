@@ -8,7 +8,7 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'hp', 'bot', 'dnd', 'help']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'hp', 'bot', 'dnd', 'help', 'bot']
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '角色卡']
 commandKeywordReList = ['.*检定', '.*豁免']
 
@@ -22,10 +22,14 @@ pcSkillDict = {'运动':'力量调整值', '体操':'敏捷调整值', '巧手':
                '奥秘':'智力调整值', '历史':'智力调整值', '调查':'智力调整值', '自然':'智力调整值', '宗教':'智力调整值',
                '驯兽':'感知调整值', '洞悉':'感知调整值', '医药':'感知调整值', '察觉':'感知调整值', '求生':'感知调整值',
                '欺瞒':'魅力调整值', '威吓':'魅力调整值', '表演':'魅力调整值', '游说':'魅力调整值'}
+
+pcSkillSynonymDict = {'特技':'体操', '潜行':'隐匿', '隐蔽':'隐匿', '躲藏':'隐匿', '驯养':'驯兽', '驯服':'驯兽', '医疗':'医药',
+                       '医术':'医药', '观察':'察觉', '生存':'求生', '欺骗':'欺瞒', '哄骗':'欺瞒', '唬骗':'欺瞒', '威胁':'威吓',
+                       '妙手':'巧手', '说服':'游说'}
 pcCheckDictShort = {**pcSavingDict, **pcSkillDict}
 pcCheckDictLong = {**pcAbilityDict, **pcCheckDictShort}
 
-pcSheetTemplate = '姓名:约翰\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:力量豁免/体质豁免/运动/威吓/察觉/洞悉\n额外加值:豁免+1/检定+1\n'
+pcSheetTemplate = '姓名:约翰\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:力量豁免/体质豁免/运动/威吓/察觉/洞悉\n额外加值:豁免+1/检定+1'
 
 @unique
 class CommandType(Enum):
@@ -46,6 +50,7 @@ class CommandType(Enum):
     TodayMenu = 14
     PC = 15
     CHECK = 16
+    BOT = 17
 
 
 @unique

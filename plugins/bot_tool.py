@@ -127,6 +127,9 @@ def ParseInput(inputStr):
         # subType 可能为 '', '指令', '源码', '协议' 
         subType = commandStr.replace(' ', '')
         return Command(CommandType.HELP,[subType])
+    elif commandType == 'bot':
+        # subType 可能为 '', '指令', '源码', '协议' 
+        return Command(CommandType.bot,[])
     elif commandType == '查询':
         target = commandStr.replace(' ', '')
         return Command(CommandType.QUERY,[target])
@@ -321,12 +324,12 @@ class Bot:
 
         elif cType == CommandType.NickName:
             if not groupId: groupId = 'Default'
-            nickName = command.cArg[0]
-            result = self.__UpdateNickName(groupId, personId, nickName)
+            newNickName = command.cArg[0]
+            result = self.__UpdateNickName(groupId, personId, newNickName)
             if result == 1:
                 return [CommandResult(CoolqCommandType.MESSAGE, f'要用本来的名字称呼你吗? 了解!')]
             elif result == 0:
-                return [CommandResult(CoolqCommandType.MESSAGE, f'要称呼{personName}为{nickName}吗? 没问题!')]
+                return [CommandResult(CoolqCommandType.MESSAGE, f'要称呼{personName}为{newNickName}吗? 没问题!')]
 
         elif cType == CommandType.JRRP:
             date = GetCurrentDateRaw()
@@ -398,12 +401,9 @@ class Bot:
             item = command.cArg[0]
             diceCommand = command.cArg[1]
             reason = command.cArg[2]
-            error, result = self.__PlayerCheck(groupId, personId, item, diceCommand)
-            if error == 0:
-                if reason:
-                    result = f'由于{reason}, {nickName}{result}'
-                else:
-                    result = f'{nickName}{result}'
+            error, result = self.__PlayerCheck(groupId, personId, item, diceCommand, nickName)
+            if error == 0 and reason:
+                    result = f'由于{reason}, {result}'
             return [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.BOT:
@@ -427,6 +427,10 @@ class Bot:
         elif cType == CommandType.HELP:
             subType = str(command.cArg[0])
             helpInfo = self.__GetHelpInfo(subType)
+            return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
+
+        elif cType == CommandType.BOT:
+            helpInfo = self.__GetHelpInfo('help')
             return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
 
         elif cType == CommandType.QUERY:
@@ -471,8 +475,6 @@ class Bot:
 
         return None
 
-
-
     
     def __UpdateNickName(self, groupId, personId, nickName) -> int:
         try:
@@ -483,10 +485,43 @@ class Bot:
         if nickName: # 如果指定了昵称, 则更新昵称
             self.nickNameDict[groupId][personId] = nickName
             UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
+
+            # 尝试修改先攻列表
+            try:
+                initList = self.initInfoDict[groupId]['initList']
+                # 如果已有先攻列表有同名角色, 修改所有权
+                if nickName in initList.keys():
+                    # 先移除可能的原本角色
+                    previousName = None
+                    for itemName in initList.keys():
+                        if initList[itemName]['id'] == personId and initList[itemName]['isPC']:
+                            previousName = itemName
+                            break
+                    if previousName:
+                        del initList[previousName]
+                    #再修改所有权
+                    initList[nickName]['id'] = personId
+                    initList[nickName]['isPC'] = True
+                else:
+                    #在先攻列表中搜索该pc控制的角色
+                    previousName = None
+                    for itemName in initList.keys():
+                        if initList[itemName]['id'] == personId and initList[itemName]['isPC']:
+                            previousName = itemName
+                            break
+                    #如果找到, 就新建一份并且删除原有的记录
+                    if previousName:
+                        initList[nickName] = initList[previousName]
+                        del initList[previousName]
+                self.initInfoDict[groupId]['initList'] = initList
+                UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
+            except:
+                pass
+
             return 0
         else: # 否则移除原有的昵称
             try:
-                self.nickNameDict[groupId].pop(personId)
+                del self.nickNameDict[groupId][personId]
             except:
                 return 1
             UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
@@ -627,7 +662,7 @@ class Bot:
                     result = f'{targetStr}的生命值增加了{resultStrHp}'
                 elif subType == '-':
                     if targetInfo['alive']:
-                        if targetInfo['hp'] > 0 and hp > targetInfo['hp']:
+                        if targetInfo['hp'] > 0 and hp >= targetInfo['hp']:
                             targetInfo['hp'] = 0
                             targetInfo['alive'] = False
                             result = f'{targetStr}的生命值减少了{resultStrHp}\n因为生命值降至0, {targetStr}昏迷/死亡了!'
@@ -663,7 +698,6 @@ class Bot:
             pass
 
     def __SetPlayerInfo(self, groupId, personId, infoStr) -> str:
-        print("start")
         try:
             pcState = self.pcStateDict[groupId][personId]
         except:
@@ -687,7 +721,6 @@ class Bot:
                 else:
                     break
             abilityVal = infoStr[index:lastIndex].strip()
-            print(ability, abilityVal)
             try:
                 abilityVal = int(abilityVal)
                 assert abilityVal >=0 and abilityVal <= 99
@@ -715,6 +748,9 @@ class Bot:
         profList = [p.strip() for p in infoStr[index:lastIndex].split('/') if p.strip()]
         
         for profItem in profList:
+            if profItem in pcSkillSynonymDict.keys():
+                profItem = pcSkillSynonymDict[profItem]
+
             if profItem in checkKeywordList:
                 pcState[profItem] += pcState['熟练加值']
                 pcState['熟练项'].append(profItem)
@@ -831,12 +867,13 @@ class Bot:
         result += f'技能:\n'
         current = '力量调整值'
         for skill in pcSkillDict.keys():
-            if pcSkillDict[skill] != current:
+            if current != pcSkillDict[skill]:
                 result += '\n'
+                current = pcSkillDict[skill]
             result += f'{skill}:{pcState[skill]}{pcState["额外"+skill]}  '
         return result[:-2]
         
-    def __PlayerCheck(self, groupId, personId, item, diceCommand) -> (int, str):
+    def __PlayerCheck(self, groupId, personId, item, diceCommand, nickName) -> (int, str):
         try:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
@@ -845,6 +882,10 @@ class Bot:
 
         if diceCommand.find('抗性') != -1 or diceCommand.find('易伤') != -1:
             return -1, '抗性与易伤关键字不能出现在此处!'
+
+        if item in pcSkillSynonymDict.keys():
+            item = pcSkillSynonymDict[item]
+
         if not item in pcCheckDictShort.keys():
             if item in pcAbilityDict.keys():
                 itemKeyword = item + '调整值'
@@ -867,7 +908,7 @@ class Bot:
 
         result = ''
         if not '豁免' in item: #说明是属性检定
-            result += f'在{item}检定中掷出了{resultStr}, '
+            result += f'{nickName}在{item}检定中掷出了{resultStr}, '
             if resultValList[0] == 20: result += '大成功!'
             elif resultValList[0] == 1: result += '大失败!'
             elif checkResult >= 30:  result += '"几乎不可能"成功!'
@@ -879,6 +920,8 @@ class Bot:
             else:  result += '即使是非常容易的事情也失败了呢...'
         else:
             result += f'在{item}中掷出了{resultStr}, '
+            if resultValList[0] == 20: result += '大成功!'
+            elif resultValList[0] == 1: result += '大失败!'
             if checkResult >= 30:  result += '无论如何都能豁免成功吧~'
             elif checkResult >= 25:  result += '豁免成功几乎是必然的事了~'
             elif checkResult >= 20:  result += '豁免成功的概率很高呢~'
@@ -886,6 +929,10 @@ class Bot:
             elif checkResult >= 10:  result += '祝你好运!'
             elif checkResult >= 5:  result += '愿海神庇护你...'
             else:  result += '希望你豁免失败的后果不要太惨...'
+
+        if item == '先攻':
+            self.__JoinInitList(groupId, personId, nickName, '0'+int2str(checkResult), isPC=True)
+            result += f'\n已将{nickName}加入先攻列表'
         return 0, result
 
 

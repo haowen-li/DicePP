@@ -19,10 +19,13 @@ LIMIT_MODE = False
 @on_command('PROCESS_COMMAND', only_to_me=True)
 async def processCommand(session: CommandSession):
     commandResultList = session.get('result')
-    if DEBUG_MODE:
-        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
+    
     if commandResultList is None:
         return
+
+    if DEBUG_MODE:
+        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
+
     for commandResult in commandResultList:
         if commandResult.coolqCommand == CoolqCommandType.MESSAGE:
             # 如果群聊列表不为空, 则对指定的群发送消息
