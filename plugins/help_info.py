@@ -5,14 +5,18 @@ HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
 HELP_STR += '.help指令 查看指令列表\n'
 HELP_STR += '.help链接 查看源码地址\n'
 HELP_STR += '.help协议 查看使用协议\n'
-HELP_STR += '.help更新 查看最近更新内容与预告\n'
+HELP_STR += '.help更新 查看最近更新内容\n'
 HELP_STR += '本骰娘的绝活包括:优劣势投骰, 强大的查询功能, 记录生命值和角色卡, 更好用的先攻列表功能等\n'
 HELP_STR += '欢迎加入交流群:861919492'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/10 v0.5.1:\n1.可以查询拓展与模组魔法物品(by惠惠)和拓展职业(by惠惠, 梨子)了\n2.nn指令也会修改先攻列表中的名字\n3.录入角色卡和检定时会自动转换一些同义词, 如:说服->游说\n'
+SHOW_STR = 'Dice++ by 梨子 Ver 0.5.1 @骰娘 .bot on/off 开启或关闭骰娘\n'
+SHOW_STR += '输入.help更新 查看最近更新内容\n'
+SHOW_STR += '本骰娘的绝活包括:优劣势投骰, 强大的查询功能, 记录生命值和角色卡, 更好用的先攻列表功能等\n'
+SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bug和提出意见~'
+
+HELP_COMMAND_UPDATE_STR = '2020/3/10 v0.5.1:\n1.可以查询拓展与模组魔法物品(by惠惠)和拓展职业(by惠惠, 梨子)了\n2.nn指令也会修改先攻列表中的名字\n3.录入角色卡和检定时会自动转换一些同义词, 如:说服->游说\n4.新增.send功能\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/10 v0.5.0:\n1.新增录入角色卡和一键检定功能\n2.直接at骰娘在关闭状态下也可以响应\n3.sethp关键字被简化为hp\n4.dismiss指令仅在@骰娘的情况下有效\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/8 v0.4.1:\n1.新增点菜, 今日菜单功能\n2.加入大量可查询内容\n3.可以识别群名片作为默认昵称了\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/6 v0.4.0: 新增烹饪功能\n'
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
@@ -32,6 +36,7 @@ HELP_COMMAND_STR += '.点菜 模拟点菜\n'
 HELP_COMMAND_STR += '.今日菜单\n'
 HELP_COMMAND_STR += '.dnd 初始属性作成\n'
 HELP_COMMAND_STR += '.jrrp 今日人品\n'
+HELP_COMMAND_STR += '.send 单方面向Master发送消息\n'
 HELP_COMMAND_STR += '骰娘会自动去掉大多数空格以及转换小写, 多数指令需要后接参数, 详细用法请输入.help [指令名]查询, 如.help hp'
 
 HELP_LINK_STR = 'Dice++是基于Python, NoneBot和酷Q的骰子机器人项目\n'
@@ -134,6 +139,8 @@ HELP_COMMAND_PC_STR += '- 如果不确定自己的理解是否正确的话, 输�
 HELP_COMMAND_PC_STR += '- 查看所有技能名请输入.help技能'
 
 HELP_COMMAND_SKILL_STR = f'所有技能关键字:{list(pcSkillDict.keys())}'
+
+HELP_COMMAND_SEND_STR = f'发送消息：.send 想对Master说的话\n如果用来调戏Master请做好心理准备'
 
 HELP_COMMAND_CHECK_STR = '属性检定系列功能: .[属性检定或豁免检定][优/劣势][加值] [原因]\n'
 HELP_COMMAND_CHECK_STR += '必须先设定角色卡才能使用哦~\n'

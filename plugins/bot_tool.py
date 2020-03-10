@@ -115,11 +115,11 @@ def ParseInput(inputStr):
         return Command(CommandType.SETHP, [targetStr, subType, hpStr, maxhpStr])
     elif commandType == 'bot':
         if commandStr.find('on') != -1:
-            return Command(CommandType.BOT, ['True'])
+            return Command(CommandType.BOT, ['on'])
         elif commandStr.find('off') != -1:
-            return Command(CommandType.BOT, ['False'])
+            return Command(CommandType.BOT, ['off'])
         else:
-            return None
+            return Command(CommandType.BOT, ['show'])
     elif commandType == 'dnd':
         number, reason = SplitNumberCommand(commandStr)
         return Command(CommandType.DND,[number, reason])
@@ -127,9 +127,8 @@ def ParseInput(inputStr):
         # subType 可能为 '', '指令', '源码', '协议' 
         subType = commandStr.replace(' ', '')
         return Command(CommandType.HELP,[subType])
-    elif commandType == 'bot':
-        # subType 可能为 '', '指令', '源码', '协议' 
-        return Command(CommandType.bot,[])
+    elif commandType == 'send':
+        return Command(CommandType.SEND,[commandStr])
     elif commandType == '查询':
         target = commandStr.replace(' ', '')
         return Command(CommandType.QUERY,[target])
@@ -284,14 +283,14 @@ class Bot:
         cType = command.cType
         if groupId: # 当时群聊状态时, 检查是否是激活状态
             try:
-                assert self.groupInfoDict[groupId]['Active'] == 'True' # 已有记录且是激活状态并继续执行命令
+                assert self.groupInfoDict[groupId]['Active'] == True # 已有记录且是激活状态并继续执行命令
             except:
                 try:
-                    if (self.groupInfoDict[groupId]['Active'] != 'True') and (cType != CommandType.BOT) and only_to_me == False: # 已有记录且是非激活状态, 且不是单独指令, 则只执行开关命令
+                    if (self.groupInfoDict[groupId]['Active'] != True) and (cType != CommandType.BOT) and only_to_me == False: # 已有记录且是非激活状态, 且不是单独指令, 则只执行开关命令
                         return None
                 except:
                     self.groupInfoDict[groupId] = {}
-                    self.groupInfoDict[groupId]['Active'] = 'True' # 没有记录则新建记录并继续执行命令
+                    self.groupInfoDict[groupId]['Active'] = True # 没有记录则新建记录并继续执行命令
                     UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
         
         command.personId = personId
@@ -408,9 +407,15 @@ class Bot:
 
         elif cType == CommandType.BOT:
             if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            
+            subType = command.cArg[0]
+            if subType == 'show':
+                return [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
             if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
-            isTurnOn = command.cArg[0]
-            result = self.__BotSwitch(groupId, isTurnOn)
+            if subType == 'on':
+                result = self.__BotSwitch(groupId, True)
+            else:
+                result = self.__BotSwitch(groupId, False)
             return [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.DND:
@@ -429,9 +434,11 @@ class Bot:
             helpInfo = self.__GetHelpInfo(subType)
             return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
 
-        elif cType == CommandType.BOT:
-            helpInfo = self.__GetHelpInfo('help')
-            return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
+        elif cType == CommandType.SEND:
+            message = command.cArg[0]
+            feedback = '已将信息转发给Master了~'
+            return [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
+                    CommandResult(CoolqCommandType.MESSAGE, feedback)]
 
         elif cType == CommandType.QUERY:
             targetStr = str(command.cArg[0])
@@ -822,7 +829,7 @@ class Bot:
                 self.__UpdateNickName(groupId, personId, nickName)
         self.pcStateDict[groupId][personId] = pcState
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-        return '角色卡录入成功, 查看角色卡请输入.角色卡'
+        return '角色卡录入成功, 查看角色卡请输入.角色卡 或.角色卡 完整'
 
     def __GetPlayerInfo(self, groupId, personId, name)->str:
         try:
@@ -862,8 +869,8 @@ class Bot:
         result += f'熟练加值:{pcState["熟练加值"]}\n'
 
         for ability in pcAbilityDict.keys():
-            result += f'{ability}:{pcState[ability]} {ability}调整值:{pcState[ability+"调整值"]} '
-            result += f'{ability}检定:{pcState[ability+"调整值"]}{pcState["额外"+ability]} {ability}豁免:{pcState[ability+"豁免"]}{pcState["额外"+ability+"豁免"]}\n'
+            result += f'{ability}:{pcState[ability]} 调整值:{pcState[ability+"调整值"]} '
+            result += f'检定:{pcState[ability+"调整值"]}{pcState["额外"+ability]} 豁免:{pcState[ability+"豁免"]}{pcState["额外"+ability+"豁免"]}\n'
         result += f'技能:\n'
         current = '力量调整值'
         for skill in pcSkillDict.keys():
@@ -1195,10 +1202,10 @@ class Bot:
     def __BotSwitch(self, groupId, activeState) -> str:
         self.groupInfoDict[groupId]['Active'] = activeState
         UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
-        if activeState == 'False':
-            return '那我就不说话咯~ #潜入水中 (咕嘟咕嘟)'
-        else:
+        if activeState:
             return '伊丽莎白来啦~'
+        else:
+            return '那我就不说话咯~ #潜入水中 (咕嘟咕嘟)'
 
     @TypeAssert(times = int)
     def __DNDBuild(self, groupId, times) -> str:

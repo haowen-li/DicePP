@@ -8,7 +8,7 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'hp', 'bot', 'dnd', 'help', 'bot']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'hp', 'bot', 'dnd', 'help', 'send']
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '角色卡']
 commandKeywordReList = ['.*检定', '.*豁免']
 
@@ -50,7 +50,7 @@ class CommandType(Enum):
     TodayMenu = 14
     PC = 15
     CHECK = 16
-    BOT = 17
+    SEND = 17
 
 
 @unique

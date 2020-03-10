@@ -158,7 +158,8 @@ async def _(session: RequestSession):
                     await nonebot.send_group_msg(group_id=gId, message=f'经{strangerInfo["nickname"]} {session.ctx["user_id"]}邀请, 加入群{groupInfo["group_name"]}{session.ctx["group_id"]}')
             except Exception as e:
                 try:
-                    await nonebot.send_private_msg(user_id=mId, message=str(e))
+                    for mId in MASTER:
+                        await nonebot.send_private_msg(user_id=mId, message=str(e))
                 except:
                     pass
             await session.approve()
