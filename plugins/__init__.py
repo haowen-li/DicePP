@@ -152,8 +152,15 @@ async def _(session: RequestSession):
                 # for mId in MASTER:
                 #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
                 nonebot = session.bot
-                strangerInfo = await nonebot.get_stranger_info(user_id = session.ctx["user_id"])
-                groupInfo = await nonebot.get_group_info (group_id = session.ctx["group_id"])
+                try:
+                    strangerInfo = await nonebot.get_stranger_info(user_id = session.ctx["user_id"])
+                except:
+                    strangerInfo = {'nickname':''}
+                try:
+                    groupInfo = await nonebot.get_group_info (group_id = session.ctx["group_id"])
+                except:
+                    groupInfo = {'group_name':''}
+                    
                 for gId in MASTER_GROUP:
                     await nonebot.send_group_msg(group_id=gId, message=f'经{strangerInfo["nickname"]} {session.ctx["user_id"]}邀请, 加入群{groupInfo["group_name"]}{session.ctx["group_id"]}')
             except Exception as e:

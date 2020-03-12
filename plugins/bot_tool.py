@@ -154,16 +154,19 @@ def ParseInput(inputStr):
     elif commandType == '今日菜单':
         return Command(CommandType.TodayMenu, [])
     elif commandType == '角色卡':
-        subType = '查看'
         if commandStr[:2] == '录入':
             subType = '录入'
             commandStr = commandStr[2:]
         elif commandStr[:2] == '删除':
             subType = '删除'
-        elif commandStr[:2] == '模板':
+        elif commandStr[:2] == '模板' or commandStr[:2] == '模版':
             subType = '模板'
         elif commandStr[:4] == '完整':
             subType = '完整'
+        elif commandStr == '' or commandStr == '查看':
+            subType = '查看'
+        else:
+            return None
         return Command(CommandType.PC, [subType, commandStr])
     elif '检定' in commandType:
         diceCommand, reason = SplitDiceCommand(commandStr)
@@ -313,6 +316,16 @@ class Bot:
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
             if error:
                 return [CommandResult(CoolqCommandType.MESSAGE, resultStr)]
+
+            try:
+                if (resultStr[:3] == 'D20' or resultStr[:4] == '1D20'):
+                    if resultValList[0] == 20:
+                        finalResult += ', 大成功!'
+                    elif resultValList[0] == 1:
+                        finalResult += ', 大失败!'
+            except:
+                pass
+
             if isHide:
                 if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '群聊时才能暗骰哦~')]
                 finalResult = f'暗骰结果:{finalResult}'
@@ -435,7 +448,10 @@ class Bot:
             return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
 
         elif cType == CommandType.SEND:
-            message = command.cArg[0]
+            if groupId:
+                message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
+            else:
+                message = f'来自用户{personId}的信息: {command.cArg[0]}'
             feedback = '已将信息转发给Master了~'
             return [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
                     CommandResult(CoolqCommandType.MESSAGE, feedback)]
@@ -829,7 +845,7 @@ class Bot:
                 self.__UpdateNickName(groupId, personId, nickName)
         self.pcStateDict[groupId][personId] = pcState
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-        return '角色卡录入成功, 查看角色卡请输入.角色卡 或.角色卡 完整'
+        return '角色卡录入成功, 查看角色卡请输入.角色卡 或.角色卡 完整\n更多相关功能请查询.help检定'
 
     def __GetPlayerInfo(self, groupId, personId, name)->str:
         try:
@@ -918,24 +934,24 @@ class Bot:
             result += f'{nickName}在{item}检定中掷出了{resultStr}, '
             if resultValList[0] == 20: result += '大成功!'
             elif resultValList[0] == 1: result += '大失败!'
-            elif checkResult >= 30:  result += '"几乎不可能"成功!'
-            elif checkResult >= 25:  result += '"非常困难"成功!'
-            elif checkResult >= 20:  result += '"困难"成功!'
-            elif checkResult >= 15:  result += '"中等"成功!'
-            elif checkResult >= 10:  result += '"容易"成功!'
-            elif checkResult >= 5:  result += '"非常容易"成功! 也不是很值得骄傲吧...'
-            else:  result += '即使是非常容易的事情也失败了呢...'
+            # elif checkResult >= 30:  result += '"几乎不可能"成功!'
+            # elif checkResult >= 25:  result += '"非常困难"成功!'
+            # elif checkResult >= 20:  result += '"困难"成功!'
+            # elif checkResult >= 15:  result += '"中等"成功!'
+            # elif checkResult >= 10:  result += '"容易"成功!'
+            # elif checkResult >= 5:  result += '"非常容易"成功! 也不是很值得骄傲吧...'
+            # else:  result += '即使是非常容易的事情也失败了呢...'
         else:
             result += f'在{item}中掷出了{resultStr}, '
             if resultValList[0] == 20: result += '大成功!'
             elif resultValList[0] == 1: result += '大失败!'
-            if checkResult >= 30:  result += '无论如何都能豁免成功吧~'
-            elif checkResult >= 25:  result += '豁免成功几乎是必然的事了~'
-            elif checkResult >= 20:  result += '豁免成功的概率很高呢~'
-            elif checkResult >= 15:  result += '发挥得还可以嘛~'
-            elif checkResult >= 10:  result += '祝你好运!'
-            elif checkResult >= 5:  result += '愿海神庇护你...'
-            else:  result += '希望你豁免失败的后果不要太惨...'
+            # if checkResult >= 30:  result += '无论如何都能豁免成功吧~'
+            # elif checkResult >= 25:  result += '豁免成功几乎是必然的事了~'
+            # elif checkResult >= 20:  result += '豁免成功的概率很高呢~'
+            # elif checkResult >= 15:  result += '发挥得还可以嘛~'
+            # elif checkResult >= 10:  result += '祝你好运!'
+            # elif checkResult >= 5:  result += '愿海神庇护你...'
+            # else:  result += '希望你豁免失败的后果不要太惨...'
 
         if item == '先攻':
             self.__JoinInitList(groupId, personId, nickName, '0'+int2str(checkResult), isPC=True)
@@ -1247,6 +1263,8 @@ class Bot:
             return HELP_COMMAND_SETHP_STR
         elif subType == 'jrrp':
             return HELP_COMMAND_JRRP_STR
+        elif subType == 'send':
+            return HELP_COMMAND_SEND_STR
         elif subType == 'draw':
             return HELP_COMMAND_DRAW_STR
         elif subType == '烹饪':
