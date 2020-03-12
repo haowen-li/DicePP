@@ -180,6 +180,8 @@ def ParseInput(inputStr):
 
 
 
+
+
 class Bot:
     def __init__(self):
         self.nickNameDict = ReadJson(LOCAL_NICKNAME_PATH)
@@ -323,6 +325,18 @@ class Bot:
                         finalResult += ', 大成功!'
                     elif resultValList[0] == 1:
                         finalResult += ', 大失败!'
+                elif resultStr.find('次D20') != 1 or resultStr.find('次1D20') != 1:
+                    succTimes = 0
+                    failTimes = 0
+                    for resList in resultValList:
+                        if resList[0] == 20:
+                            succTimes += 1
+                        elif resList[0] == 1:
+                            failTimes += 1
+                    if succTimes != 0:
+                        finalResult += f'\n{succTimes}次大成功!'
+                    if failTimes != 0:
+                        finalResult += f'\n{failTimes}次大失败!'
             except:
                 pass
 
@@ -499,6 +513,13 @@ class Bot:
         return None
 
     
+
+
+
+
+
+
+    
     def __UpdateNickName(self, groupId, personId, nickName) -> int:
         try:
             assert type(self.nickNameDict[groupId]) == dict
@@ -549,15 +570,15 @@ class Bot:
                 return 1
             UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
             return 1
-        
+   
     def __UpdateHP(self, groupId, personId, targetStr, subType, hpStr, maxhpStr, nickName) -> str:
         hp = None
         maxhp = None
         if subType != '=' and maxhpStr:
             return '增加或减少生命值的时候不能修改最大生命值哦'
         # 先尝试解读hpStr和maxhpStr
-        if hpStr.find('抗性') != -1 or hpStr.find('易伤') != -1:
-            return '抗性与易伤关键字不能出现在此处!'
+        # if hpStr.find('抗性') != -1 or hpStr.find('易伤') != -1:
+        #     return '抗性与易伤关键字不能出现在此处!'
         error, resultStrHp, resultValListHp = RollDiceCommond(hpStr)
         if error: return error
         try:
@@ -581,30 +602,7 @@ class Bot:
                 self.__CreateHP(groupId, personId)
                 pcState = self.pcStateDict[groupId][personId]
 
-            if subType == '=':
-                pcState['hp'] = hp
-                pcState['alive'] = True
-                result = f'成功将{nickName}的生命值设置为{resultStrHp}'
-                if maxhpStr:
-                    pcState['maxhp'] = maxhp
-                    result += f', 最大生命值是{maxhp}'
-            elif subType == '+':
-                pcState['hp'] += hp
-                pcState['alive'] = True
-                result = f'{nickName}的生命值增加了{resultStrHp}'
-            elif subType == '-':
-                if pcState['alive']:
-                    if pcState['hp'] > 0 and hp > pcState['hp']:
-                        pcState['hp'] = 0
-                        pcState['alive'] = False
-                        result = f'{nickName}的生命值减少了{resultStrHp}\n因为生命值降至0, {nickName}昏迷/死亡了!'
-                    else:
-                        pcState['hp'] -= hp
-                        result = f'{nickName}的生命值减少了{resultStrHp}'
-                else:
-                    result = f'{nickName}的生命值减少了{resultStrHp}\n{nickName}当前生命值已经是0, 无法再减少了'
-            else:
-                result = '不太对劲呢...'
+            pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, nickName, resultStrHp)
 
             self.pcStateDict[groupId][personId] = pcState
             UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
@@ -639,64 +637,14 @@ class Bot:
                     self.__CreateHP(groupId, targetId)
                     pcState = self.pcStateDict[groupId][targetId]
 
-                if subType == '=':
-                    pcState['hp'] = hp
-                    pcState['alive'] = True
-                    result = f'成功将{targetStr}的生命值设置为{resultStrHp}'
-                    if maxhpStr:
-                        pcState['maxhp'] = maxhp
-                        result += f', 最大生命值是{maxhp}'
-                elif subType == '+':
-                    pcState['hp'] += hp
-                    pcState['alive'] = True
-                    result = f'{targetStr}的生命值增加了{resultStrHp}'
-                elif subType == '-':
-                    if pcState['alive']:
-                        if pcState['hp'] > 0 and hp >= pcState['hp']:
-                            pcState['hp'] = 0
-                            pcState['alive'] = False
-                            result = f'{targetStr}的生命值减少了{resultStrHp}\n因为生命值降至0, {targetStr}昏迷/死亡了!'
-                        else:
-                            pcState['hp'] -= hp
-                            result = f'{targetStr}的生命值减少了{resultStrHp}'
-                    else:
-                        result = f'{targetStr}的生命值减少了{resultStrHp}\n{targetStr}当前生命值已经是0, 无法再减少了'
-                else:
-                    result = '有些不对劲呢...'
+                pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, targetStr, resultStrHp)
+
                 self.pcStateDict[groupId][targetId] = pcState
                 UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
                 return result
             # 否则修改先攻列表中的信息并保存
             else:
-                if subType == '=':
-                    targetInfo['hp'] = hp
-                    targetInfo['alive'] = True
-                    if maxhpStr:
-                        targetInfo['maxhp'] = maxhp
-                    elif targetInfo['maxhp'] == -1:
-                        targetInfo['maxhp'] = 0
-                    result = f'成功将{targetStr}的生命值设置为{resultStrHp}'
-                    if maxhpStr:
-                        result += f', 最大生命值是{maxhp}'
-                    return result
-                elif subType == '+':
-                    targetInfo['hp'] += hp
-                    targetInfo['alive'] = True
-                    result = f'{targetStr}的生命值增加了{resultStrHp}'
-                elif subType == '-':
-                    if targetInfo['alive']:
-                        if targetInfo['hp'] > 0 and hp >= targetInfo['hp']:
-                            targetInfo['hp'] = 0
-                            targetInfo['alive'] = False
-                            result = f'{targetStr}的生命值减少了{resultStrHp}\n因为生命值降至0, {targetStr}昏迷/死亡了!'
-                        else:
-                            targetInfo['hp'] -= hp
-                            result = f'{targetStr}的生命值减少了{resultStrHp}'
-                    else:
-                        result = f'{targetStr}的生命值减少了{resultStrHp}\n{targetStr}当前生命值已经是0, 无法再减少了'
-
-                else:
-                    result = '有些不对劲呢...'
+                targetInfo, result = ModifyHPInfo(targetInfo, subType, hp, maxhp, targetStr, resultStrHp)
                 self.initInfoDict[groupId]['initList'][targetStr] = targetInfo
                 UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
                 return result
@@ -753,6 +701,7 @@ class Bot:
                 return f'关键词"{ability}"对应的属性值"{abilityVal}"无效, 请查看.角色卡模板'
         for ability in pcAbilityList:
             pcState[ability+'调整值'] = math.floor((pcState[ability]-10)/2)
+        pcState['无调整值'] = 0
         checkKeywordList = list(pcCheckDictShort.keys())
         for key in checkKeywordList:
             pcState[key] = pcState[pcCheckDictShort[key]]
@@ -920,9 +869,9 @@ class Bot:
         #diceCommand 必须为调整值
         if not diceCommand or diceCommand[0] in ['+','-'] or diceCommand[:2] in ['优势','劣势']: #通过符号判断
             if pcState[itemKeyword] != 0:
-                completeCommand = 'd20'+diceCommand+int2str(pcState[itemKeyword])+pcState['额外'+item]
+                completeCommand = 'd20'+int2str(pcState[itemKeyword])+pcState['额外'+item]+diceCommand
             else:
-                completeCommand = 'd20'+diceCommand+pcState['额外'+item]
+                completeCommand = 'd20'+pcState['额外'+item]+diceCommand
             error, resultStr, resultValList = RollDiceCommond(completeCommand)
             if error: return -1, resultStr
             checkResult = sum(resultValList)
@@ -931,9 +880,9 @@ class Bot:
 
         result = ''
         if not '豁免' in item: #说明是属性检定
-            result += f'{nickName}在{item}检定中掷出了{resultStr}, '
-            if resultValList[0] == 20: result += '大成功!'
-            elif resultValList[0] == 1: result += '大失败!'
+            result += f'{nickName}在{item}检定中掷出了{resultStr}'
+            if resultValList[0] == 20: result += ' 大成功!'
+            elif resultValList[0] == 1: result += ' 大失败!'
             # elif checkResult >= 30:  result += '"几乎不可能"成功!'
             # elif checkResult >= 25:  result += '"非常困难"成功!'
             # elif checkResult >= 20:  result += '"困难"成功!'
@@ -942,9 +891,9 @@ class Bot:
             # elif checkResult >= 5:  result += '"非常容易"成功! 也不是很值得骄傲吧...'
             # else:  result += '即使是非常容易的事情也失败了呢...'
         else:
-            result += f'在{item}中掷出了{resultStr}, '
-            if resultValList[0] == 20: result += '大成功!'
-            elif resultValList[0] == 1: result += '大失败!'
+            result += f'在{item}中掷出了{resultStr}'
+            if resultValList[0] == 20: result += ' 大成功!'
+            elif resultValList[0] == 1: result += ' 大失败!'
             # if checkResult >= 30:  result += '无论如何都能豁免成功吧~'
             # elif checkResult >= 25:  result += '豁免成功几乎是必然的事了~'
             # elif checkResult >= 20:  result += '豁免成功的概率很高呢~'
@@ -1394,52 +1343,40 @@ class Bot:
         todayStyle = RandomSelectList(MENU_STYLE_LIST)[0]
         result += f'今日菜单主题是{todayCuisine}与{todayStyle}噢~\n'
 
-        possDish, delKeyList = self.__FindDishList(['小菜', todayCuisine, todayStyle])
-        if len(possDish) != 0 and len(delKeyList) <= 1:
-            dishNameList = RandomSelectList(possDish, 1)
-            result += f'小菜:'
-            for dishName in dishNameList:
-                dishInfo = self.menuDict[dishName]
-                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-
-        possDish, delKeyList = self.__FindDishList(['主菜', todayCuisine, todayStyle])
-        if len(possDish) != 0 and len(delKeyList) <= 1:
-            dishNameList = RandomSelectList(possDish, 1)
-            result += f'主食:'
-            for dishName in dishNameList:
-                dishInfo = self.menuDict[dishName]
-                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-
-        possDish, delKeyList = self.__FindDishList(['汤', todayCuisine, todayStyle])
-        if len(possDish) != 0 and len(delKeyList) <= 1:
-            dishNameList = RandomSelectList(possDish, 1)
-            result += f'汤:'
-            for dishName in dishNameList:
-                dishInfo = self.menuDict[dishName]
-                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-
-        possDish, delKeyList = self.__FindDishList(['甜品', todayCuisine, todayStyle])
-        if len(possDish) != 0 and len(delKeyList) <= 1:
-            dishNameList = RandomSelectList(possDish, 1)
-            result += f'餐后甜点:'
-            for dishName in dishNameList:
-                dishInfo = self.menuDict[dishName]
-                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-
-        possDish, delKeyList = self.__FindDishList(['酒', todayCuisine, todayStyle])
-        if len(possDish) != 0 and len(delKeyList) <= 1:
-            dishNameList = RandomSelectList(possDish, 1)
-            result += f'酒:'
-            for dishName in dishNameList:
-                dishInfo = self.menuDict[dishName]
-                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-
-        possDish, delKeyList = self.__FindDishList(['饮料', todayCuisine, todayStyle])
-        if len(possDish) != 0 and len(delKeyList) <= 1:
-            dishNameList = RandomSelectList(possDish, 1)
-            result += f'饮料:'
-            for dishName in dishNameList:
-                dishInfo = self.menuDict[dishName]
-                result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
+        for typeStr in MENU_TYPE_LIST:
+            possDish, delKeyList = self.__FindDishList([typeStr, todayCuisine, todayStyle])
+            if len(possDish) != 0 and len(delKeyList) <= 1:
+                dishNameList = RandomSelectList(possDish, 1)
+                dishInfo = self.menuDict[dishNameList[0]]
+                result += f'{typeStr}:{dishNameList[0]} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
 
         return result[:-1]
+
+def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
+    assert subType in ['=', '+', '-']
+    result = ''
+    preHP = stateDict['hp']
+    if subType == '=':
+        stateDict['hp'] = hp
+        stateDict['alive'] = True
+        result = f'成功将{name}的生命值设置为{resultStrHp}'
+        if maxhp:
+            stateDict['maxhp'] = maxhp
+            result += f', 最大生命值是{maxhp}'
+    elif subType == '+':
+        stateDict['hp'] += hp
+        stateDict['alive'] = True
+        result = f'{name}的生命值增加了{resultStrHp} ({preHP}->{stateDict["hp"]})'
+    elif subType == '-':
+        if stateDict['alive']:
+            if stateDict['hp'] > 0 and hp >= stateDict["hp"]:
+                stateDict['hp'] = 0
+                stateDict['alive'] = False
+                result = f'{name}的生命值减少了{resultStrHp} ({preHP}->0)\n因为生命值降至0, {name}昏迷/死亡了!'
+            else:
+                stateDict['hp'] -= hp
+                result = f'{name}的生命值减少了{resultStrHp} ({preHP}->{stateDict["hp"]})'
+        else:
+            result = f'{name}的生命值减少了{resultStrHp}\n{name}当前生命值已经是0, 无法再减少了 (0->0)'
+
+    return stateDict, result
