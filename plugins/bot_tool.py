@@ -869,9 +869,9 @@ class Bot:
         #diceCommand 必须为调整值
         if not diceCommand or diceCommand[0] in ['+','-'] or diceCommand[:2] in ['优势','劣势']: #通过符号判断
             if pcState[itemKeyword] != 0:
-                completeCommand = 'd20'+int2str(pcState[itemKeyword])+pcState['额外'+item]+diceCommand
+                completeCommand = 'd20'+diceCommand+int2str(pcState[itemKeyword])+pcState['额外'+item]
             else:
-                completeCommand = 'd20'+pcState['额外'+item]+diceCommand
+                completeCommand = 'd20'+diceCommand+pcState['额外'+item]
             error, resultStr, resultValList = RollDiceCommond(completeCommand)
             if error: return -1, resultStr
             checkResult = sum(resultValList)
