@@ -221,6 +221,7 @@ class Bot:
         self.initInfoDict = ReadJson(LOCAL_INITINFO_PATH)
         self.pcStateDict = ReadJson(LOCAL_PCSTATE_PATH)
         self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
+        self.teamInfoDict = ReadJson(LOCAL_TEAMINFO_PATH)
         print(f'个人资料库加载成功!')
         # 尝试加载查询资料库
         try:
@@ -410,7 +411,8 @@ class Bot:
         elif cType == CommandType.HELP:
             subType = str(command.cArg[0])
             helpInfo = self.__GetHelpInfo(subType)
-            return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
+            if helpInfo:
+                return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
 
         elif cType == CommandType.INIT:
             subType = command.cArg[0]
@@ -914,8 +916,8 @@ class Bot:
             command = infoStr[index:lastIndex].strip()
             if command:
                 error, feedback = self.__SetSpellSlot(groupId, personId, command)
-            if error != 0:
-                return feedback
+                if error != 0:
+                    return feedback
 
         if '金钱:' in infoStr:
             index = infoStr.find('金钱:') + 3
@@ -927,19 +929,18 @@ class Bot:
             command = infoStr[index:lastIndex].strip()
             if command:
                 error, feedback = self.__SetMoney(groupId, personId, command)
-            if error != 0:
-                return feedback
+                if error != 0:
+                    return feedback
 
-        self.pcStateDict[groupId][personId] = pcState
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-        return '角色卡录入成功, 查看角色卡请输入.角色卡 或.角色卡 完整\n更多相关功能请查询.help检定, .helphp, .help法术位'
+        return '记录角色卡成功, 查看角色卡请输入.角色卡 或.角色卡 完整\n更多相关功能请查询.help检定, .helphp, .help法术位'
 
     def __GetPlayerInfo(self, groupId, personId, name)->str:
         try:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
         except:
-            return f'{name}还没有录入角色卡呢~'
+            return f'{name}还没有记录角色卡呢~'
 
         result = f'姓名:{name}\n'
         if pcState['hp'] != 0 and pcState['maxhp'] != 0:
@@ -969,7 +970,11 @@ class Bot:
 
         try:
             moneyList = pcState['金钱']
-            result += f'\n金钱:{moneyList[0]}gp {moneyList[1]}sp {moneyList[2]}cp'
+            result += f'\n金钱:{moneyList[0]}gp'
+            if moneyList[1] != 0:
+                result += f' {moneyList[1]}sp'
+            if moneyList[2] != 0:
+                result += f' {moneyList[2]}sp'
         except:
             pass
 
@@ -980,12 +985,12 @@ class Bot:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
         except:
-            return f'{name}还没有录入角色卡呢~'
+            return f'{name}还没有记录角色卡呢~'
 
         result = name
         try:
             hp = pcState['hp']
-            result += f' {hp}'
+            result += f' hp:{hp}'
         except: pass
         try:
             maxhp = pcState['maxhp']
@@ -993,14 +998,23 @@ class Bot:
         except: pass
         try:
             moneyList = pcState['金钱']
-            result += f' {moneyList[0]}gp {moneyList[1]}sp {moneyList[2]}cp'
+            result += f' 金钱:{moneyList[0]}gp'
+            if moneyList[1] != 0:
+                result += f' {moneyList[1]}sp'
+            if moneyList[2] != 0:
+                result += f' {moneyList[2]}sp'
         except:
             pass
         try:
             currentSlotList = pcState['当前法术位']
             maxSlotList = pcState['最大法术位']
-            result += '\n法术位:'
+            highestSlot = -1
             for i in range(9):
+                if currentSlotList[i] != 0 or maxSlotList[i] != 0:
+                    highestSlot = i+1
+            assert highestSlot != -1
+            result += '\n法术位:'
+            for i in range(highestSlot):
                 result += f'{currentSlotList[i]}({maxSlotList[i]})/'
             result = result[:-1]
         except: pass
@@ -1011,14 +1025,18 @@ class Bot:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
         except:
-            return f'{name}还没有录入角色卡呢~'
+            return f'{name}还没有记录角色卡呢~'
 
         result = f'姓名:{name} '
         if pcState['hp'] != 0 and pcState['maxhp'] != 0:
             result += f'hp:{pcState["hp"]}/{pcState["maxhp"]} '
         try:
             moneyList = pcState['金钱']
-            result += f' 金钱:{moneyList[0]}gp {moneyList[1]}sp {moneyList[2]}cp'
+            result += f'金钱:{moneyList[0]}gp'
+            if moneyList[1] != 0:
+                result += f' {moneyList[1]}sp'
+            if moneyList[2] != 0:
+                result += f' {moneyList[2]}sp'
         except:
             pass
         result += f'熟练加值:{pcState["熟练加值"]}\n'
@@ -1036,14 +1054,18 @@ class Bot:
         result = result[:-2]
 
         try:
+            currentSlotList = pcState['当前法术位']
             maxSlotList = pcState['最大法术位']
-            curSlotList = pcState['当前法术位']
-            newResult = result + '\n法术位:'
+            highestSlot = -1
             for i in range(9):
-                newResult += f'{curSlotList[i]}({maxSlotList[i]})/'
-            result = newResult[:-1]
-        except:
-            pass
+                if currentSlotList[i] != 0 or maxSlotList[i] != 0:
+                    highestSlot = i+1
+            assert highestSlot != -1
+            result += '\n法术位:'
+            for i in range(highestSlot):
+                result += f'{currentSlotList[i]}({maxSlotList[i]})/'
+            result = result[:-1]
+        except: pass
 
         return result
         
@@ -1052,7 +1074,7 @@ class Bot:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
         except:
-            return -1, '请先录入角色卡~'
+            return -1, '请先记录角色卡~'
 
         if diceCommand.find('抗性') != -1 or diceCommand.find('易伤') != -1:
             return -1, '抗性与易伤关键字不能出现在此处!'
@@ -1086,7 +1108,7 @@ class Bot:
             if rollResult.rawResultList[0][0] == 20: result += ' 大成功!'
             elif rollResult.rawResultList[0][0] == 1: result += ' 大失败!'
         else:
-            result += f'在{item}中掷出了{resultStr}'
+            result += f'{nickName}在{item}中掷出了{resultStr}'
             if rollResult.rawResultList[0][0] == 20: result += ' 大成功!'
             elif rollResult.rawResultList[0][0] == 1: result += ' 大失败!'
 
@@ -1133,7 +1155,7 @@ class Bot:
             UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
             return 0, '法术环位已经记录好了~'
         else:
-            return -1, '不会施法就请不要录入法术位咯~'
+            return -1, '不会施法就请不要记录法术位咯~'
 
     def __ClearSpellSlot(self, groupId, personId) -> str:
         try:
@@ -1149,8 +1171,8 @@ class Bot:
             maxSlotList = self.pcStateDict[groupId][personId]['最大法术位']
             currentSlotList = self.pcStateDict[groupId][personId]['当前法术位']
         except:
-            return '还没有施法能力哦, 请先使用 .录入法术位 命令吧~'
-        result = '当前法术位:'
+            return '还没有施法能力哦, 请先使用 .记录法术位 命令吧~'
+        result = '当前法术位'
         index = 1
         for maxSize in maxSlotList:
             if maxSize != 0:
@@ -1164,7 +1186,7 @@ class Bot:
         try:
             currentSlotList = self.pcStateDict[groupId][personId]['当前法术位']
         except:
-            print('没有检测到相关信息, 请先使用 .录入法术位 命令吧~')
+            print('没有检测到相关信息, 请先使用 .记录法术位 命令吧~')
         preSlot = currentSlotList[level-1]
         if preSlot + adjVal < 0:
             return '没有这么多法术位了...'
@@ -1394,9 +1416,9 @@ class Bot:
 
     def __JoinTeam(self, groupId, personId, name) -> str:
         try:
-            self.pcStateDict[groupId][personId]['数量加值']
+            self.pcStateDict[groupId][personId]['熟练加值']
         except:
-            return '必须先录入角色卡才能加入队伍~'
+            return '必须先记录角色卡才能加入队伍~'
 
         try:
             teamDict = self.teamInfoDict[groupId]
@@ -1431,8 +1453,8 @@ class Bot:
             try:
                 nickName = self.nickNameDict[groupId][pId]
             except:
-                continue
-            result += f'\n{self.__GetPlayerInfoShort(groupId, personId, nickName)}'
+                nickName = pId
+            result += f'\n{self.__GetPlayerInfoShort(groupId, pId, nickName)}'
             
         return result
 
@@ -1448,9 +1470,8 @@ class Bot:
             try:
                 nickName = self.nickNameDict[groupId][pId]
             except:
-                continue
-            result += f'\n{self.__GetPlayerInfoFull(groupId, personId, nickName)}'
-            
+                nickName = pId
+            result += f'\n{self.__GetPlayerInfoFull(groupId, pId, nickName)}'
         return result
 
 
@@ -1629,9 +1650,9 @@ class Bot:
             return HELP_COMMAND_QUERY_STR
         elif subType == 'hp':
             return HELP_COMMAND_HP_STR
-        elif subType == '法术位':
+        elif '法术位' in subType:
             return HELP_COMMAND_SpellSlot_STR
-        elif subType == '金钱':
+        elif '金钱' in subType:
             return HELP_COMMAND_Money_STR
         elif subType == 'jrrp':
             return HELP_COMMAND_JRRP_STR
@@ -1645,11 +1666,11 @@ class Bot:
             return HELP_COMMAND_ORDER_STR
         elif subType == '今日菜单':
             return HELP_COMMAND_MENU_STR
-        elif subType == '角色卡':
+        elif '角色卡' in subType or '人物卡' in subType:
             return HELP_COMMAND_PC_STR
-        elif subType == '队伍':
+        elif '队伍' in subType:
             return HELP_COMMAND_TEAM_STR
-        elif subType == '检定':
+        elif '检定' in subType:
             return HELP_COMMAND_CHECK_STR
         elif subType == '技能':
             return HELP_COMMAND_SKILL_STR
