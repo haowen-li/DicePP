@@ -3,6 +3,14 @@ import datetime
 
 from .utils import *
 
+# 储存投骰表达式的结果
+class RollResult:
+    def __init__(self, rawResultList, totalValueList, scale):
+        self.rawResultList = rawResultList
+        self.totalValueList = totalValueList
+        self.scale = scale
+
+
 # 将一个字符串分割为一个骰子列表, 然后输出最终结果 [异常值， 结果字符串， 结果数值]
 @TypeAssert(str)
 def RollDiceCommond(diceCommand) -> (int, str, list):
@@ -83,36 +91,41 @@ def RollDiceCommond(diceCommand) -> (int, str, list):
 
 
     # 开始投骰并输出结果
-    totalValueList = None
+    totalValueList = []
+    rawValueList = []
     if repeatTime == 1:
         # 如果不重复直接返回结果
-        error, answer, totalValueList = RollDiceList(diceList, totalScale)
+        error, answer, totalValueCurrent, rawValueListCurrent = RollDiceList(diceList, totalScale)
         if error != 0:
             return -1, answer, None
         output = f'{diceCommand}{surfix}={answer}'
+        totalValueList.append(totalValueCurrent)
+        rawValueList.append(rawValueListCurrent)
     else:
         # 重复多次则在结果中加入第x次的标注
-        totalValueList = []
         output = f'{repeatTime}次{diceCommand}{surfix}=' + '{\n'
         for i in range(repeatTime):
-            error, answer, totalValueListCurrent = RollDiceList(diceList, totalScale)
+            error, answer, totalValueCurrent, rawValueListCurrent = RollDiceList(diceList, totalScale)
             if error != 0:
                 return -1, answer, None
             output += f'{answer}'
             if i != repeatTime-1:
                 output += '\n'
-            totalValueList.append(totalValueListCurrent)
+            totalValueList.append(totalValueCurrent)
+            rawValueList.append(rawValueListCurrent)
+
 
         output += ' }'
 
-    return 0, output, totalValueList
+    rollResult = RollResult(rawValueList, totalValueList, totalScale)
+    return 0, output, rollResult
 
 # 接受一个骰子列表和比例, 返回结果字符串和结果数组
 # 注意! 由于抗性要减半并向下取整不方便逐个处理. 比例只会影响字符串而不会影响数组元素的值! 请在函数外自己处理!!!
 @TypeAssert(diceList = list)
-def RollDiceList(diceList, scale = 1)->(int, str, list):
+def RollDiceList(diceList, scale = 1)->(int, str, int, list):
     if not scale in [0.5, 1, 2]:
-        return -1, f'比例不在可选择的范围内, 请向开发者报告', None
+        return -1, f'比例不在可选择的范围内, 请向开发者报告', None, None
     # 生成随机种子
     np.random.seed(datetime.datetime.now().microsecond+np.random.randint(10000))
     finalAnswer = ''
@@ -124,7 +137,7 @@ def RollDiceList(diceList, scale = 1)->(int, str, list):
     for dice in diceList:
         error, answer, value = RollDice(dice)
         if error != 0:
-            return -1, f'执行{dice}时遇到了问题:{answer}', None
+            return -1, f'执行{dice}时遇到了问题:{answer}', None, None
         answerList.append(answer)
         totalValue += value
         totalValueList.append(value)
@@ -154,7 +167,7 @@ def RollDiceList(diceList, scale = 1)->(int, str, list):
         elif scale == 0.5:
             finalAnswer = f'{finalAnswer}/2={totalValue}'
 
-    return 0, finalAnswer, totalValueList
+    return 0, finalAnswer, totalValue, totalValueList
 
 @TypeAssert(str)
 def RollDice(diceStr)->(int, str, int):

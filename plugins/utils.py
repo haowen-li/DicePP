@@ -9,8 +9,10 @@ from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
 commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'hp', 'bot', 'dnd', 'help', 'send']
-commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '角色卡']
-commandKeywordReList = ['.*检定', '.*豁免']
+commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单']
+commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
+commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱']
+commandKeywordReList = ['.*检定', '.*豁免', '.*法术位']
 
 pcAbilityDict = {'力量':'力量调整值', '敏捷':'敏捷调整值', '体质':'体质调整值',
                 '智力':'智力调整值', '感知':'感知调整值', '魅力':'魅力调整值'}
@@ -29,7 +31,7 @@ pcSkillSynonymDict = {'特技':'体操', '潜行':'隐匿', '隐蔽':'隐匿', '
 pcCheckDictShort = {**pcSavingDict, **pcSkillDict}
 pcCheckDictLong = {**pcAbilityDict, **pcCheckDictShort}
 
-pcSheetTemplate = '姓名:约翰\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:力量豁免/体质豁免/运动/威吓/察觉/洞悉\n额外加值:豁免+1/检定+1'
+pcSheetTemplate = '姓名:约翰\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:力量豁免/体质豁免/运动/威吓/察觉/洞悉\n额外加值:豁免+1/检定+1/先攻+2/说服+1d4\n最大法术位:4/3/3/1\n金钱:50gp 30sp'
 
 @unique
 class CommandType(Enum):
@@ -39,18 +41,23 @@ class CommandType(Enum):
     INIT = 3
     RI = 4
     SETHP = 5
-    BOT = 6
-    DND = 7
-    HELP = 8
-    QUERY = 9
-    DISMISS = 10
-    DRAW = 11
-    COOK = 12
-    ORDER = 13
-    TodayMenu = 14
-    PC = 15
-    CHECK = 16
-    SEND = 17
+    SHOWHP = 6
+    CLRHP = 7
+    BOT = 8
+    DND = 9
+    HELP = 10
+    QUERY = 11
+    DISMISS = 12
+    DRAW = 13
+    COOK = 14
+    ORDER = 15
+    TodayMenu = 16
+    PC = 17
+    CHECK = 18
+    SEND = 19
+    SpellSlot = 20
+    TEAM = 21
+    MONEY = 22
 
 
 @unique
@@ -133,6 +140,20 @@ def ChineseToEnglishSymbol(inputStr):
 #         if char == '－':
 #             newStr[i] = '-'
     return inputStr
+
+# 将中文数字转为int类型
+def ChineseNumberToInt(inputChar):
+    if inputChar == '零': return 0
+    elif inputChar == '一': return 1
+    elif inputChar == '二': return 2
+    elif inputChar == '三': return 3
+    elif inputChar == '四': return 4
+    elif inputChar == '五': return 5
+    elif inputChar == '六': return 6
+    elif inputChar == '七': return 7
+    elif inputChar == '八': return 8
+    elif inputChar == '九': return 9
+    raise TypeValueError(f'ChineseNumberToInt: Input {inputStr} is invalid')
 
 def int2str(value, with_symbol = True):
     assert type(value) == int

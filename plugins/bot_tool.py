@@ -3,7 +3,7 @@ import os
 import re
 import math
 
-from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand, isDiceCommand
+from .dice_tool import RollDiceCommond, SplitDiceCommand, SplitNumberCommand, isDiceCommand, RollResult
 from .type_assert import TypeAssert
 from .utils import *
 from .custom_config import *
@@ -81,38 +81,6 @@ def ParseInput(inputStr):
 #         # 参数包含两部分, 骰子表达式(加值)与名称, 名称为可选项
         diceCommand, name = SplitDiceCommand(commandStr)
         return Command(CommandType.RI,[diceCommand, name])
-    elif commandType == 'hp':
-        subType = None
-        targetStr = None
-        hpCommand = None
-        commandStr = commandStr.strip()
-        if len(commandStr) == 0:
-            return Command(CommandType.SETHP, [None])
-        #是否显式指定了指令类型
-        for i in range(len(commandStr)): 
-            if commandStr[i] in ['+', '-', '=']:
-                subType = commandStr[i]
-                targetStr = commandStr[:i].strip()
-                hpCommand = commandStr[i+1:].strip()
-                break
-        #不指定指令类型则默认为'='
-        if not subType:
-            for i in range(len(commandStr)):
-                if commandStr[i] in (['d']+[str(n) for n in range(0,10)]):
-                    subType = '='
-                    targetStr = commandStr[:i].strip()
-                    hpCommand = commandStr[i:].strip()
-                    break
-        if not subType:
-            return None
-        splitIndex = hpCommand.rfind('/')
-        if splitIndex != -1:
-            hpStr = hpCommand[:splitIndex]
-            maxhpStr = hpCommand[splitIndex+1:]
-        else:
-            hpStr = hpCommand
-            maxhpStr = ''
-        return Command(CommandType.SETHP, [targetStr, subType, hpStr, maxhpStr])
     elif commandType == 'bot':
         if commandStr.find('on') != -1:
             return Command(CommandType.BOT, ['on'])
@@ -153,21 +121,86 @@ def ParseInput(inputStr):
         return Command(CommandType.ORDER, [diceCommand, keywrodList])
     elif commandType == '今日菜单':
         return Command(CommandType.TodayMenu, [])
-    elif commandType == '角色卡':
-        if commandStr[:2] == '录入':
-            subType = '录入'
-            commandStr = commandStr[2:]
-        elif commandStr[:2] == '删除':
-            subType = '删除'
-        elif commandStr[:2] == '模板' or commandStr[:2] == '模版':
-            subType = '模板'
-        elif commandStr[:4] == '完整':
-            subType = '完整'
-        elif commandStr == '' or commandStr == '查看':
-            subType = '查看'
-        else:
+    elif commandType == '角色卡' or commandType == '查看角色卡':
+        return Command(CommandType.PC, ['查看', commandStr])
+    elif commandType == '记录角色卡':
+        return Command(CommandType.PC, ['记录', commandStr])
+    elif commandType == '角色卡模板' or commandType == '角色卡模版':
+        return Command(CommandType.PC, ['模板', commandStr])
+    elif commandType == '清除角色卡':
+        return Command(CommandType.PC, ['清除', commandStr])
+    elif commandType == '完整角色卡':
+        return Command(CommandType.PC, ['完整', commandStr])
+    elif commandType == 'hp':
+        subType = None
+        targetStr = None
+        hpCommand = None
+        commandStr = commandStr.strip()
+        if len(commandStr) == 0:
+            return Command(CommandType.SHOWHP, [])
+        if commandStr == 'clr':
+            return Command(CommandType.CLRHP, [])
+        #是否显式指定了指令类型
+        for i in range(len(commandStr)): 
+            if commandStr[i] in ['+', '-', '=']:
+                subType = commandStr[i]
+                targetStr = commandStr[:i].strip()
+                hpCommand = commandStr[i+1:].strip()
+                break
+        #不指定指令类型则默认为'='
+        if not subType:
+            for i in range(len(commandStr)):
+                if commandStr[i] in (['d']+[str(n) for n in range(0,10)]):
+                    subType = '='
+                    targetStr = commandStr[:i].strip()
+                    hpCommand = commandStr[i:].strip()
+                    break
+        if not subType:
             return None
-        return Command(CommandType.PC, [subType, commandStr])
+        splitIndex = hpCommand.rfind('/')
+        if splitIndex != -1:
+            hpStr = hpCommand[:splitIndex]
+            maxhpStr = hpCommand[splitIndex+1:]
+        else:
+            hpStr = hpCommand
+            maxhpStr = ''
+        return Command(CommandType.SETHP, [targetStr, subType, hpStr, maxhpStr])
+    elif commandType == '加入队伍':
+        return Command(CommandType.TEAM, ['加入', commandStr])
+    elif commandType == '队伍信息':
+        return Command(CommandType.TEAM, ['查看'])
+    elif commandType == '完整队伍信息':
+        return Command(CommandType.TEAM, ['完整'])
+    elif commandType == '清除队伍':
+        return Command(CommandType.TEAM, ['清除'])
+    elif commandType == '记录金钱':
+        return Command(CommandType.MONEY, ['记录', commandStr])
+    elif commandType == '清除金钱':
+        return Command(CommandType.MONEY, ['清除'])
+    elif commandType == '查看金钱':
+        return Command(CommandType.MONEY, ['查看'])
+    elif commandType == '金钱':
+        if commandStr == '':
+            return Command(CommandType.MONEY, ['查看'])
+        else:
+            return Command(CommandType.MONEY, ['更改', commandStr])
+    elif '法术位' in commandType:
+        if commandType == '清除法术位':
+            return Command(CommandType.SpellSlot, ['清除', commandStr])
+        elif commandType == '记录法术位':
+            return Command(CommandType.SpellSlot, ['记录', commandStr])
+        elif commandType[1:5] == '环法术位':
+            level = -1
+            try:
+                level = int(commandType[0])
+            except:
+                try:
+                    level = ChineseNumberToInt(commandType[0])
+                except:
+                    return None
+            return Command(CommandType.SpellSlot, ['更改', level, commandStr])
+        elif commandType == '法术位' or commandType == '查看法术位':
+            return Command(CommandType.SpellSlot, ['查看', commandStr])
     elif '检定' in commandType:
         diceCommand, reason = SplitDiceCommand(commandStr)
         return Command(CommandType.CHECK, [commandType[:-2], diceCommand, reason])
@@ -314,7 +347,7 @@ class Bot:
             isHide = command.cArg[2]
             if len(reason) != 0:
                 reason = f'由于{reason},'
-            error, resultStr, resultValList = RollDiceCommond(diceCommand)
+            error, resultStr, rollResult = RollDiceCommond(diceCommand)
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
             if error:
                 return [CommandResult(CoolqCommandType.MESSAGE, resultStr)]
@@ -348,6 +381,23 @@ class Bot:
             else:
                 return [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
 
+        elif cType == CommandType.BOT:
+            if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            
+            subType = command.cArg[0]
+            if subType == 'show':
+                return [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
+            if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
+            if subType == 'on':
+                result = self.__BotSwitch(groupId, True)
+            else:
+                result = self.__BotSwitch(groupId, False)
+            return [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.DISMISS:
+            if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
+            return [CommandResult(CoolqCommandType.DISMISS, '再见咯, 期待我们下次的相遇~' ,groupIdList = [groupId])]
+
         elif cType == CommandType.NickName:
             if not groupId: groupId = 'Default'
             newNickName = command.cArg[0]
@@ -357,16 +407,10 @@ class Bot:
             elif result == 0:
                 return [CommandResult(CoolqCommandType.MESSAGE, f'要称呼{personName}为{newNickName}吗? 没问题!')]
 
-        elif cType == CommandType.JRRP:
-            date = GetCurrentDateRaw()
-            value = self.__GetJRRP(personId, date)
-            answer = f'{nickName}今天走运的概率是{value}%'
-            if value >= 80:
-                answer += ', 今天运气不错哦~'
-            elif value <= 20:
-                gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
-                answer += f', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~'
-            return [CommandResult(CoolqCommandType.MESSAGE, answer)]
+        elif cType == CommandType.HELP:
+            subType = str(command.cArg[0])
+            helpInfo = self.__GetHelpInfo(subType)
+            return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
 
         elif cType == CommandType.INIT:
             subType = command.cArg[0]
@@ -397,24 +441,28 @@ class Bot:
             if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             result = None
             # Args: [targetStr, subType , hpStr, maxhpStr]
-            if command.cArg[0] is None: # 第一个参数为None说明要清除生命值记录
-                self.__ClearHP(groupId, personId)
-                return [CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')]
-            else:
-                result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
-                return [CommandResult(CoolqCommandType.MESSAGE, result)]
+            result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
+            return [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.SHOWHP:
+            result = self.__ShowHP(groupId, personId)
+            return [CommandResult(CoolqCommandType.MESSAGE, f'{nickName}{result}')]
+
+        elif cType == CommandType.CLRHP:
+            self.__ClearHP(groupId, personId)
+            return [CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')]
 
         elif cType == CommandType.PC:
             if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             subType = command.cArg[0]
             infoStr = command.cArg[1]
-            if subType == '录入':# 参数为None说明要清除记录
+            if subType == '记录':
                 result = self.__SetPlayerInfo(groupId, personId, infoStr)
             elif subType == '查看':
                 result = self.__GetPlayerInfo(groupId, personId, nickName)
             elif subType == '完整':
                 result = self.__GetPlayerInfoFull(groupId, personId, nickName)
-            elif subType == '删除':
+            elif subType == '清除':
                 self.__ClearPlayerInfo(groupId, personId)
                 result = f'成功删除了{nickName}的角色卡~'
             elif subType == '模板':
@@ -432,18 +480,76 @@ class Bot:
                     result = f'由于{reason}, {result}'
             return [CommandResult(CoolqCommandType.MESSAGE, result)]
 
-        elif cType == CommandType.BOT:
+        elif cType == CommandType.SpellSlot:
             if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            
+            # Args: [subType, *args]
             subType = command.cArg[0]
-            if subType == 'show':
-                return [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
-            if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
-            if subType == 'on':
-                result = self.__BotSwitch(groupId, True)
-            else:
-                result = self.__BotSwitch(groupId, False)
+            if subType == '记录':
+                error, result = self.__SetSpellSlot(groupId, personId, command.cArg[1])
+            elif subType == '查看':
+                result = nickName + self.__ShowSpellSlot(groupId, personId)
+            elif subType == '更改':
+                level = command.cArg[1]
+                try:
+                    assert command.cArg[2][0] in ['+', '-']
+                    adjVal = int(command.cArg[2])
+                    assert adjVal > -10 and adjVal < 10
+                except:
+                    return [CommandResult(CoolqCommandType.MESSAGE, f'{command.cArg[2]}是无效的法术位调整值~ 合法范围:[-9, +9]')]
+                result = nickName + self.__ModifySpellSlot(groupId, personId, level, adjVal)
+            elif subType == '清除':
+                result = self.__ClearSpellSlot(groupId, personId)
+
             return [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.MONEY:
+            if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            subType = command.cArg[0]
+            if subType == '记录':
+                error, result = self.__SetMoney(groupId, personId, command.cArg[1])
+                result = result
+            elif subType == '清除':
+                result = self.__ClearMoney(groupId, personId)
+            elif subType == '更改':
+                result = nickName + self.__ModifyMoney(groupId, personId, command.cArg[1])
+            elif subType == '查看':
+                result = nickName + '当前的财富:' +self.__ShowMoney(groupId, personId)
+            return [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.TEAM:
+            if not groupId: return [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            subType = command.cArg[0]
+            if subType == '加入':
+                result = self.__JoinTeam(groupId, personId, command.cArg[1])
+            elif subType == '清除':
+                result = self.__ClearTeam(groupId)
+            elif subType == '查看':
+                result = self.__ShowTeam(groupId)
+            elif subType == '完整':
+                result = self.__ShowTeamFull(groupId)
+                return [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[personId]),
+                        CommandResult(CoolqCommandType.MESSAGE, '已将队伍的完整信息私聊给你啦~')]
+            return [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.SEND:
+            if groupId:
+                message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
+            else:
+                message = f'来自用户{personId}的信息: {command.cArg[0]}'
+            feedback = '已将信息转发给Master了~'
+            return [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
+                    CommandResult(CoolqCommandType.MESSAGE, feedback)]
+
+        elif cType == CommandType.JRRP:
+            date = GetCurrentDateRaw()
+            value = self.__GetJRRP(personId, date)
+            answer = f'{nickName}今天走运的概率是{value}%'
+            if value >= 80:
+                answer += ', 今天运气不错哦~'
+            elif value <= 20:
+                gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
+                answer += f', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~'
+            return [CommandResult(CoolqCommandType.MESSAGE, answer)]
 
         elif cType == CommandType.DND:
             try:
@@ -456,28 +562,10 @@ class Bot:
             result = f'{nickName}的初始属性: {reason}\n{result}'
             return [CommandResult(CoolqCommandType.MESSAGE, result)]
 
-        elif cType == CommandType.HELP:
-            subType = str(command.cArg[0])
-            helpInfo = self.__GetHelpInfo(subType)
-            return [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
-
-        elif cType == CommandType.SEND:
-            if groupId:
-                message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
-            else:
-                message = f'来自用户{personId}的信息: {command.cArg[0]}'
-            feedback = '已将信息转发给Master了~'
-            return [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
-                    CommandResult(CoolqCommandType.MESSAGE, feedback)]
-
         elif cType == CommandType.QUERY:
             targetStr = str(command.cArg[0])
             queryResult = self.__QueryInfo(targetStr)
             return [CommandResult(CoolqCommandType.MESSAGE, queryResult)]
-
-        elif cType == CommandType.DISMISS:
-            if not only_to_me: return None #'不指定我的话, 这个指令是无效的哦'
-            return [CommandResult(CoolqCommandType.DISMISS, '再见咯, 期待我们下次的相遇~' ,groupIdList = [groupId])]
 
         elif cType == CommandType.DRAW:
             targetStr = str(command.cArg[0])
@@ -579,11 +667,12 @@ class Bot:
         # 先尝试解读hpStr和maxhpStr
         # if hpStr.find('抗性') != -1 or hpStr.find('易伤') != -1:
         #     return '抗性与易伤关键字不能出现在此处!'
-        error, resultStrHp, resultValListHp = RollDiceCommond(hpStr)
+        error, resultStrHp, rollResult = RollDiceCommond(hpStr)
         if error: return error
         try:
-            hp = sum(resultValListHp)
-        except:
+            hp = rollResult.totalValueList[0]
+        except Exception as e:
+            print(e)
             return f'无法解释生命值参数{hpStr}呢...'
         if hp < 0:
             return f'hp数值{resultStrHp}为负数, 没有修改hp数值'
@@ -598,6 +687,7 @@ class Bot:
         if not targetStr: # 不指定目标说明要修改自己的生命值信息
             try:
                 pcState = self.pcStateDict[groupId][personId]
+                pcState['hp']
             except:
                 self.__CreateHP(groupId, personId)
                 pcState = self.pcStateDict[groupId][personId]
@@ -605,7 +695,7 @@ class Bot:
             pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, nickName, resultStrHp)
 
             self.pcStateDict[groupId][personId] = pcState
-            UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+            # UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
             return result
         else:
             # 尝试对先攻列中的目标修改生命值信息
@@ -633,6 +723,7 @@ class Bot:
                 targetId = targetInfo['id']
                 try:
                     pcState = self.pcStateDict[groupId][targetId]
+                    pcState['hp']
                 except:
                     self.__CreateHP(groupId, targetId)
                     pcState = self.pcStateDict[groupId][targetId]
@@ -640,13 +731,13 @@ class Bot:
                 pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, targetStr, resultStrHp)
 
                 self.pcStateDict[groupId][targetId] = pcState
-                UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+                # UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
                 return result
             # 否则修改先攻列表中的信息并保存
             else:
                 targetInfo, result = ModifyHPInfo(targetInfo, subType, hp, maxhp, targetStr, resultStrHp)
                 self.initInfoDict[groupId]['initList'][targetStr] = targetInfo
-                UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
+                # UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
                 return result
 
         return '未知的错误发生了'
@@ -656,7 +747,11 @@ class Bot:
             assert type(self.pcStateDict[groupId]) == dict
         except:
             self.pcStateDict[groupId] = {}
-        pcState = {'personId':personId, 'hp':hp, 'maxhp':maxhp, 'alive':True}
+        try:
+            pcState = self.pcStateDict[groupId][personId]
+        except:
+            pcState = {}
+        pcState.update({'hp':hp, 'maxhp':maxhp, 'alive':True})
         self.pcStateDict[groupId][personId] = pcState
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
 
@@ -667,6 +762,17 @@ class Bot:
             UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
         except:
             pass
+
+    def __ShowHP(self, groupId, personId) -> str:
+        try:
+            hp = self.pcStateDict[groupId][personId]['hp']
+            maxhp = self.pcStateDict[groupId][personId]['maxhp']
+            result = f'当前生命值为{hp}'
+            if maxhp != 0:
+                result += f'/{maxhp}'
+            return result
+        except:
+            return '还没有设置生命值呢~'
 
     def __SetPlayerInfo(self, groupId, personId, infoStr) -> str:
         try:
@@ -729,7 +835,8 @@ class Bot:
             else:
                 return f'{profItem}不是有效的熟练关键词, 请查看.角色卡模板'
         pcState['额外加值'] = []
-        linesep = os.linesep
+        # linesep = os.linesep
+        linesep = '\n'
         if '额外加值:' in infoStr:
             index = infoStr.find('额外加值:') + 5
             lastIndex = infoStr[index:].find(linesep)
@@ -749,6 +856,10 @@ class Bot:
                 addStr = additionItem[index:]
                 if not isDiceCommand(addStr):
                     return f'额外加值中的{addStr}不是有效的加值, 请查看.角色卡模板'
+
+                if checkItem in pcSkillSynonymDict.keys():
+                    checkItem = pcSkillSynonymDict[checkItem]
+
                 if checkItem in checkKeywordList:
                     pcState['额外'+checkItem] += addStr
                 elif checkItem == '豁免':  # 如: 豁免+2
@@ -792,16 +903,43 @@ class Bot:
             nickName = infoStr[index:lastIndex].strip()
             if nickName:
                 self.__UpdateNickName(groupId, personId, nickName)
+
+        if '最大法术位' in infoStr:
+            index = infoStr.find('最大法术位:') + 6
+            lastIndex = infoStr[index:].find(linesep)
+            if lastIndex == -1:
+                lastIndex = infoLength
+            else:
+                lastIndex += index
+            command = infoStr[index:lastIndex].strip()
+            if command:
+                error, feedback = self.__SetSpellSlot(groupId, personId, command)
+            if error != 0:
+                return feedback
+
+        if '金钱:' in infoStr:
+            index = infoStr.find('金钱:') + 3
+            lastIndex = infoStr[index:].find(linesep)
+            if lastIndex == -1:
+                lastIndex = infoLength
+            else:
+                lastIndex += index
+            command = infoStr[index:lastIndex].strip()
+            if command:
+                error, feedback = self.__SetMoney(groupId, personId, command)
+            if error != 0:
+                return feedback
+
         self.pcStateDict[groupId][personId] = pcState
         UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-        return '角色卡录入成功, 查看角色卡请输入.角色卡 或.角色卡 完整\n更多相关功能请查询.help检定'
+        return '角色卡录入成功, 查看角色卡请输入.角色卡 或.角色卡 完整\n更多相关功能请查询.help检定, .helphp, .help法术位'
 
     def __GetPlayerInfo(self, groupId, personId, name)->str:
         try:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
         except:
-            return '现在还没有录入角色卡呢~'
+            return f'{name}还没有录入角色卡呢~'
 
         result = f'姓名:{name}\n'
         if pcState['hp'] != 0 and pcState['maxhp'] != 0:
@@ -819,6 +957,53 @@ class Bot:
             for additionItem in pcState['额外加值']:
                 result += f'{additionItem}/'
             result = result[:-1]
+
+        try:
+            maxSlotList = pcState['最大法术位']
+            newResult = result + '\n最大法术位:'
+            for i in range(9):
+                newResult += f'{maxSlotList[i]}/'
+            result = newResult[:-1]
+        except:
+            pass
+
+        try:
+            moneyList = pcState['金钱']
+            result += f'\n金钱:{moneyList[0]}gp {moneyList[1]}sp {moneyList[2]}cp'
+        except:
+            pass
+
+        return result
+
+    def __GetPlayerInfoShort(self, groupId, personId, name)->str:
+        try:
+            pcState = self.pcStateDict[groupId][personId]
+            pcState['熟练加值']
+        except:
+            return f'{name}还没有录入角色卡呢~'
+
+        result = name
+        try:
+            hp = pcState['hp']
+            result += f' {hp}'
+        except: pass
+        try:
+            maxhp = pcState['maxhp']
+            result += f'/{maxhp}'
+        except: pass
+        try:
+            moneyList = pcState['金钱']
+            result += f' {moneyList[0]}gp {moneyList[1]}sp {moneyList[2]}cp'
+        except:
+            pass
+        try:
+            currentSlotList = pcState['当前法术位']
+            maxSlotList = pcState['最大法术位']
+            result += '\n法术位:'
+            for i in range(9):
+                result += f'{currentSlotList[i]}({maxSlotList[i]})/'
+            result = result[:-1]
+        except: pass
         return result
 
     def __GetPlayerInfoFull(self, groupId, personId, name)->str:
@@ -826,11 +1011,16 @@ class Bot:
             pcState = self.pcStateDict[groupId][personId]
             pcState['熟练加值']
         except:
-            return '现在还没有录入角色卡呢~'
+            return f'{name}还没有录入角色卡呢~'
 
         result = f'姓名:{name} '
         if pcState['hp'] != 0 and pcState['maxhp'] != 0:
             result += f'hp:{pcState["hp"]}/{pcState["maxhp"]} '
+        try:
+            moneyList = pcState['金钱']
+            result += f' 金钱:{moneyList[0]}gp {moneyList[1]}sp {moneyList[2]}cp'
+        except:
+            pass
         result += f'熟练加值:{pcState["熟练加值"]}\n'
 
         for ability in pcAbilityDict.keys():
@@ -843,7 +1033,19 @@ class Bot:
                 result += '\n'
                 current = pcSkillDict[skill]
             result += f'{skill}:{pcState[skill]}{pcState["额外"+skill]}  '
-        return result[:-2]
+        result = result[:-2]
+
+        try:
+            maxSlotList = pcState['最大法术位']
+            curSlotList = pcState['当前法术位']
+            newResult = result + '\n法术位:'
+            for i in range(9):
+                newResult += f'{curSlotList[i]}({maxSlotList[i]})/'
+            result = newResult[:-1]
+        except:
+            pass
+
+        return result
         
     def __PlayerCheck(self, groupId, personId, item, diceCommand, nickName) -> (int, str):
         try:
@@ -872,35 +1074,21 @@ class Bot:
                 completeCommand = 'd20'+diceCommand+int2str(pcState[itemKeyword])+pcState['额外'+item]
             else:
                 completeCommand = 'd20'+diceCommand+pcState['额外'+item]
-            error, resultStr, resultValList = RollDiceCommond(completeCommand)
+            error, resultStr, rollResult = RollDiceCommond(completeCommand)
             if error: return -1, resultStr
-            checkResult = sum(resultValList)
+            checkResult = rollResult.totalValueList[0]
         else:
             return -1, f'输入的指令有点问题呢~'
 
         result = ''
         if not '豁免' in item: #说明是属性检定
             result += f'{nickName}在{item}检定中掷出了{resultStr}'
-            if resultValList[0] == 20: result += ' 大成功!'
-            elif resultValList[0] == 1: result += ' 大失败!'
-            # elif checkResult >= 30:  result += '"几乎不可能"成功!'
-            # elif checkResult >= 25:  result += '"非常困难"成功!'
-            # elif checkResult >= 20:  result += '"困难"成功!'
-            # elif checkResult >= 15:  result += '"中等"成功!'
-            # elif checkResult >= 10:  result += '"容易"成功!'
-            # elif checkResult >= 5:  result += '"非常容易"成功! 也不是很值得骄傲吧...'
-            # else:  result += '即使是非常容易的事情也失败了呢...'
+            if rollResult.rawResultList[0][0] == 20: result += ' 大成功!'
+            elif rollResult.rawResultList[0][0] == 1: result += ' 大失败!'
         else:
             result += f'在{item}中掷出了{resultStr}'
-            if resultValList[0] == 20: result += ' 大成功!'
-            elif resultValList[0] == 1: result += ' 大失败!'
-            # if checkResult >= 30:  result += '无论如何都能豁免成功吧~'
-            # elif checkResult >= 25:  result += '豁免成功几乎是必然的事了~'
-            # elif checkResult >= 20:  result += '豁免成功的概率很高呢~'
-            # elif checkResult >= 15:  result += '发挥得还可以嘛~'
-            # elif checkResult >= 10:  result += '祝你好运!'
-            # elif checkResult >= 5:  result += '愿海神庇护你...'
-            # else:  result += '希望你豁免失败的后果不要太惨...'
+            if rollResult.rawResultList[0][0] == 20: result += ' 大成功!'
+            elif rollResult.rawResultList[0][0] == 1: result += ' 大失败!'
 
         if item == '先攻':
             self.__JoinInitList(groupId, personId, nickName, '0'+int2str(checkResult), isPC=True)
@@ -914,6 +1102,180 @@ class Bot:
             UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
         except:
             pass
+
+    # commandStr示例: 4/2/0/0/0/0
+    def __SetSpellSlot(self, groupId, personId, commandStr) -> (int, str):
+        maxSpellSlotList = [0]*9
+        sizeStrList = commandStr.split('/')
+        isValid = False
+        index = 0
+        if len(sizeStrList)>9:
+            return -1, '唔...法术环位好像最高只有九环呢...'
+        for sizeStr in sizeStrList:
+            try:
+                size = int(sizeStr)
+                maxSpellSlotList[index] = size
+                assert size >=0 and size < 100
+                if size > 0:
+                    isValid = True
+            except:
+                return -1, f'{index+1}环法术位大小{sizeStr}无效~'
+            index += 1
+
+        try:
+            pcState = self.pcStateDict[groupId][personId]
+        except:
+            pcState = {}
+        if isValid:
+            pcState['最大法术位'] = maxSpellSlotList
+            pcState['当前法术位'] = maxSpellSlotList.copy()
+            self.pcStateDict[groupId][personId] = pcState
+            UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+            return 0, '法术环位已经记录好了~'
+        else:
+            return -1, '不会施法就请不要录入法术位咯~'
+
+    def __ClearSpellSlot(self, groupId, personId) -> str:
+        try:
+            del self.pcStateDict[groupId][personId]['最大法术位']
+            del self.pcStateDict[groupId][personId]['当前法术位']
+            UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+        except:
+            pass
+        return '已经将法术位信息忘记啦~'
+
+    def __ShowSpellSlot(self, groupId, personId) -> str:
+        try:
+            maxSlotList = self.pcStateDict[groupId][personId]['最大法术位']
+            currentSlotList = self.pcStateDict[groupId][personId]['当前法术位']
+        except:
+            return '还没有施法能力哦, 请先使用 .录入法术位 命令吧~'
+        result = '当前法术位:'
+        index = 1
+        for maxSize in maxSlotList:
+            if maxSize != 0:
+                result += f'\n{index}环法术位:{currentSlotList[index-1]}/{maxSize}'
+            index += 1
+        return result
+
+    # level in [1, 9]
+    # adjVal in [-9, 9]
+    def __ModifySpellSlot(self, groupId, personId, level, adjVal):
+        try:
+            currentSlotList = self.pcStateDict[groupId][personId]['当前法术位']
+        except:
+            print('没有检测到相关信息, 请先使用 .录入法术位 命令吧~')
+        preSlot = currentSlotList[level-1]
+        if preSlot + adjVal < 0:
+            return '没有这么多法术位了...'
+        currentSlotList[level-1] += adjVal
+        self.pcStateDict[groupId][personId]['当前法术位'] = currentSlotList
+        UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+        if adjVal < 0:
+            return f'{level}环法术位减少了{-1*adjVal}个 ({preSlot}->{preSlot+adjVal})'
+        else:
+            return f'{level}环法术位增加了{adjVal}个 ({preSlot}->{preSlot+adjVal})'
+
+    def __SetMoney(self, groupId, personId, commandStr) -> (int, str):
+        error, reason, moneyList = strToMoneyList(commandStr)
+        if error != 0:
+            return -1, reason
+        try:
+            pcState = self.pcStateDict[groupId][personId]
+        except:
+            pcState = {}
+        pcState['金钱'] = moneyList
+        self.pcStateDict[groupId][personId] = pcState
+        UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+        return 0, '牢牢记住你的财富咯~'
+
+    def __ShowMoney(self, groupId, personId):
+        try:
+            moneyList = self.pcStateDict[groupId][personId]['金钱']
+        except:
+            return '现在身无分文呢~ 请先使用 .记录金钱 命令吧~'
+        result = f'{moneyList[0]}gp'
+        if moneyList[1] != 0:
+            result += f' {moneyList[1]}sp'
+        if moneyList[2] != 0:
+            result += f' {moneyList[2]}cp'
+        return result
+
+    def __ClearMoney(self, groupId, personId):
+        try:
+            del self.pcStateDict[groupId][personId]['金钱']
+            UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+        except:
+            pass
+        return '已经将你的财富忘记啦~'
+
+    def __ModifyMoney(self, groupId, personId, commandStr):
+        try:
+            moneyList = self.pcStateDict[groupId][personId]['金钱'].copy()
+        except:
+            return '现在身无分文呢~ 请先使用 .记录金钱 命令吧~'
+        error, reason, adjList = strToMoneyList(commandStr)
+        if error != 0:
+            return reason
+        totalVal = moneyList[0]*100 + moneyList[1]*10+ moneyList[0]
+        adjVal = adjList[0]*100 + adjList[1]*10+ adjList[0]
+        if totalVal + adjVal < 0:
+            return '余额不足, 请及时充值~'
+        # 当前的铜币不足以支付要求的铜币, 则用银币或金币换取
+        if moneyList[2] + adjList[2] < 0:
+            # 加上银币
+            if adjList[2]+moneyList[2]+moneyList[1]*10 < 0:
+                # 依然不够则加上金币
+                gpNum = math.ceil((adjList[2]+moneyList[2]+moneyList[1]*10)/-100)
+                moneyList[2] = adjList[2]+moneyList[2]+moneyList[1]*10+gpNum*100
+                moneyList[1] = 0
+                moneyList[0] -= gpNum
+            else:
+                #换取部分银币
+                spNum = math.ceil((adjList[2]+moneyList[2])/-10)
+                moneyList[2] = adjList[2]+moneyList[2]+spNum*10
+                moneyList[1] -= spNum
+        else:
+            moneyList[2] = adjList[2]+moneyList[2]
+
+        # 当前的银币不足以支付要求的银币, 则用铜币或金币换取
+        if moneyList[1] + adjList[1] < 0:
+            # 加上铜币
+            if adjList[1]+moneyList[1]+moneyList[2]//10 < 0:
+                # 再加上金币
+                gpNum = math.ceil((adjList[1]+moneyList[1]+moneyList[2]//10)/-10)
+                moneyList[1] = adjList[1]+moneyList[1]+moneyList[2]//10+gpNum*10
+                moneyList[2] -= moneyList[2]//10
+                moneyList[0] -= gpNum
+            else:
+                #换取部分铜币支付
+                cpNum = (adjList[1]+moneyList[1])*-10
+                moneyList[1] = 0
+                moneyList[2] -= cpNum
+        else:
+            moneyList[1] = adjList[1]+moneyList[1]
+
+        # 当前的金币不足以支付要求的金币, 则用银币或铜币换取
+        if moneyList[0] + adjList[0] < 0:
+            # 加上银币
+            if adjList[0]+moneyList[0]+moneyList[1]//10 < 0:
+                # 依然不够则加上铜币支付
+                cpNum = (adjList[0]+moneyList[0]+moneyList[1]//10)*-100
+                moneyList[0] = 0
+                moneyList[1] -= moneyList[1]//10
+                moneyList[2] -= cpNum
+            else:
+                spNum = (adjList[0]+moneyList[0])*-10
+                moneyList[0] = 0
+                moneyList[1] -= spNum
+        else:
+            moneyList[0] = adjList[0]+moneyList[0]
+        preMoneyStr = self.__ShowMoney(groupId, personId)
+        self.pcStateDict[groupId][personId]['金钱'] = moneyList
+        UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
+        curMoneyStr = self.__ShowMoney(groupId, personId)
+        return f'的金钱{commandStr} ({preMoneyStr}->{curMoneyStr})'
+
 
         
     def __GetJRRP(self, personId, date) -> int:
@@ -972,7 +1334,6 @@ class Bot:
     
     def __ClearInitList(self, groupId) -> str:
         try: #查找已存在的先攻信息
-            initInfo = self.initInfoDict[groupId]
             del self.initInfoDict[groupId]
             UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
             return '先攻列表已经删除啦'
@@ -1014,13 +1375,11 @@ class Bot:
             
         #initAdj 有两种情况, 一是调整值, 二是固定值
         if not initAdj or initAdj[0] in ['+','-'] or initAdj[:2] in ['优势','劣势']: #通过符号判断
-            error, resultStr, resultValList = RollDiceCommond('d20'+initAdj)
-            if error: return resultStr
-            initResult = sum(resultValList)
+            error, resultStr, rollResult = RollDiceCommond('d20'+initAdj)
         else:
-            error, resultStr, resultValList = RollDiceCommond(initAdj)
-            if error: return resultStr
-            initResult = sum(resultValList)
+            error, resultStr, rollResult = RollDiceCommond(initAdj)
+        if error: return resultStr
+        initResult = rollResult.totalValueList[0]
             
         if isPC: # maxhp = 0 或 -1 影响先攻列表的显示与否
             hp, maxhp = (0, 0)
@@ -1033,18 +1392,78 @@ class Bot:
         
         return f'{name}先攻:{resultStr}'
 
+    def __JoinTeam(self, groupId, personId, name) -> str:
+        try:
+            self.pcStateDict[groupId][personId]['数量加值']
+        except:
+            return '必须先录入角色卡才能加入队伍~'
+
+        try:
+            teamDict = self.teamInfoDict[groupId]
+            name = teamDict['name']
+        except:
+            teamDict = {}
+            if not name:
+                name = '无名小队'
+            teamDict['name'] = name
+            teamDict['members'] = []
+        teamDict['members'].append(personId)
+        self.teamInfoDict[groupId] = teamDict
+        UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
+        return f'成功加入{name}, 当前共{len(teamDict["members"])}人。 查看队伍信息请输入 .队伍信息 或 .完整队伍信息'
+
+    def __ClearTeam(self, groupId) -> str:
+        try: #查找已存在的先攻信息
+            del self.teamInfoDict[groupId]
+            UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
+            return '队伍信息已经删除啦'
+        except: #如未找到, 返回错误信息
+            return '无法删除不存在的队伍哦'
+
+    def __ShowTeam(self, groupId) -> str:
+        try:
+            teamDict = self.teamInfoDict[groupId]
+            name = teamDict['name']
+        except:
+            return '还没有创建队伍哦~'
+        result = f'{name}:'
+        for pId in teamDict['members']:
+            try:
+                nickName = self.nickNameDict[groupId][pId]
+            except:
+                continue
+            result += f'\n{self.__GetPlayerInfoShort(groupId, personId, nickName)}'
+            
+        return result
+
+    def __ShowTeamFull(self, groupId) -> str:
+        try:
+            teamDict = self.teamInfoDict[groupId]
+            name = teamDict['name']
+        except:
+            return '还没有创建队伍哦~'
+        result = f'{name}的完整信息:'
+
+        for pId in teamDict['members']:
+            try:
+                nickName = self.nickNameDict[groupId][pId]
+            except:
+                continue
+            result += f'\n{self.__GetPlayerInfoFull(groupId, personId, nickName)}'
+            
+        return result
+
+
     #第一个返回值是执行状况, -1为异常, 0为正常
     def __CookCheck(self, cookAdj, keywordList)->(int, str):
         result = ''
         #cookAdj 有两种情况, 一是调整值, 二是固定值
         if not cookAdj or cookAdj[0] in ['+','-'] or cookAdj[:2] in ['优势','劣势']: #通过符号判断
-            error, resultStr, resultValList = RollDiceCommond('d20'+cookAdj)
-            if error: return -1, resultStr
-            cookValue = sum(resultValList)
+            error, resultStr, rollResult = RollDiceCommond('d20'+cookAdj)
         else:
-            error, resultStr, resultValList = RollDiceCommond(cookAdj)
-            if error: return -1, resultStr
-            cookValue = sum(resultValList)
+            error, resultStr, rollResult = RollDiceCommond(cookAdj)
+        if error: return -1, resultStr
+        cookValue = rollResult.totalValueList[0]
 
         try:
             assert self.menuDict
@@ -1108,9 +1527,9 @@ class Bot:
         result = ''
         number = 1
         if numberStr:
-            error, resultStr, resultValList = RollDiceCommond(numberStr)
+            error, resultStr, rollResult = RollDiceCommond(numberStr)
             if error: return -1, resultStr
-            number = sum(resultValList)
+            number = rollResult.totalValueList[0]
             if number < 1:
                 return -1, '呃,您要不要点菜呢?'
             if number > 5:
@@ -1178,10 +1597,10 @@ class Bot:
         
         result = ''
         for i in range(times):
-            error, resultStr, resultValList = RollDiceCommond(f'6#4d6k3')
-            result += f'力量:{resultValList[0][0]}  敏捷:{resultValList[2][0]}  体质:{resultValList[1][0]}  '
-            result += f'智力:{resultValList[3][0]}  感知:{resultValList[4][0]}  魅力:{resultValList[5][0]}'
-            result += f'  共计:{sum([valList[0] for valList in resultValList])}'
+            error, resultStr, rollResult = RollDiceCommond(f'6#4d6k3')
+            result += f'力量:{rollResult.rawResultList[0][0]}  敏捷:{rollResult.rawResultList[1][0]}  体质:{rollResult.rawResultList[2][0]}  '
+            result += f'智力:{rollResult.rawResultList[3][0]}  感知:{rollResult.rawResultList[4][0]}  魅力:{rollResult.rawResultList[5][0]}'
+            result += f'  共计:{sum(rollResult.totalValueList)}'
             if i != (times-1) and times != 1:
                 result += '\n'
         return result
@@ -1209,7 +1628,11 @@ class Bot:
         elif subType == '查询':
             return HELP_COMMAND_QUERY_STR
         elif subType == 'hp':
-            return HELP_COMMAND_SETHP_STR
+            return HELP_COMMAND_HP_STR
+        elif subType == '法术位':
+            return HELP_COMMAND_SpellSlot_STR
+        elif subType == '金钱':
+            return HELP_COMMAND_Money_STR
         elif subType == 'jrrp':
             return HELP_COMMAND_JRRP_STR
         elif subType == 'send':
@@ -1224,6 +1647,8 @@ class Bot:
             return HELP_COMMAND_MENU_STR
         elif subType == '角色卡':
             return HELP_COMMAND_PC_STR
+        elif subType == '队伍':
+            return HELP_COMMAND_TEAM_STR
         elif subType == '检定':
             return HELP_COMMAND_CHECK_STR
         elif subType == '技能':
@@ -1282,9 +1707,9 @@ class Bot:
         try:
             deckList = self.deckDict[targetStr]
             size = len(deckList)
-            error, resultStr, resultValList = RollDiceCommond(f'd{size}')
+            error, resultStr, rollResult = RollDiceCommond(f'd{size}')
             if error: return resultStr
-            index = sum(resultValList)-1
+            index = rollResult.totalValueList[0]-1
             result = f'从{possResult[0]}中抽取的结果: \n{deckList[index]}'
             return result
         except:
@@ -1313,9 +1738,9 @@ class Bot:
             elif len(possResult) == 1:
                 deckList = self.deckDict[possResult[0]]
                 size = len(deckList)
-                error, resultStr, resultValList = RollDiceCommond(f'd{size}')
+                error, resultStr, rollResult = RollDiceCommond(f'd{size}')
                 if error: return resultStr
-                index = sum(resultValList)-1
+                index = rollResult.totalValueList[0]-1
                 result = f'从{possResult[0]}中抽取的结果: \n{deckList[index]}'
                 return result
             else:
@@ -1380,3 +1805,41 @@ def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str
             result = f'{name}的生命值减少了{resultStrHp}\n{name}当前生命值已经是0, 无法再减少了 (0->0)'
 
     return stateDict, result
+
+def strToMoneyList(commandStr) -> (int, str, list):
+    moneyList = [0,0,0]
+    gpIndex = commandStr.find('gp')
+    spIndex = commandStr.find('sp')
+    cpIndex = commandStr.find('cp')
+    if gpIndex == -1 and spIndex == -1 and cpIndex == -1:
+        try:
+            moneyList[0] = int(commandStr)
+            return 0, '', moneyList
+        except:
+            return -1, '找不到有效的关键字["gp", "sp", "cp"]', None
+    if gpIndex != -1:
+        try:
+            value = int(commandStr[0:gpIndex])
+            moneyList[0] = value
+            assert value >= -100000000 and value <= 100000000
+            gpIndex += 2
+        except:
+            return -1, f'{commandStr[0:gpIndex]}不是有效的数额', None
+    if spIndex != -1:
+        try:
+            startIndex = max(gpIndex, 0)
+            value = int(commandStr[startIndex:spIndex])
+            moneyList[1] = value
+            assert value >= -100000000 and value <= 100000000
+            spIndex += 2
+        except:
+            return -1, f'{commandStr[startIndex:spIndex]}不是有效的数额', None
+    if cpIndex != -1:
+        try:
+            startIndex = max([0, gpIndex, spIndex])
+            value = int(commandStr[startIndex:cpIndex])
+            moneyList[2] = value
+            assert value >= -100000000 and value <= 100000000
+        except:
+            return -1, f'{commandStr[startIndex:cpIndex]}不是有效的数额', None
+    return 0, '', moneyList

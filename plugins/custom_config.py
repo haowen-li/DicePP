@@ -13,6 +13,7 @@ LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nick_name.json')
 LOCAL_INITINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'init_info.json')
 LOCAL_PCSTATE_PATH = os.path.join(LOCAL_DATA_PATH, 'pc_state.json')
 LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_info.json')
+LOCAL_TEAMINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'team_info.json')
 
 LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
@@ -60,4 +61,9 @@ if os.path.exists(LOCAL_GROUPINFO_PATH) == False:
     UpdateJson(test_dict, LOCAL_GROUPINFO_PATH)
     print("Create file: " + LOCAL_GROUPINFO_PATH)
     del test_dict
-    
+
+if os.path.exists(LOCAL_TEAMINFO_PATH) == False:
+    test_dict = {'TEST_groupId':'Group Info'}
+    UpdateJson(test_dict, LOCAL_TEAMINFO_PATH)
+    print("Create file: " + LOCAL_TEAMINFO_PATH)
+    del test_dict
