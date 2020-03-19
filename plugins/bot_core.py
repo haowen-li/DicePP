@@ -343,7 +343,7 @@ class Bot:
         for pId in self.userInfoDict.keys():
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
-            if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) > datetime.timedelta(days = 1):
+            if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
                 userInfoCur['credit'] += 1
 
     # 接受输入字符串，返回输出字符串
