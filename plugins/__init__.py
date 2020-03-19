@@ -1,4 +1,4 @@
-__all__ = ["bot_tool"]
+__all__ = ["bot_core"]
 
 import time
 from time import sleep
