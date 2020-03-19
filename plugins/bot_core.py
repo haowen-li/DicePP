@@ -352,12 +352,12 @@ class Bot:
             try:
                 assert groupId in self.groupInfoDict.keys()
             except:
-                CreateNewGroupInfo(groupInfoDict, groupId)
+                CreateNewGroupInfo(self.groupInfoDict, groupId)
 
             try:
                 assert self.groupInfoDict[groupId]['active'] == True # 已有记录且是激活状态并继续执行命令
             except:
-                if self.groupInfoDict[groupId]['active'] == False and only_to_me == False: # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
+                if self.groupInfoDict[groupId]['active'] == False and only_to_me == False and inputStr.find('bot') == -1: # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
                     return None
 
         # 检测命令
@@ -391,41 +391,43 @@ class Bot:
             diceCommand = command.cArg[0]
             reason = command.cArg[1]
             isHide = command.cArg[2]
+            if diceCommand == '':
+                diceCommand = 'd'
             if len(reason) != 0:
                 reason = f'由于{reason},'
             error, resultStr, rollResult = RollDiceCommond(diceCommand)
             finalResult = f'{reason}{nickName}掷出了{resultStr}'
             if error:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, resultStr)]
-
-            try:
-                if (resultStr[:3] == 'D20' or resultStr[:4] == '1D20'):
-                    if resultValList[0] == 20:
-                        finalResult += ', 大成功!'
-                    elif resultValList[0] == 1:
-                        finalResult += ', 大失败!'
-                elif resultStr.find('次D20') != 1 or resultStr.find('次1D20') != 1:
-                    succTimes = 0
-                    failTimes = 0
-                    for resList in resultValList:
-                        if resList[0] == 20:
-                            succTimes += 1
-                        elif resList[0] == 1:
-                            failTimes += 1
-                    if succTimes != 0:
-                        finalResult += f'\n{succTimes}次大成功!'
-                    if failTimes != 0:
-                        finalResult += f'\n{failTimes}次大失败!'
-            except:
-                pass
-
-            if isHide:
-                if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '群聊时才能暗骰哦~')]
-                finalResult = f'暗骰结果:{finalResult}'
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList = [personId]),
-                        CommandResult(CoolqCommandType.MESSAGE, f'{nickName}进行了一次暗骰')]
             else:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
+                try:
+                    if (resultStr[:3] == 'D20' or resultStr[:4] == '1D20'):
+                        if resultValList[0] == 20:
+                            finalResult += ', 大成功!'
+                        elif resultValList[0] == 1:
+                            finalResult += ', 大失败!'
+                    elif resultStr.find('次D20') != 1 or resultStr.find('次1D20') != 1:
+                        succTimes = 0
+                        failTimes = 0
+                        for resList in resultValList:
+                            if resList[0] == 20:
+                                succTimes += 1
+                            elif resList[0] == 1:
+                                failTimes += 1
+                        if succTimes != 0:
+                            finalResult += f'\n{succTimes}次大成功!'
+                        if failTimes != 0:
+                            finalResult += f'\n{failTimes}次大失败!'
+                except:
+                    pass
+
+                if isHide:
+                    if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '群聊时才能暗骰哦~')]
+                    finalResult = f'暗骰结果:{finalResult}'
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList = [personId]),
+                            CommandResult(CoolqCommandType.MESSAGE, f'{nickName}进行了一次暗骰')]
+                else:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
 
         elif cType == CommandType.BOT:
             commandWeight = 3
@@ -434,7 +436,7 @@ class Bot:
             subType = command.cArg[0]
             if subType == 'show':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
-            if only_to_me:
+            elif only_to_me:
                 if subType == 'on':
                     result = self.__BotSwitch(groupId, True)
                 else:
@@ -464,135 +466,160 @@ class Bot:
         elif cType == CommandType.INIT:
             commandWeight = 4
             subType = command.cArg[0]
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            if not subType:
-                result = self.__GetInitList(groupId)
-            elif subType == 'clr':
-                result = self.__ClearInitList(groupId)
-            elif subType[:3] == 'del':
-                result = self.__RemoveInitList(groupId, subType[3:].strip())
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
-                return None
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                if not subType:
+                    result = self.__GetInitList(groupId)
+                elif subType == 'clr':
+                    result = self.__ClearInitList(groupId)
+                elif subType[:3] == 'del':
+                    result = self.__RemoveInitList(groupId, subType[3:].strip())
+                else:
+                    return None
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.RI:
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            initAdj = command.cArg[0]
-            name = command.cArg[1]
-            if not name:
-                isPC = True
-                name = nickName
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
-                isPC = False
-            result = self.__JoinInitList(groupId, personId, name, initAdj, isPC)
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                initAdj = command.cArg[0]
+                name = command.cArg[1]
+                if not name:
+                    isPC = True
+                    name = nickName
+                else:
+                    isPC = False
+                result = self.__JoinInitList(groupId, personId, name, initAdj, isPC)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.SETHP:
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            result = None
-            # Args: [targetStr, subType , hpStr, maxhpStr]
-            result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                result = None
+                # Args: [targetStr, subType , hpStr, maxhpStr]
+                result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.SHOWHP:
-            result = self.__ShowHP(groupId, personId)
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{nickName}{result}')]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                result = self.__ShowHP(groupId, personId)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{nickName}{result}')]
 
         elif cType == CommandType.CLRHP:
-            self.__ClearHP(groupId, personId)
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                self.__ClearHP(groupId, personId)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')]
 
         elif cType == CommandType.PC:
-            commandWeight = 4
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            subType = command.cArg[0]
-            infoStr = command.cArg[1]
-            if subType == '记录':
-                result = self.__SetPlayerInfo(groupId, personId, infoStr)
-            elif subType == '查看':
-                result = self.__GetPlayerInfo(groupId, personId, nickName)
-            elif subType == '完整':
-                result = self.__GetPlayerInfoFull(groupId, personId, nickName)
-            elif subType == '清除':
-                self.__ClearPlayerInfo(groupId, personId)
-                result = f'成功删除了{nickName}的角色卡~'
-            elif subType == '模板':
-                result = pcSheetTemplate
+            commandWeight = 3
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                subType = command.cArg[0]
+                infoStr = command.cArg[1]
+                if subType == '记录':
+                    result = self.__SetPlayerInfo(groupId, personId, infoStr)
+                elif subType == '查看':
+                    result = self.__GetPlayerInfo(groupId, personId, nickName)
+                elif subType == '完整':
+                    result = self.__GetPlayerInfoFull(groupId, personId, nickName)
+                elif subType == '清除':
+                    self.__ClearPlayerInfo(groupId, personId)
+                    result = f'成功删除了{nickName}的角色卡~'
+                elif subType == '模板':
+                    result = pcSheetTemplate
             
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.CHECK:
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            item = command.cArg[0]
-            diceCommand = command.cArg[1]
-            reason = command.cArg[2]
-            error, result = self.__PlayerCheck(groupId, personId, item, diceCommand, nickName)
-            if error == 0 and reason:
-                    result = f'由于{reason}, {result}'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                item = command.cArg[0]
+                diceCommand = command.cArg[1]
+                reason = command.cArg[2]
+                error, result = self.__PlayerCheck(groupId, personId, item, diceCommand, nickName)
+                if error == 0 and reason:
+                        result = f'由于{reason}, {result}'
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.SpellSlot:
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            # Args: [subType, *args]
-            subType = command.cArg[0]
-            if subType == '记录':
-                error, result = self.__SetSpellSlot(groupId, personId, command.cArg[1])
-            elif subType == '查看':
-                result = nickName + self.__ShowSpellSlot(groupId, personId)
-            elif subType == '更改':
-                level = command.cArg[1]
-                try:
-                    assert command.cArg[2][0] in ['+', '-']
-                    adjVal = int(command.cArg[2])
-                    assert adjVal > -10 and adjVal < 10
-                except:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{command.cArg[2]}是无效的法术位调整值~ 合法范围:[-9, +9]')]
-                result = nickName + self.__ModifySpellSlot(groupId, personId, level, adjVal)
-            elif subType == '清除':
-                result = self.__ClearSpellSlot(groupId, personId)
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                # Args: [subType, *args]
+                subType = command.cArg[0]
+                if subType == '记录':
+                    error, result = self.__SetSpellSlot(groupId, personId, command.cArg[1])
+                elif subType == '查看':
+                    result = nickName + self.__ShowSpellSlot(groupId, personId)
+                elif subType == '更改':
+                    level = command.cArg[1]
+                    try:
+                        assert command.cArg[2][0] in ['+', '-']
+                        adjVal = int(command.cArg[2])
+                        assert adjVal > -10 and adjVal < 10
+                    except:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{command.cArg[2]}是无效的法术位调整值~ 合法范围:[-9, +9]')]
+                    result = nickName + self.__ModifySpellSlot(groupId, personId, level, adjVal)
+                elif subType == '清除':
+                    result = self.__ClearSpellSlot(groupId, personId)
 
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.MONEY:
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            subType = command.cArg[0]
-            if subType == '记录':
-                error, result = self.__SetMoney(groupId, personId, command.cArg[1])
-                result = result
-            elif subType == '清除':
-                result = self.__ClearMoney(groupId, personId)
-            elif subType == '更改':
-                result = nickName + self.__ModifyMoney(groupId, personId, command.cArg[1])
-            elif subType == '查看':
-                result = nickName + '当前的财富:' +self.__ShowMoney(groupId, personId)
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                subType = command.cArg[0]
+                if subType == '记录':
+                    error, result = self.__SetMoney(groupId, personId, command.cArg[1])
+                    result = result
+                elif subType == '清除':
+                    result = self.__ClearMoney(groupId, personId)
+                elif subType == '更改':
+                    result = nickName + self.__ModifyMoney(groupId, personId, command.cArg[1])
+                elif subType == '查看':
+                    result = nickName + '当前的财富:' +self.__ShowMoney(groupId, personId)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.TEAM:
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            subType = command.cArg[0]
-            if subType == '加入':
-                result = self.__JoinTeam(groupId, personId, command.cArg[1])
-            elif subType == '清除':
-                result = self.__ClearTeam(groupId)
-            elif subType == '查看':
-                result = self.__ShowTeam(groupId)
-            elif subType == '完整':
-                result = self.__ShowTeamFull(groupId)
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[personId]),
-                        CommandResult(CoolqCommandType.MESSAGE, '已将队伍的完整信息私聊给你啦~')]
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                subType = command.cArg[0]
+                if subType == '加入':
+                    result = self.__JoinTeam(groupId, personId, command.cArg[1])
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                elif subType == '清除':
+                    result = self.__ClearTeam(groupId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                elif subType == '查看':
+                    result = self.__ShowTeam(groupId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                elif subType == '完整':
+                    result = self.__ShowTeamFull(groupId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[personId]),
+                            CommandResult(CoolqCommandType.MESSAGE, '已将队伍的完整信息私聊给你啦~')]
 
         elif cType == CommandType.SEND:
             commandWeight = 4
             if len(command.cArg[0]) < 10 or len(command.cArg[0])>100:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '请不要随便骚扰Master哦~ (信息长度限制为10~100)')]
-            if groupId:
-                message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
             else:
-                message = f'来自用户{personId}的信息: {command.cArg[0]}'
-            feedback = '已将信息转发给Master了~'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
-                    CommandResult(CoolqCommandType.MESSAGE, feedback)]
+                if groupId:
+                    message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
+                else:
+                    message = f'来自用户{personId}的信息: {command.cArg[0]}'
+                feedback = '已将信息转发给Master了~'
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
+                        CommandResult(CoolqCommandType.MESSAGE, feedback)]
 
         elif cType == CommandType.JRRP:
             commandWeight = 2
@@ -632,25 +659,31 @@ class Bot:
 
         elif cType == CommandType.COOK:
             commandWeight = 4
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            cookAdj = command.cArg[0]
-            keywordList = command.cArg[1]
-            error, cookResult = self.__CookCheck(cookAdj, keywordList)
-            if error == -1:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
-            cookResult = f'{nickName}的烹饪结果是:\n{cookResult}'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                cookAdj = command.cArg[0]
+                keywordList = command.cArg[1]
+                error, cookResult = self.__CookCheck(cookAdj, keywordList)
+                if error == -1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
+                else:
+                    cookResult = f'{nickName}的烹饪结果是:\n{cookResult}'
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
 
         elif cType == CommandType.ORDER:
             commandWeight = 4
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            number = command.cArg[0]
-            keywordList = command.cArg[1]
-            error, orderResult = self.__OrderDish(number, keywordList)
-            if error == -1:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
-            orderResult = f'{nickName}的菜单:\n{orderResult}'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                number = command.cArg[0]
+                keywordList = command.cArg[1]
+                error, orderResult = self.__OrderDish(number, keywordList)
+                if error == -1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
+                else:
+                    orderResult = f'{nickName}的菜单:\n{orderResult}'
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
 
         elif cType == CommandType.TodayMenu:
             commandWeight = 4
@@ -670,20 +703,21 @@ class Bot:
         elif cType == CommandType.MASTER:
             if personId not in MASTER:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有Master才能使用这个命令!')]
-            subType = command.cArg[0]
-            if subType == 'savedata':
-                self.UpdateLocalData()
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '成功将所有资料保存到本地咯~')]
-            if subType == 'credit':
-                try:
-                    commandArgs = command.cArg[1].split(':')
-                    targetId = commandArgs[0].strip()
-                    value = int(commandArgs[1])
-                    self.userInfoDict[targetId]['credit'] += value
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度{int2str(value)}'),
-                                          CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}', personIdList=[targetId])]
-                except Exception as e:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'好感度调整失败, 原因是:\n{e}')]
+            else:
+                subType = command.cArg[0]
+                if subType == 'savedata':
+                    self.UpdateLocalData()
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '成功将所有资料保存到本地咯~')]
+                elif subType == 'credit':
+                    try:
+                        commandArgs = command.cArg[1].split(':')
+                        targetId = commandArgs[0].strip()
+                        value = int(commandArgs[1])
+                        self.userInfoDict[targetId]['credit'] += value
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度{int2str(value)}'),
+                                              CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}', personIdList=[targetId])]
+                    except Exception as e:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'好感度调整失败, 原因是:\n{e}')]
 
 
         # 最后处理
