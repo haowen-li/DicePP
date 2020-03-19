@@ -3,13 +3,14 @@ __all__ = ["bot_tool"]
 import time
 from time import sleep
 
+import nonebot
 from nonebot import on_command, CommandSession
 from nonebot import on_natural_language, NLPSession, IntentCommand
 from nonebot import on_request, RequestSession, on_notice, NoticeSession
 from nonebot.permission import PRIVATE_FRIEND,PRIVATE_GROUP, PRIVATE_DISCUSS, PRIVATE_OTHER, PRIVATE
 from nonebot.permission import DISCUSS, GROUP_MEMBER, GROUP_ADMIN, GROUP_OWNER, GROUP, SUPERUSER, EVERYBODY
 
-from .bot_tool import Bot, CoolqCommandType
+from .bot_core import Bot, CoolqCommandType
 from .custom_config import *
 
 bot = Bot()
@@ -46,7 +47,6 @@ async def processCommand(session: CommandSession):
             try:
                 nonebot = session.bot
                 for gId in commandResult.groupIdList:
-                    await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
                     await nonebot.set_group_leave(group_id = gId)
             except:
                 pass
@@ -91,9 +91,38 @@ async def _(session: NLPSession):
     if index != -1:
         return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text[index:], 'only_to_me':True})
 
+# @nonebot.scheduler.scheduled_job(
+#     'interval',
+#     # weeks=0,
+#     # days=0,
+#     # hours=0,
+#     minutes=5,
+#     # seconds=0,
+#     # start_date=time.now(),
+#     # end_date=None,
+# )
+# async def _():
+#     bot.UpdateTime(datetime.now())
+
+
+@nonebot.scheduler.scheduled_job(
+    'cron',
+    hour=4,
+)
+async def _():
+    await bot.DailyUpdate()
+
+
+@nonebot.scheduler.scheduled_job(
+    'interval',
+    minutes=10,
+)
+async def _():
+    bot.UpdateLocalData()
+
 
 @on_command('radio', permission = SUPERUSER)
-async def processCommand(session: CommandSession):
+async def _(session: CommandSession):
     msg = session.current_arg_text
     nonebot = session.bot
     try:
@@ -110,7 +139,7 @@ async def processCommand(session: CommandSession):
             pass
 
 @on_command('debug', permission = SUPERUSER)
-async def processCommand(session: CommandSession):
+async def _(session: CommandSession):
     if DEBUG_MODE == True:
         await session.send('关闭调试模式')
         DEBUG_MODE = False
@@ -119,7 +148,7 @@ async def processCommand(session: CommandSession):
         DEBUG_MODE = True
 
 @on_command('limit', permission = SUPERUSER)
-async def processCommand(session: CommandSession):
+async def _(session: CommandSession):
     if LIMIT_MODE == True:
         await session.send('关闭限制模式')
         LIMIT_MODE = False

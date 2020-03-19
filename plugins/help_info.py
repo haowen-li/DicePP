@@ -1,6 +1,8 @@
 from .custom_config import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .utils import pcAbilityDict, pcSavingDict, pcSkillDict, pcSheetTemplate
-HELP_STR = 'Dice++ by 梨子 Ver 0.5.3\n'
+VERSION = '0.5.4'
+
+HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
 HELP_STR += '.help指令 查看指令列表\n'
 HELP_STR += '.help链接 查看源码地址\n'
@@ -9,16 +11,16 @@ HELP_STR += '.help更新 查看最近更新内容\n'
 HELP_STR += '本骰娘的绝活包括:优劣势投骰, 强大的查询功能, 记录角色卡(生命值, 属性, 法术环位, 金钱), 加强版先攻列表等\n'
 HELP_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bug和提出意见~'
 
-SHOW_STR = 'Dice++ by 梨子 Ver 0.5.3 @骰娘 .bot on/off 开启或关闭骰娘\n'
+SHOW_STR = f'Dice++ by 梨子 Ver {VERSION} @骰娘 .bot on/off 开启或关闭骰娘\n'
 SHOW_STR += '输入.help更新 查看最近更新内容\n'
 SHOW_STR += '本骰娘的绝活包括:优劣势投骰, 强大的查询功能, 记录角色卡(生命值, 属性, 法术环位, 金钱), 加强版先攻列表等\n'
 SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bug和提出意见~'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/16 v0.5.3:\n1.新增了队伍, 法术位与金钱系列指令\n2.新增了一些查询内容, 包括PHB背景, DMG魔法物品相关的规则等\n3.修复了一些错误, 包括在hp指令中出现的抗性导致的结果不正确\n'
+HELP_COMMAND_UPDATE_STR = '2020/3/19 v0.5.4:\n1.加入了刷屏检测功能\n2.hp指令与法术位指令的识别条件放宽了\n3.部分新拓展EGtW内容可查询了\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/16 v0.5.3:\n1.新增了队伍, 法术位与金钱系列指令\n2.新增了一些查询内容, 包括PHB背景, DMG魔法物品相关的规则等\n3.修复了一些错误, 包括在hp指令中出现的抗性导致的结果不正确\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/13 v0.5.2:\n1.可以查询怪物图鉴(by花作噫, 梨子)了(包括怪物种类, 怪物清单等)\n2.投骰时如果第一个骰子是d20会提示大成功或大失败\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/10 v0.5.1:\n1.可以查询拓展与模组魔法物品(by惠惠)和拓展职业(by惠惠, 梨子)了\n2.nn指令也会修改先攻列表中的名字\n3.录入角色卡和检定时会自动转换一些同义词, 如:说服->游说\n4.新增.send功能\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/10 v0.5.0:\n1.新增录入角色卡和一键检定功能\n2.直接at骰娘在关闭状态下也可以响应\n3.sethp关键字被简化为hp\n4.dismiss指令仅在@骰娘的情况下有效\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/8 v0.4.1:\n1.新增点菜, 今日菜单功能\n2.加入大量可查询内容\n3.可以识别群名片作为默认昵称了\n'
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
@@ -105,7 +107,7 @@ HELP_COMMAND_INIT_STR += '.init del 地精 //在先攻列表中删除地精'
 
 HELP_COMMAND_QUERY_STR =  '查询资料: .查询 查询目标\n'
 HELP_COMMAND_QUERY_STR += '查询指令支持部分匹配, 可用/区分多个关键字\n'
-HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 玩家手册(by梨子,花作噫,邪恶,赵小安,睡帽), 全拓展法术与专长, 怪物图鉴(by花作噫, 梨子), 拓展职业(by惠惠, 梨子), 核心与拓展魔法物品(by花作噫, 惠惠)\n'
+HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 玩家手册(by梨子,花作噫,邪恶,赵小安,睡帽), 全拓展法术与专长, 怪物图鉴(by花作噫, 梨子), 城主指南部分规则(by梨子), 拓展职业(by惠惠, 梨子), 核心与拓展魔法物品(by花作噫, 惠惠)\n'
 HELP_COMMAND_QUERY_STR += '示例:\n'
 HELP_COMMAND_QUERY_STR += '.查询 借机攻击\n'
 HELP_COMMAND_QUERY_STR += '.查询 长弓\n'
@@ -116,6 +118,7 @@ HELP_COMMAND_DRAW_STR += '目标牌库支持部分匹配, 可用/区分多个关
 HELP_COMMAND_DRAW_STR += '查看支持的牌库请输入.draw'
 
 HELP_COMMAND_HP_STR =  '记录/调整生命值: .hp ([调整目标])([符号]) [骰子表达式/数值](/[最大生命值])\n'
+HELP_COMMAND_HP_STR += 'hp关键字可出现在任意处\n'
 HELP_COMMAND_HP_STR += '生命值信息将在.init的结果中显示\n'
 HELP_COMMAND_HP_STR += '不输入符号与目标时默认为对自己的"="操作\n'
 HELP_COMMAND_HP_STR += '不设置生命值则会显示已损失生命值\n'
@@ -128,12 +131,16 @@ HELP_COMMAND_HP_STR += '.hp 20/30 // 将自己的生命值设置为20, 最大生
 HELP_COMMAND_HP_STR += '.hp 杰+ 1d8+3 // 在先攻列表中匹配名字中有杰的对象, 然后给其增加1d8+3的生命值\n'
 HELP_COMMAND_HP_STR += '.hp clr// 删除自己的生命值信息\n'
 HELP_COMMAND_HP_STR += '.hp // 显示自己的生命值信息'
+HELP_COMMAND_HP_STR += '.地精-10hp // 对地精造成10点伤害\n'
+HELP_COMMAND_HP_STR += '.地精hp-10 // 对地精造成10点伤害'
 
-HELP_COMMAND_SpellSlot_STR =  '记录/调整法术位:\n.记录法术位\n.(查看)法术位\n.[1~9]环法术位[+n/-n]\n.清除法术位\n'
+HELP_COMMAND_SpellSlot_STR =  '记录/调整法术位:\n.记录法术位\n.(查看)法术位\n.[1~9]环(法术位)[+n/-n]\n.清除法术位\n'
 HELP_COMMAND_SpellSlot_STR += '示例:\n'
 HELP_COMMAND_SpellSlot_STR += '.记录法术位 4/3/2  //表示4个1环, 3个2环, 2个3环\n'
 HELP_COMMAND_SpellSlot_STR += '.2环法术位-1  //消耗一个2环法术位\n'
-HELP_COMMAND_SpellSlot_STR += '.1环法术位+2  //增加两个1环法术位'
+HELP_COMMAND_SpellSlot_STR += '.1环法术位+2  //增加两个1环法术位\n'
+HELP_COMMAND_SpellSlot_STR += '.3环+2  //增加两个3环法术位\n'
+HELP_COMMAND_SpellSlot_STR += '.1环+2  //增加两个1环法术位'
 
 HELP_COMMAND_Money_STR =  '记录/调整金钱:\n.记录金钱\n.(查看)金钱\n.金钱[+/-][xgp/ysp/zcp]\n.清除金钱\n'
 HELP_COMMAND_Money_STR += '默认的单位是gp\n'

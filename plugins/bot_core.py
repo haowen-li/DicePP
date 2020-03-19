@@ -156,6 +156,8 @@ def ParseInput(inputStr):
             return Command(CommandType.MONEY, ['查看'])
         else:
             return Command(CommandType.MONEY, ['更改', commandStr])
+    elif commandType == '好感度':
+        return Command(CommandType.CREDIT, [])
     elif 'hp' in commandType:
         commandStr = commandType[:commandType.find('hp')]+commandStr
         subType = None
@@ -237,8 +239,9 @@ class Bot:
         self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
         self.userInfoDict = ReadJson(LOCAL_USERINFO_PATH)
         self.teamInfoDict = ReadJson(LOCAL_TEAMINFO_PATH)
-        UpdateAllUserInfo(userDict)
-        UpdateAllGroupInfo(groupDict)
+        
+        UpdateAllGroupInfo(self.groupInfoDict)
+        UpdateAllUserInfo(self.userInfoDict)
 
         print(f'个人资料库加载成功!')
         # 尝试加载查询资料库
@@ -338,13 +341,13 @@ class Bot:
 
     def DailyUpdate(self):
         for pId in self.userInfoDict.keys():
-            userInfocur = self.userInfoDict[pId]
-            userInfocur['warning'] = 0
-            if GetCurrentDateRaw() - Str2Datetime(userInfocur['commandDate']) > datetime.timedelta(days = 1)
+            userInfoCur = self.userInfoDict[pId]
+            userInfoCur['warning'] = 0
+            if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) > datetime.timedelta(days = 1):
+                userInfoCur['credit'] += 1
 
     # 接受输入字符串，返回输出字符串
     def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> list:
-        cType = command.cType
         if groupId: # 当是群聊信息时, 检查是否是激活状态
             try:
                 assert groupId in self.groupInfoDict.keys()
@@ -354,7 +357,7 @@ class Bot:
             try:
                 assert self.groupInfoDict[groupId]['active'] == True # 已有记录且是激活状态并继续执行命令
             except:
-                if (self.groupInfoDict[groupId]['active'] != True) and only_to_me == False: # 已有记录且是非激活状态, 且不是单独指令, 则只执行开关命令
+                if self.groupInfoDict[groupId]['active'] == False and only_to_me == False: # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
                     return None
 
         # 检测命令
@@ -383,6 +386,7 @@ class Bot:
         # 处理命令
         commandResultList = []
         commandWeight = 1
+        cType = command.cType
         if cType == CommandType.Roll:
             diceCommand = command.cArg[0]
             reason = command.cArg[1]
@@ -655,6 +659,14 @@ class Bot:
             result = f'{nickName}的{result}'
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
+        elif cType == CommandType.CREDIT:
+            try:
+                credit = userInfoCur['credit']
+                result = f'对{nickName}的好感度为{credit}~'
+            except:
+                result = '啊咧, 遇到一点问题, 请汇报给Master~'
+            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+
         elif cType == CommandType.MASTER:
             if personId not in MASTER:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有Master才能使用这个命令!')]
@@ -664,12 +676,12 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '成功将所有资料保存到本地咯~')]
             if subType == 'credit':
                 try:
-                    commandArgs = commandStr.split(' ')
+                    commandArgs = command.cArg[1].split(':')
                     targetId = commandArgs[0].strip()
                     value = int(commandArgs[1])
-                    userInfoDict[targetId]['credit'] += value
+                    self.userInfoDict[targetId]['credit'] += value
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度{int2str(value)}'),
-                                          CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}', personIdList=[targetId])]
+                                          CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}', personIdList=[targetId])]
                 except Exception as e:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'好感度调整失败, 原因是:\n{e}')]
 
@@ -1695,7 +1707,7 @@ class Bot:
         return possDish, delKeyList
 
     def __BotSwitch(self, groupId, activeState) -> str:
-        self.groupInfoDict[groupId]['Active'] = activeState
+        self.groupInfoDict[groupId]['active'] = activeState
         # UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
         if activeState:
             return '伊丽莎白来啦~'
@@ -1965,40 +1977,59 @@ def CreateNewGroupInfo(groupDict, groupId):
     groupDict[groupId] = groupInfoTemp
 
 def UpdateAllUserInfo(userDict):
-    deleted_list = []
+    deletedUserList = []
+    deletedList = []
     for userId in userDict.keys():
-        for curK in userDict[userId].keys():
-            if curK not in userInfoTemp.keys():
-                deleted_list.append((userId, curK))
+        userInfoCur = userDict[userId]
+        if type(userInfoCur) != dict:
+            deletedUserList.append(userId)
+            continue
 
-        for k in userInfoTemp.keys()
-            if k not in userDict[userId].keys():
-                userDict[userId] = userInfoTemp[k]
+        for curK in userInfoCur.keys():
+            if not curK in userInfoTemp.keys():
+                deletedList.append((userId, curK))
 
-    for pair in deleted_list:
+        for k in userInfoTemp.keys():
+            if not k in userInfoCur.keys():
+                userInfoCur[k] = userInfoTemp[k]
+
+    for pair in deletedList:
         del userDict[pair[0]][pair[1]]
 
+    for userId in deletedUserList:
+        del userDict[userId]
+
 def UpdateAllGroupInfo(groupDict):
-    deleted_list = []
+    deletedGroupList = []
+    deletedList = []
     for groupId in groupDict.keys():
+        groupInfoCur = groupDict[groupId]
+
+        if type(groupInfoCur) != dict:
+            deletedGroupList.append(groupId)
+            continue
+
         # Temp code, delete after next update
         try:
-            groupDict['active'] = groupDict['Active']
+            groupInfoCur['active'] = bool(groupInfoCur['Active'])
         except:
             pass
 
-        for curK in groupDict[groupId].keys():
-            if curK not in groupInfoTemp.keys():
-                deleted_list.append((groupId, curK))
+        for curK in groupInfoCur.keys():
+            if not curK in groupInfoTemp.keys():
+                deletedList.append((groupId, curK))
 
-        for k in groupInfoTemp.keys()
-            if k not in groupDict[groupId].keys():
-                groupDict[groupId] = groupInfoTemp[k]
+        for k in groupInfoTemp.keys():
+            if not k in groupInfoCur.keys():
+                groupInfoCur[k] = groupInfoTemp[k]
 
-    for pair in deleted_list:
+    for pair in deletedList:
         del groupDict[pair[0]][pair[1]]
 
-def DetectSpam(currentDate, lastDateStr, accuNum, weight = 1) -> bool, str, int:
+    for groupId in deletedGroupList:
+        del groupDict[groupId]
+
+def DetectSpam(currentDate, lastDateStr, accuNum, weight = 1) -> (bool, str, int):
     lastDate = Str2Datetime(lastDateStr)
     if currentDate - lastDate > MESSAGE_LIMIT_TIME:
         return False, Datetime2Str(currentDate), 0
