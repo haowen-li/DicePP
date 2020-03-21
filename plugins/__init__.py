@@ -117,7 +117,7 @@ async def _(session: NLPSession):
 
 @nonebot.scheduler.scheduled_job(
     'cron',
-    hour=4,
+    hour=8,
     timezone='Asia/Shanghai'
 )
 async def _():

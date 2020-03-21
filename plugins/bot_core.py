@@ -355,7 +355,7 @@ class Bot:
                 except Exception as e:
                     print(e)
             assert len(self.jokeDict) > 0
-            print(f'笑话资料库加载成功! 共{len(self.jokeDict)}个条目')
+            print(f'笑话资料库加载成功!')
         except: 
             print(f'笑话资料库加载失败!')
             self.jokeDict = None
@@ -795,6 +795,7 @@ class Bot:
                     for gId in self.groupInfoDict.keys():
                         groupInfoDict[gId]['noticeBool'] = True
                         groupInfoDict[gId]['noticeStr'] = command.cArg[1]
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'通知已成功设置, 内容是:\n{command.cArg[1]}')]
 
 
         # 最后处理
