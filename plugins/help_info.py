@@ -1,6 +1,6 @@
 from .custom_config import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .utils import pcAbilityDict, pcSavingDict, pcSkillDict, pcSheetTemplate
-VERSION = '0.5.4'
+VERSION = '0.5.5'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -13,10 +13,14 @@ HELP_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bu
 
 SHOW_STR = f'Dice++ by 梨子 Ver {VERSION} @骰娘 .bot on/off 开启或关闭骰娘\n'
 SHOW_STR += '输入.help更新 查看最近更新内容\n'
-SHOW_STR += '本骰娘的绝活包括:优劣势投骰, 强大的查询功能, 记录角色卡(生命值, 属性, 法术环位, 金钱), 加强版先攻列表等\n'
+SHOW_STR += '伊丽莎白的绝活包括:优劣势投骰, 全面的查询功能, 记录角色卡(生命值, 属性, 法术环位, 金钱), 实用先攻列表等\n'
 SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bug和提出意见~'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/19 v0.5.4:\n1.加入了刷屏检测功能\n2.hp指令与法术位指令的识别条件放宽了\n3.部分新拓展EGtW内容可查询了\n'
+FIRST_TIME_STR = '伊丽莎白来咯~\n输入.help查看使用帮助\n请不要禁言和踢骰娘, 暂时不需要我的话就at我以后再使用bot off或dismiss功能吧~'
+LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
+
+HELP_COMMAND_UPDATE_STR = '2020/3/21 v0.5.5:\n1.7天不使用骰娘会在警告后退群\n2.更新了新拓展EGtW内容(.查询egtw 可查看最新内容)\n3.增加了更新通知与入群提醒功能\n4.会检测可能过时的先攻列表\n'
+HELP_COMMAND_UPDATE_STR = '2020/3/19 v0.5.4:\n1.加入刷屏检测功能\n2.hp指令与法术位指令的识别条件放宽了\n3.部分新拓展EGtW内容可查询了\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/16 v0.5.3:\n1.新增了队伍, 法术位与金钱系列指令\n2.新增了一些查询内容, 包括PHB背景, DMG魔法物品相关的规则等\n3.修复了一些错误, 包括在hp指令中出现的抗性导致的结果不正确\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/13 v0.5.2:\n1.可以查询怪物图鉴(by花作噫, 梨子)了(包括怪物种类, 怪物清单等)\n2.投骰时如果第一个骰子是d20会提示大成功或大失败\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/10 v0.5.1:\n1.可以查询拓展与模组魔法物品(by惠惠)和拓展职业(by惠惠, 梨子)了\n2.nn指令也会修改先攻列表中的名字\n3.录入角色卡和检定时会自动转换一些同义词, 如:说服->游说\n4.新增.send功能\n'
@@ -99,7 +103,7 @@ HELP_COMMAND_RI_STR += '.ri优势+1 //以昵称加入先攻列表\n'
 HELP_COMMAND_RI_STR += '.ri20 地精 //将地精以固定先攻20加入先攻列表'
 
 HELP_COMMAND_INIT_STR =  '显示先攻列表：.init ([可选指令]) [可选指令]:clr 清空先攻列表 del 删除指定先攻条目\n'
-HELP_COMMAND_INIT_STR += 'del指令支持部分匹配\n'
+HELP_COMMAND_INIT_STR += 'del指令支持部分匹配\nhp信息也会在先攻列表上显示\n'
 HELP_COMMAND_INIT_STR += '示例:\n'
 HELP_COMMAND_INIT_STR += '.init //查看先攻列表\n'
 HELP_COMMAND_INIT_STR += '.init clr //清空先攻列表\n'

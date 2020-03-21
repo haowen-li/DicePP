@@ -2,6 +2,7 @@ __all__ = ["bot_core"]
 
 import time
 from time import sleep
+import datetime
 
 import nonebot
 from nonebot import on_command, CommandSession
@@ -116,7 +117,7 @@ async def _(session: NLPSession):
 
 @nonebot.scheduler.scheduled_job(
     'cron',
-    hour=9,
+    hour=4,
     timezone='Asia/Shanghai'
 )
 async def _():

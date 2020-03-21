@@ -12,7 +12,7 @@ commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'se
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱']
-commandKeywordList += ['savedata', 'credit']
+commandKeywordList += ['savedata', 'credit', 'notice']
 commandKeywordReList = ['.*检定', '.*豁免', '.*法术位', '.*hp', '^[1-9]环']
 
 @unique
@@ -174,7 +174,7 @@ def GetCurrentDateRaw():
     return current_date
 
 def Str2Datetime(inputStr):
-    return datatime.datetime.strptime(inputStr, '%Y_%m_%d_%H_%M_%S')
+    return datetime.datetime.strptime(inputStr, '%Y_%m_%d_%H_%M_%S')
 
 def Datetime2Str(inputDatetime):
     return inputDatetime.strftime('%Y_%m_%d_%H_%M_%S')

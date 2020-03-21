@@ -151,6 +151,8 @@ def ParseInput(inputStr):
         return Command(CommandType.MASTER, ['savedata'])
     elif commandType == 'credit':
         return Command(CommandType.MASTER, ['credit', commandStr])
+    elif commandType == 'notice':
+        return Command(CommandType.MASTER, ['notice', commandStr])
     elif commandType == '金钱':
         if commandStr == '':
             return Command(CommandType.MONEY, ['查看'])
@@ -341,12 +343,36 @@ class Bot:
         UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
 
     def DailyUpdate(self):
+        result = []
         for pId in self.userInfoDict.keys():
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
+            # 最近一天有过指令则增加好感度
             if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
                 userInfoCur['credit'] += 10
-        return [CommandResult(CoolqCommandType.MESSAGE, '成功更新今日数据'), MASTER]
+
+        warningGroup = []
+        dismissGroup = []
+        for gId in self.groupInfoDict.keys():
+            groupInfoCur = self.groupInfoDict[gId]
+            lastTime = GetCurrentDateRaw() - Str2Datetime(groupInfoCur['commandDate'])
+            if lastTime >= datetime.timedelta(days = 7):
+                if groupInfoCur['warning'] <= 1:
+                    groupInfoCur['warning'] += 1
+                    warningGroup.append(gId)
+                else:
+                    dismissGroup.append(gId)
+            else:
+                groupInfoCur['warning'] = 0
+
+        if warningGroup:
+            result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR), warningGroup]
+        if dismissGroup:
+            result += [CommandResult(CoolqCommandType.DISMISS), dismissGroup]
+            for gId in dismissGroup:
+                del self.groupInfoDict[gId]
+        result += [CommandResult(CoolqCommandType.MESSAGE, '成功更新今日数据'), MASTER]
+        return result
 
     # 接受输入字符串，返回输出字符串
     def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> list:
@@ -355,11 +381,11 @@ class Bot:
                 assert groupId in self.groupInfoDict.keys()
             except:
                 CreateNewGroupInfo(self.groupInfoDict, groupId)
-
+            groupInfoCur = self.groupInfoDict[groupId]
             try:
-                assert self.groupInfoDict[groupId]['active'] == True # 已有记录且是激活状态并继续执行命令
+                assert groupInfoCur['active'] == True # 已有记录且是激活状态并继续执行命令
             except:
-                if self.groupInfoDict[groupId]['active'] == False and only_to_me == False and inputStr.find('bot') == -1: # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
+                if groupInfoCur['active'] == False and only_to_me == False and inputStr.find('bot') == -1: # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
                     return None
 
         # 检测命令
@@ -720,6 +746,10 @@ class Bot:
                                               CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}', personIdList=[targetId])]
                     except Exception as e:
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'好感度调整失败, 原因是:\n{e}')]
+                elif subType == 'notice':
+                    for gId in self.groupInfoDict.keys():
+                        groupInfoDict[gId]['noticeBool'] = True
+                        groupInfoDict[gId]['noticeStr'] = command.cArg[1]
 
 
         # 最后处理
@@ -746,6 +776,11 @@ class Bot:
                         userInfoCur['warning'] += 1
                 except:
                     pass
+            if groupId:
+                groupInfoCur['commandDate'] = GetCurrentDateStr()
+                if groupInfoCur['noticeBool']:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, groupInfoCur['noticeStr'])]
+                    groupInfoCur['noticeBool'] = False
             return commandResultList
         else:
             return None
@@ -1551,10 +1586,16 @@ class Bot:
             hp, maxhp = (0, 0)
         name = name.lower()
         initInfo['initList'][name] = {'id':personId, 'init':initResult, 'hp':hp, 'maxhp':maxhp, 'alive':True, 'isPC':isPC}
-        self.initInfoDict[groupId] = initInfo
         # UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
-        
-        return f'{name}先攻:{resultStr}'
+        result = f'{name}先攻:{resultStr}'
+        try:
+            if GetCurrentDateRaw() - Str2Datetime(initInfo['date']) > datetime.timedelta(hours=1):
+                result += '\n先攻列表上一次更新是一小时以前, 请注意~'
+            initInfo['date'] = GetCurrentDateStr()
+        except:
+            pass
+        self.initInfoDict[groupId] = initInfo
+        return result
 
     def __JoinTeam(self, groupId, personId, name) -> str:
         try:
@@ -1844,10 +1885,10 @@ class Bot:
                     possResult.append(k)
 
             if len(possResult) > 1:
-                if len(possResult) <= 30:
+                if len(possResult) <= 50:
                     result = f'找到多个匹配的条目: {possResult}'
                 else:
-                    result = f'找到多个匹配的条目: {possResult[:30]}等, 共{len(possResult)}个条目'
+                    result = f'找到多个匹配的条目: {possResult[:50]}等, 共{len(possResult)}个条目'
                 return result
             elif len(possResult) == 1:
                 result = str(self.queryInfoDict[possResult[0]])
