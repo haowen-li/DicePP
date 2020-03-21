@@ -793,8 +793,8 @@ class Bot:
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'好感度调整失败, 原因是:\n{e}')]
                 elif subType == 'notice':
                     for gId in self.groupInfoDict.keys():
-                        groupInfoDict[gId]['noticeBool'] = True
-                        groupInfoDict[gId]['noticeStr'] = command.cArg[1]
+                        self.groupInfoDict[gId]['noticeBool'] = True
+                        self.groupInfoDict[gId]['noticeStr'] = command.cArg[1]
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'通知已成功设置, 内容是:\n{command.cArg[1]}')]
 
 
