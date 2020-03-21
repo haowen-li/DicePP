@@ -63,11 +63,15 @@ def ParseInput(inputStr):
     if commandType == 'r':
         # 参数包含两部分, 骰子表达式与原因, 原因为可选项
         isHide = False
+        isShort = False
         if commandStr and commandStr[0] == 'h':
             commandStr = commandStr[1:]
             isHide = True
+        if commandStr and commandStr[0] == 's':
+            commandStr = commandStr[1:]
+            isShort = True
         diceCommand, reason = SplitDiceCommand(commandStr)
-        return Command(CommandType.Roll,[diceCommand, reason, isHide])
+        return Command(CommandType.Roll,[diceCommand, reason, isHide, isShort])
     # 更改昵称命令
     elif commandType == 'nn':
         nickName = commandStr
@@ -123,6 +127,8 @@ def ParseInput(inputStr):
         return Command(CommandType.ORDER, [diceCommand, keywrodList])
     elif commandType == '今日菜单':
         return Command(CommandType.TodayMenu, [])
+    elif commandType == '今日笑话':
+        return Command(CommandType.TodayJoke, [])
     elif commandType == '角色卡' or commandType == '查看角色卡':
         return Command(CommandType.PC, ['查看', commandStr])
     elif commandType == '记录角色卡':
@@ -333,6 +339,32 @@ class Bot:
             print(f'菜谱资料库加载失败! {e}')
             self.menuDict = None
 
+        # 尝试加载笑话资料库
+        try:
+            filesPath = os.listdir(LOCAL_JOKEINFO_DIR_PATH) #读取所有文件名
+            filesPath = sorted(filesPath)
+            self.jokeList = []
+            for fp in filesPath:
+                try:
+                    assert fp[-4:] == '.txt'
+                    absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
+                    with open(absPath, 'r') as f:
+                        jokeCur = ''
+                        data = f.readline()
+                        while data:
+                            jokeCur += data
+                            data = f.readline()
+                    jokeCur = jokeCur.strip()
+                    if jokeCur:
+                        self.jokeList.append(jokeCur)
+                except Exception as e:
+                    print(e)
+            assert len(self.jokeList) > 0
+            print(f'笑话资料库加载成功! 共{len(self.jokeList)}个条目')
+        except: 
+            print(f'笑话资料库加载失败!')
+            self.jokeList = None
+
 
     def UpdateLocalData(self):
         UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
@@ -419,25 +451,34 @@ class Bot:
             diceCommand = command.cArg[0]
             reason = command.cArg[1]
             isHide = command.cArg[2]
+            isShort = command.cArg[3]
             if diceCommand == '':
                 diceCommand = 'd'
             if len(reason) != 0:
                 reason = f'由于{reason},'
             error, resultStr, rollResult = RollDiceCommond(diceCommand)
-            finalResult = f'{reason}{nickName}掷出了{resultStr}'
             if error:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, resultStr)]
             else:
+                if isShort:
+                    if len(rollResult.totalValueList) == 1:
+                        resultStr = str(rollResult.totalValueList[0])
+                    else:
+                        resultStr = '{'
+                        for totalVal in rollResult.totalValueList:
+                            resultStr += f'{totalVal}, '
+                        resultStr = resultStr[:-2] + '}'
+                finalResult = f'{reason}{nickName}掷出了{resultStr}'
                 try:
                     if (resultStr[:3] == 'D20' or resultStr[:4] == '1D20'):
-                        if resultValList[0] == 20:
+                        if rollResult.rawResultList[0][0] == 20:
                             finalResult += ', 大成功!'
-                        elif resultValList[0] == 1:
+                        elif rollResult.rawResultList[0][0] == 1:
                             finalResult += ', 大失败!'
                     elif resultStr.find('次D20') != 1 or resultStr.find('次1D20') != 1:
                         succTimes = 0
                         failTimes = 0
-                        for resList in resultValList:
+                        for resList in rollResult.rawResultList:
                             if resList[0] == 20:
                                 succTimes += 1
                             elif resList[0] == 1:
@@ -477,9 +518,10 @@ class Bot:
                                   CommandResult(CoolqCommandType.DISMISS,groupIdList = [groupId])]
 
         elif cType == CommandType.NickName:
-            if not groupId: groupId = 'Default'
+            if not groupId: newGroupId = 'Default'
+            else: newGroupId = groupId
             newNickName = command.cArg[0]
-            result = self.__UpdateNickName(groupId, personId, newNickName)
+            result = self.__UpdateNickName(newGroupId, personId, newNickName)
             if result == 1:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'要用本来的名字称呼你吗? 了解!')]
             elif result == 0:
@@ -718,6 +760,13 @@ class Bot:
             date = GetCurrentDateRaw()
             result = self.__GetTodayMenu(personId, date)
             result = f'{nickName}的{result}'
+            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.TodayJoke:
+            commandWeight = 4
+            date = GetCurrentDateRaw()
+            result = self.__GetTodayJoke(personId, date)
+            result = f'{nickName}的今日随机TRPG笑话:\n{result}'
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.CREDIT:
@@ -1979,6 +2028,26 @@ class Bot:
                 result += f'{typeStr}:{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
 
         return result[:-1]
+
+    def __GetTodayJoke(self, personId, date) -> str:
+        seed = 0
+        temp = 1
+        seed += date.year + date.month*13 + date.day*6
+        for c in personId:
+            seed += ord(c) * temp
+            temp += 3
+            if temp > 10:
+                temp = -4
+        seed = int(seed)
+        np.random.seed(seed)
+
+        try:
+            assert self.jokeList
+        except:
+            return '笑话资料库加载失败了呢...'
+
+        jokeCur = RandomSelectList(self.jokeList, 1)[0]
+        return jokeCur
 
 def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
     assert subType in ['=', '+', '-']

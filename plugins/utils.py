@@ -9,7 +9,7 @@ from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
 commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send']
-commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度']
+commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱']
 commandKeywordList += ['savedata', 'credit', 'notice']
@@ -42,6 +42,7 @@ class CommandType(Enum):
     TEAM = 21
     MONEY = 22
     CREDIT = 23
+    TodayJoke = 24
 
 
 @unique

@@ -29,6 +29,11 @@ LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
 LOCAL_DECKINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'deck_info')
 LOCAL_MENUINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'menu_info')
+LOCAL_JOKEINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'joke_info')
+
+ALL_LOCAL_DIR_PATH = [LOCAL_DATA_PATH, LOCAL_CUSTOM_DATA_PATH, LOCAL_QUERYINFO_DIR_PATH,
+                      LOCAL_DECKINFO_DIR_PATH, LOCAL_DECKINFO_DIR_PATH, LOCAL_MENUINFO_DIR_PATH,
+                      LOCAL_JOKEINFO_DIR_PATH]
 
 GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',
  '珍贵的水晶球(听说吞下去可以转运)', '偷偷带出来的淬毒匕首', '父皇宝库里的幽蓝魔杖',
@@ -44,9 +49,10 @@ MENU_KEYWORD_LIST = MENU_CUISINE_LIST + MENU_TYPE_LIST + MENU_STYLE_LIST
 COOK_FAIL_STR_LIST = ['略加思索', '灵机一动', '毫不犹豫', '啊!就是这个', '不如这样']
 
 
-if os.path.exists(LOCAL_DATA_PATH) == False:
-    os.makedirs(LOCAL_DATA_PATH)
-    print("Make dir: " + LOCAL_DATA_PATH)
+for dirPath in ALL_LOCAL_DIR_PATH:
+    if os.path.exists(dirPath) == False:
+        os.makedirs(dirPath)
+        print("Make dir: " + dirPath)
 
 for path in ALL_LOCAL_DATA_PATH:
     if os.path.exists(path) == False:
