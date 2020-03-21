@@ -247,6 +247,7 @@ class Bot:
         # 尝试加载查询资料库
         try:
             filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH) #读取所有文件名
+            filesPath = sorted(filesPath)
             print(f'找到以下查询资料: {filesPath}')
             self.queryInfoDict = {}
             for fp in filesPath:
