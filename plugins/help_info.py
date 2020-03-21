@@ -1,6 +1,6 @@
 from .custom_config import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .utils import pcAbilityDict, pcSavingDict, pcSkillDict, pcSheetTemplate
-VERSION = '0.5.5'
+VERSION = '0.5.6'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'

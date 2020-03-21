@@ -343,27 +343,22 @@ class Bot:
         try:
             filesPath = os.listdir(LOCAL_JOKEINFO_DIR_PATH) #读取所有文件名
             filesPath = sorted(filesPath)
-            self.jokeList = []
+            print(f'找到以下笑话资料: {filesPath}')
+            self.jokeDict = {}
             for fp in filesPath:
                 try:
-                    assert fp[-4:] == '.txt'
+                    assert fp[-5:] == '.json'
                     absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
-                    with open(absPath, 'r') as f:
-                        jokeCur = ''
-                        data = f.readline()
-                        while data:
-                            jokeCur += data
-                            data = f.readline()
-                    jokeCur = jokeCur.strip()
-                    if jokeCur:
-                        self.jokeList.append(jokeCur)
+                    currentJokeDict = ReadJson(absPath)
+                    self.jokeDict.update(currentJokeDict)
+                    print(f'成功加载{fp}')
                 except Exception as e:
                     print(e)
-            assert len(self.jokeList) > 0
-            print(f'笑话资料库加载成功! 共{len(self.jokeList)}个条目')
+            assert len(self.jokeDict) > 0
+            print(f'笑话资料库加载成功! 共{len(self.jokeDict)}个条目')
         except: 
             print(f'笑话资料库加载失败!')
-            self.jokeList = None
+            self.jokeDict = None
 
 
     def UpdateLocalData(self):
@@ -380,6 +375,7 @@ class Bot:
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
             # 最近一天有过指令则增加好感度
+            print(userInfoCur['commandDate'], Str2Datetime(userInfoCur['commandDate']))
             if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
                 userInfoCur['credit'] += 10
 
@@ -398,12 +394,12 @@ class Bot:
                 groupInfoCur['warning'] = 0
 
         if warningGroup:
-            result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR), warningGroup]
+            result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR, groupIdList = warningGroup)]
         if dismissGroup:
-            result += [CommandResult(CoolqCommandType.DISMISS), dismissGroup]
+            result += [CommandResult(CoolqCommandType.DISMISS, groupIdList = dismissGroup)]
             for gId in dismissGroup:
                 del self.groupInfoDict[gId]
-        result += [CommandResult(CoolqCommandType.MESSAGE, '成功更新今日数据'), MASTER]
+        result += [CommandResult(CoolqCommandType.MESSAGE, '成功更新今日数据', MASTER)]
         return result
 
     # 接受输入字符串，返回输出字符串
@@ -2042,11 +2038,11 @@ class Bot:
         np.random.seed(seed)
 
         try:
-            assert self.jokeList
+            assert self.jokeDict
         except:
             return '笑话资料库加载失败了呢...'
 
-        jokeCur = RandomSelectList(self.jokeList, 1)[0]
+        jokeCur = RandomSelectList(self.jokeDict['word'], 1)[0]
         return jokeCur
 
 def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
