@@ -17,39 +17,48 @@ bot = Bot()
 DEBUG_MODE = False
 LIMIT_MODE = False
 
-@on_command('PROCESS_COMMAND', only_to_me=True)
-async def processCommand(session: CommandSession):
-    commandResultList = session.get('result')
-    
-    if commandResultList is None:
-        return
 
-    if DEBUG_MODE:
-        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
-
+async def processCommandResult(session, commandResultList):
     for commandResult in commandResultList:
         if commandResult.coolqCommand == CoolqCommandType.MESSAGE:
             # 如果群聊列表不为空, 则对指定的群发送消息
             if commandResult.groupIdList:
-                nonebot = session.bot
+                if session:
+                    botNone = session.bot
+                else:
+                    botNone = nonebot.get_bot()
                 for gId in commandResult.groupIdList:
-                    await nonebot.send_group_msg(group_id=gId, message=commandResult.resultStr)
+                    await botNone.send_group_msg(group_id=gId, message=commandResult.resultStr)
             else:
                 # 如果用户列表不为空, 则对指定的用户发送消息
-                nonebot = session.bot
+                if session:
+                    botNone = session.bot
+                else:
+                    botNone = nonebot.get_bot()
                 if commandResult.personIdList:
                     for pId in commandResult.personIdList:
-                        await nonebot.send_private_msg(user_id=pId, message=commandResult.resultStr)
+                        await botNone.send_private_msg(user_id=pId, message=commandResult.resultStr)
                 # 否则原样返回
                 else:
                     await session.send(commandResult.resultStr)
         elif commandResult.coolqCommand == CoolqCommandType.DISMISS:
             try:
-                nonebot = session.bot
+                if session:
+                    botNone = session.bot
+                else:
+                    botNone = nonebot.get_bot()
                 for gId in commandResult.groupIdList:
-                    await nonebot.set_group_leave(group_id = gId)
+                    await botNone.set_group_leave(group_id = gId)
             except:
                 pass
+
+@on_command('PROCESS_COMMAND', only_to_me=True)
+async def processCommand(session: CommandSession):
+    commandResultList = session.get('result')
+    if DEBUG_MODE:
+        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
+    if commandResultList:
+        await processCommandResult(session, commandResultList)
 
 
 @processCommand.args_parser
@@ -70,8 +79,8 @@ async def _(session: CommandSession):
             memberInfo = nonebot.get_group_member_info(groupId, uid)
             if memberInfo['card']:
                 uname = memberInfo['card']
-        except:
-            pass
+        except Exception as e:
+            print(e)
         commandResult = bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
 
     session.state['result'] = commandResult
@@ -107,10 +116,13 @@ async def _(session: NLPSession):
 
 @nonebot.scheduler.scheduled_job(
     'cron',
-    hour=4,
+    hour=9,
+    timezone='Asia/Shanghai'
 )
 async def _():
-    await bot.DailyUpdate()
+    commandResultList = bot.DailyUpdate()
+    if commandResultList:
+        await processCommandResult(None, commandResultList)
 
 
 @nonebot.scheduler.scheduled_job(
@@ -138,24 +150,6 @@ async def _(session: CommandSession):
         except:
             pass
 
-@on_command('debug', permission = SUPERUSER)
-async def _(session: CommandSession):
-    if DEBUG_MODE == True:
-        await session.send('关闭调试模式')
-        DEBUG_MODE = False
-    else:
-        await session.send('开启调试模式')
-        DEBUG_MODE = True
-
-@on_command('limit', permission = SUPERUSER)
-async def _(session: CommandSession):
-    if LIMIT_MODE == True:
-        await session.send('关闭限制模式')
-        LIMIT_MODE = False
-    else:
-        await session.send('开启限制模式')
-        LIMIT_MODE = True
-
 
 # 将函数注册为好友请求处理器
 @on_request('friend')
@@ -182,11 +176,11 @@ async def _(session: RequestSession):
                 #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
                 nonebot = session.bot
                 try:
-                    strangerInfo = await nonebot.get_stranger_info(user_id = session.ctx["user_id"])
+                    strangerInfo = await nonebot.get_stranger_info(user_id = str(session.ctx["user_id"]))
                 except:
                     strangerInfo = {'nickname':''}
                 try:
-                    groupInfo = await nonebot.get_group_info (group_id = session.ctx["group_id"])
+                    groupInfo = await nonebot.get_group_info (group_id = str(session.ctx["group_id"]))
                 except:
                     groupInfo = {'group_name':''}
                     

@@ -130,7 +130,7 @@ HELP_COMMAND_HP_STR += '.hp 地精- 1d12+2 // 对地精造成1d12+2点伤害\n'
 HELP_COMMAND_HP_STR += '.hp 20/30 // 将自己的生命值设置为20, 最大生命值设置为30\n'
 HELP_COMMAND_HP_STR += '.hp 杰+ 1d8+3 // 在先攻列表中匹配名字中有杰的对象, 然后给其增加1d8+3的生命值\n'
 HELP_COMMAND_HP_STR += '.hp clr// 删除自己的生命值信息\n'
-HELP_COMMAND_HP_STR += '.hp // 显示自己的生命值信息'
+HELP_COMMAND_HP_STR += '.hp // 显示自己的生命值信息\n'
 HELP_COMMAND_HP_STR += '.地精-10hp // 对地精造成10点伤害\n'
 HELP_COMMAND_HP_STR += '.地精hp-10 // 对地精造成10点伤害'
 

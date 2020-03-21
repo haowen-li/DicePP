@@ -344,7 +344,8 @@ class Bot:
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
             if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
-                userInfoCur['credit'] += 1
+                userInfoCur['credit'] += 10
+        return [CommandResult(CoolqCommandType.MESSAGE, '成功更新今日数据'), MASTER]
 
     # 接受输入字符串，返回输出字符串
     def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> list:
@@ -646,7 +647,7 @@ class Bot:
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.QUERY:
-            commandWeight = 2
+            commandWeight = 3
             targetStr = str(command.cArg[0])
             queryResult = self.__QueryInfo(targetStr)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, queryResult)]
