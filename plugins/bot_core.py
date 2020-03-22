@@ -1938,6 +1938,8 @@ class Bot:
             return HELP_COMMAND_TEAM_STR
         elif '检定' in subType:
             return HELP_COMMAND_CHECK_STR
+        elif subType == '长休':
+            return HELP_COMMAND_LONGREST_STR
         elif subType == '技能':
             return HELP_COMMAND_SKILL_STR
         else:
