@@ -11,9 +11,9 @@ from .type_assert import TypeAssert
 commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send']
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
-commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱']
+commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱', '长休']
 commandKeywordList += ['savedata', 'credit', 'notice']
-commandKeywordReList = ['.*检定', '.*豁免', '.*法术位', '.*hp', '^[1-9]环']
+commandKeywordReList = ['^..检定', '^..豁免', '^..攻击', '.*法术位', '.*hp', '^[1-9]环']
 
 @unique
 class CommandType(Enum):
@@ -43,6 +43,7 @@ class CommandType(Enum):
     MONEY = 22
     CREDIT = 23
     TodayJoke = 24
+    REST = 25
 
 
 @unique
@@ -55,6 +56,8 @@ pcAbilityDict = {'力量':'力量调整值', '敏捷':'敏捷调整值', '体质
                 '智力':'智力调整值', '感知':'感知调整值', '魅力':'魅力调整值'}
 pcSavingDict = {'力量豁免':'力量调整值', '敏捷豁免':'敏捷调整值', '体质豁免':'体质调整值',
                 '智力豁免':'智力调整值', '感知豁免':'感知调整值', '魅力豁免':'魅力调整值', '死亡豁免':'无调整值'}
+pcAttackDict = {'力量攻击':'力量调整值', '敏捷攻击':'敏捷调整值', '体质攻击':'体质调整值',
+                '智力攻击':'智力调整值', '感知攻击':'感知调整值', '魅力攻击':'魅力调整值'}
 pcSkillDict = {'运动':'力量调整值', '体操':'敏捷调整值', '巧手':'敏捷调整值', '隐匿':'敏捷调整值', '先攻':'敏捷调整值',
                '奥秘':'智力调整值', '历史':'智力调整值', '调查':'智力调整值', '自然':'智力调整值', '宗教':'智力调整值',
                '驯兽':'感知调整值', '洞悉':'感知调整值', '医药':'感知调整值', '察觉':'感知调整值', '求生':'感知调整值',
@@ -63,10 +66,10 @@ pcSkillDict = {'运动':'力量调整值', '体操':'敏捷调整值', '巧手':
 pcSkillSynonymDict = {'特技':'体操', '潜行':'隐匿', '隐蔽':'隐匿', '躲藏':'隐匿', '驯养':'驯兽', '驯服':'驯兽', '医疗':'医药',
                        '医术':'医药', '观察':'察觉', '生存':'求生', '欺骗':'欺瞒', '哄骗':'欺瞒', '唬骗':'欺瞒', '威胁':'威吓',
                        '妙手':'巧手', '说服':'游说'}
-pcCheckDictShort = {**pcSavingDict, **pcSkillDict}
+pcCheckDictShort = {**pcSavingDict, **pcSkillDict, **pcAttackDict}
 pcCheckDictLong = {**pcAbilityDict, **pcCheckDictShort}
 
-pcSheetTemplate = '姓名:约翰\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:力量豁免/体质豁免/运动/威吓/察觉/洞悉\n额外加值:豁免+1/检定+1/先攻+2/说服+1d4\n最大法术位:4/3/3/1\n金钱:50gp 30sp'
+pcSheetTemplate = '姓名:无名氏\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:智力豁免/体质豁免/敏捷攻击/智力攻击/运动/威吓/察觉/洞悉\n额外加值:敏捷攻击+2/豁免+1/检定+1/先攻+2/说服+1d4\n最大法术位:4/3/3/1\n金钱:50gp 30sp'
 
 china_tz = datetime.timezone(datetime.timedelta(hours=8), '北京时间')
     

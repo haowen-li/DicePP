@@ -164,6 +164,8 @@ def ParseInput(inputStr):
             return Command(CommandType.MONEY, ['查看'])
         else:
             return Command(CommandType.MONEY, ['更改', commandStr])
+    elif commandType == '长休':
+            return Command(CommandType.REST, ['长休'])
     elif commandType == '好感度':
         return Command(CommandType.CREDIT, [])
     elif 'hp' in commandType:
@@ -229,6 +231,9 @@ def ParseInput(inputStr):
         diceCommand, reason = SplitDiceCommand(commandStr)
         return Command(CommandType.CHECK, [commandType[:-2], diceCommand, reason])
     elif '豁免' in commandType:
+        diceCommand, reason = SplitDiceCommand(commandStr)
+        return Command(CommandType.CHECK, [commandType, diceCommand, reason])
+    elif '攻击' in commandType:
         diceCommand, reason = SplitDiceCommand(commandStr)
         return Command(CommandType.CHECK, [commandType, diceCommand, reason])
 
@@ -375,7 +380,6 @@ class Bot:
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
             # 最近一天有过指令则增加好感度
-            print(userInfoCur['commandDate'], Str2Datetime(userInfoCur['commandDate']))
             if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
                 userInfoCur['credit'] += 10
 
@@ -399,7 +403,7 @@ class Bot:
             result += [CommandResult(CoolqCommandType.DISMISS, groupIdList = dismissGroup)]
             for gId in dismissGroup:
                 del self.groupInfoDict[gId]
-        result += [CommandResult(CoolqCommandType.MESSAGE, '成功更新今日数据', MASTER)]
+        result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}', MASTER)]
         return result
 
     # 接受输入字符串，返回输出字符串
@@ -471,7 +475,7 @@ class Bot:
                             finalResult += ', 大成功!'
                         elif rollResult.rawResultList[0][0] == 1:
                             finalResult += ', 大失败!'
-                    elif resultStr.find('次D20') != 1 or resultStr.find('次1D20') != 1:
+                    elif resultStr.find('次D20') != -1 or resultStr.find('次1D20') != -1:
                         succTimes = 0
                         failTimes = 0
                         for resList in rollResult.rawResultList:
@@ -674,6 +678,15 @@ class Bot:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[personId]),
                             CommandResult(CoolqCommandType.MESSAGE, '已将队伍的完整信息私聊给你啦~')]
 
+        elif cType == CommandType.REST:
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                subType = command.cArg[0]
+                if subType == '长休':
+                    result = self.__LongRest(groupId, personId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, nickName+result)]
+
         elif cType == CommandType.SEND:
             commandWeight = 4
             if len(command.cArg[0]) < 10 or len(command.cArg[0])>100:
@@ -806,22 +819,22 @@ class Bot:
             if userWarning >= 2 or banTimes >= 3:
                 return None
 
-            if personId not in MASTER:
-                # 刷屏检测
-                try:
-                    isSpam, dateStr, accuNum = DetectSpam(GetCurrentDateRaw(),
-                        userInfoCur['commandDate'], userInfoCur['commandAccu'], commandWeight)
-                    userInfoCur['commandDate'] = dateStr
-                    userInfoCur['commandAccu'] = accuNum
-                    if isSpam:
-                        if userWarning == 0:
-                            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 黄牌警告!')]
-                        elif userWarning == 1:
-                            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 不理你了!')]
-                            userInfoCur['ban'] += 1
-                        userInfoCur['warning'] += 1
-                except:
-                    pass
+            # 刷屏检测
+            try:
+                isSpam, dateStr, accuNum = DetectSpam(GetCurrentDateRaw(),
+                    userInfoCur['commandDate'], userInfoCur['commandAccu'], commandWeight)
+                userInfoCur['commandDate'] = dateStr
+                userInfoCur['commandAccu'] = accuNum
+                if isSpam and not personId in MASTER:
+                    if userWarning == 0:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 黄牌警告!')]
+                    elif userWarning == 1:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 不理你了!')]
+                        userInfoCur['ban'] += 1
+                    userInfoCur['warning'] += 1
+            except Exception as e:
+                print(f'DetectSpam:{e}')
+
             if groupId:
                 groupInfoCur['commandDate'] = GetCurrentDateStr()
                 if groupInfoCur['noticeBool']:
@@ -833,9 +846,6 @@ class Bot:
 
 
 
-
-
-    
     def __UpdateNickName(self, groupId, personId, nickName) -> int:
         try:
             assert type(self.nickNameDict[groupId]) == dict
@@ -845,7 +855,6 @@ class Bot:
         if nickName: # 如果指定了昵称, 则更新昵称
             self.nickNameDict[groupId][personId] = nickName
             # UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
-
             # 尝试修改先攻列表
             try:
                 initList = self.initInfoDict[groupId]['initList']
@@ -893,8 +902,6 @@ class Bot:
         if subType != '=' and maxhpStr:
             return '增加或减少生命值的时候不能修改最大生命值哦'
         # 先尝试解读hpStr和maxhpStr
-        # if hpStr.find('抗性') != -1 or hpStr.find('易伤') != -1:
-        #     return '抗性与易伤关键字不能出现在此处!'
         error, resultStrHp, rollResult = RollDiceCommond(hpStr)
         if error: return error
         try:
@@ -923,52 +930,52 @@ class Bot:
             pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, nickName, resultStrHp)
 
             self.pcStateDict[groupId][personId] = pcState
-            # UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-            return result
         else:
-            # 尝试对先攻列中的目标修改生命值信息
-            try: #查找已存在的先攻信息
-                initInfo = self.initInfoDict[groupId]
-            except: #如未找到, 返回错误信息
-                return '只能指定在先攻列表中的其他角色, 请先建立先攻列表吧~'
+            targetList = targetStr.split('/')
+            result = ''
+            for targetStr in targetList:
+                # 尝试对先攻列中的目标修改生命值信息
+                try: #查找已存在的先攻信息
+                    initInfo = self.initInfoDict[groupId]
+                except: #如未找到, 返回错误信息
+                    return '只能指定在先攻列表中的其他角色, 请先建立先攻列表吧~'
 
-            # 尝试搜索targetStr有关的信息
-            if not targetStr in initInfo['initList'].keys(): 
-                possName = []
-                for k in initInfo['initList'].keys():
-                    if k.find(targetStr) != -1:
-                        possName.append(k)
-                if len(possName) == 0:
-                    return f'在先攻列表中找不到与"{targetStr}"相关的名字哦'
-                elif len(possName) > 1:
-                    return f'在先攻列表找到多个可能的名字: {[ n for n in possName]}'
+                # 尝试搜索targetStr有关的信息
+                if not targetStr in initInfo['initList'].keys(): 
+                    possName = []
+                    for k in initInfo['initList'].keys():
+                        if k.find(targetStr) != -1:
+                            possName.append(k)
+                    if len(possName) == 0:
+                        return f'在先攻列表中找不到与"{targetStr}"相关的名字哦'
+                    elif len(possName) > 1:
+                        return f'在先攻列表找到多个可能的名字: {[ n for n in possName]}'
+                    else:
+                        targetStr = possName[0]
+
+                targetInfo = initInfo['initList'][targetStr]
+                # 如果指定的目标是pc, 则直接修改pcStateDict然后返回
+                if targetInfo['isPC']:
+                    targetId = targetInfo['id']
+                    try:
+                        pcState = self.pcStateDict[groupId][targetId]
+                        pcState['hp']
+                    except:
+                        self.__CreateHP(groupId, targetId)
+                        pcState = self.pcStateDict[groupId][targetId]
+
+                    pcState, resultCur = ModifyHPInfo(pcState, subType, hp, maxhp, targetStr, resultStrHp)
+                    self.pcStateDict[groupId][targetId] = pcState
+                # 否则修改先攻列表中的信息并保存
                 else:
-                    targetStr = possName[0]
+                    targetInfo, resultCur = ModifyHPInfo(targetInfo, subType, hp, maxhp, targetStr, resultStrHp)
+                    self.initInfoDict[groupId]['initList'][targetStr] = targetInfo
+                if result == '':
+                    result = resultCur
+                else:
+                    result += '\n'+resultCur
 
-            targetInfo = initInfo['initList'][targetStr]
-            # 如果指定的目标是pc, 则直接修改pcStateDict然后返回
-            if targetInfo['isPC']:
-                targetId = targetInfo['id']
-                try:
-                    pcState = self.pcStateDict[groupId][targetId]
-                    pcState['hp']
-                except:
-                    self.__CreateHP(groupId, targetId)
-                    pcState = self.pcStateDict[groupId][targetId]
-
-                pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, targetStr, resultStrHp)
-
-                self.pcStateDict[groupId][targetId] = pcState
-                # UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-                return result
-            # 否则修改先攻列表中的信息并保存
-            else:
-                targetInfo, result = ModifyHPInfo(targetInfo, subType, hp, maxhp, targetStr, resultStrHp)
-                self.initInfoDict[groupId]['initList'][targetStr] = targetInfo
-                # UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
-                return result
-
-        return '未知的错误发生了'
+        return result
 
     def __CreateHP(self, groupId, personId, hp=0, maxhp=0):
         try:
@@ -1013,6 +1020,7 @@ class Bot:
         infoLength = len(infoStr)
         numberStrList = [str(n) for n in range(10)] + [' ']
         pcAbilityList = list(pcAbilityDict.keys())
+        # 处理六大基本属性和熟练加值
         for ability in pcAbilityList + ['熟练加值']:
             index = infoStr.find(ability)
             if index == -1:
@@ -1033,13 +1041,19 @@ class Bot:
                 pcState['额外'+ability] = ''
             except:
                 return f'关键词"{ability}"对应的属性值"{abilityVal}"无效, 请查看.角色卡模板'
+
+        # 计算基础属性调整值
         for ability in pcAbilityList:
             pcState[ability+'调整值'] = math.floor((pcState[ability]-10)/2)
         pcState['无调整值'] = 0
+
+        # 初始化属性值与额外加值
         checkKeywordList = list(pcCheckDictShort.keys())
         for key in checkKeywordList:
             pcState[key] = pcState[pcCheckDictShort[key]]
             pcState['额外'+key] = ''
+
+        # 给技能, 豁免, 攻击加上熟练加值
         index = infoStr.find('熟练项:')
         lastIndex = infoStr[index:].find('\n')
         if index == -1:
@@ -1049,7 +1063,6 @@ class Bot:
         else:
             lastIndex += index
         index += 4
-
         pcState['熟练项'] = []
         profList = [p.strip() for p in infoStr[index:lastIndex].split('/') if p.strip()]
         
@@ -1062,6 +1075,7 @@ class Bot:
                 pcState['熟练项'].append(profItem)
             else:
                 return f'{profItem}不是有效的熟练关键词, 请查看.角色卡模板'
+
         pcState['额外加值'] = []
         # linesep = os.linesep
         linesep = '\n'
@@ -1098,12 +1112,6 @@ class Bot:
                         pcState['额外'+ability] += addStr
                     for skill in pcSkillDict.keys():
                         pcState['额外'+skill] += addStr
-                # elif checkItem in pcAbilityDict.keys(): # 如: 力量+2
-                #     pcState['额外'+checkItem] += addStr
-                #     pcState['额外'+checkItem+'豁免'] += addStr
-                #     for skill in pcSkillDict.keys():
-                #         if checkItem in pcSkillDict[skill]:
-                #             pcState['额外'+skill] += addStr
                 else:
                     return f'额外加值中的{checkItem}不是有效的熟练关键词, 请查看.角色卡模板'
                 pcState['额外加值'].append(additionItem)
@@ -1323,7 +1331,7 @@ class Bot:
             else:
                 completeCommand = 'd20'+diceCommand+pcState['额外'+item]
             error, resultStr, rollResult = RollDiceCommond(completeCommand)
-            if error: return -1, resultStr
+            if error != 0: return -1, resultStr
             checkResult = rollResult.totalValueList[0]
         else:
             return -1, f'输入的指令有点问题呢~'
@@ -1523,8 +1531,39 @@ class Bot:
         curMoneyStr = self.__ShowMoney(groupId, personId)
         return f'的金钱{commandStr} ({preMoneyStr}->{curMoneyStr})'
 
+    def __LongRest(self, groupId, personId) -> str:
+        isValidSlot = False
+        isValidHp = False
+        try:
+            maxSlotList = self.pcStateDict[groupId][personId]['最大法术位']
+            currentSlotList = self.pcStateDict[groupId][personId]['当前法术位']
+            isValidSlot = True
+        except:
+            pass
+        try:
+            hp = self.pcStateDict[groupId][personId]['hp']
+            maxhp = self.pcStateDict[groupId][personId]['maxhp']
+            isValidHp = True
+        except:
+            pass
+        if not isValidSlot and not isValidHp:
+            return '至少要设置最大生命值和最大法术位中的一项'
+        result = ''
+        if isValidHp:
+            result = f'\n生命值: {hp}->{maxhp}'
+            self.pcStateDict[groupId][personId]['hp'] = maxhp
+        if isValidSlot:
+            result += '\n法术环位:\n'
+            for i in range(9):
+                if maxSlotList[i] != currentSlotList[i]:
+                    result += f'{currentSlotList[i]}->{maxSlotList[i]}/'
+                else:
+                    result += f'{maxSlotList[i]}/'
+            result = result[:-1]
+            self.pcStateDict[groupId][personId]['当前法术位'] = maxSlotList.copy()
+        return result
 
-        
+
     def __GetJRRP(self, personId, date) -> int:
         seed = 0
         temp = 1
@@ -1658,9 +1697,11 @@ class Bot:
                 name = '无名小队'
             teamDict['name'] = name
             teamDict['members'] = []
-        teamDict['members'].append(personId)
+        if not personId in teamDict['members']:
+            teamDict['members'].append(personId)
+        else:
+            return f'你已经加入{name}啦~'
         self.teamInfoDict[groupId] = teamDict
-        # UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
         return f'成功加入{name}, 当前共{len(teamDict["members"])}人。 查看队伍信息请输入 .队伍信息 或 .完整队伍信息'
 
     def __ClearTeam(self, groupId) -> str:
