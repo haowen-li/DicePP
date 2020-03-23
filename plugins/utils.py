@@ -69,7 +69,7 @@ pcSkillSynonymDict = {'特技':'体操', '潜行':'隐匿', '隐蔽':'隐匿', '
 pcCheckDictShort = {**pcSavingDict, **pcSkillDict, **pcAttackDict}
 pcCheckDictLong = {**pcAbilityDict, **pcCheckDictShort}
 
-pcSheetTemplate = '姓名:无名氏\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:智力豁免/体质豁免/敏捷攻击/智力攻击/运动/威吓/察觉/洞悉\n额外加值:敏捷攻击+2/豁免+1/检定+1/先攻+2/说服+1d4\n最大法术位:4/3/3/1\n金钱:50gp 30sp'
+pcSheetTemplate = '姓名:无名氏\nhp:30/50\n力量:16 敏捷:13 体质:16 智力:10 感知:14 魅力:8\n熟练加值:3  熟练项:智力豁免/体质豁免/运动/威吓/察觉/洞悉\n额外加值:敏捷攻击+2/豁免+1/检定+1/先攻+2/说服+1d4\n最大法术位:4/3/3/1\n金钱:50gp 30sp'
 
 china_tz = datetime.timezone(datetime.timedelta(hours=8), '北京时间')
     

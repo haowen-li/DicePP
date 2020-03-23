@@ -769,7 +769,7 @@ class Bot:
             date = GetCurrentDateRaw()
             result = self.__GetTodayMenu(personId, date)
             result = f'{nickName}的{result}'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList = [personId])]
 
         elif cType == CommandType.TodayJoke:
             commandWeight = 4
@@ -1047,8 +1047,9 @@ class Bot:
             pcState[ability+'调整值'] = math.floor((pcState[ability]-10)/2)
         pcState['无调整值'] = 0
 
-        # 初始化属性值与额外加值
+        # 初始化技能加值,豁免加值,攻击加值与额外加值
         checkKeywordList = list(pcCheckDictShort.keys())
+        profAbleKeywordList = list(pcSkillDict.keys()) + list(pcSavingDict.keys())
         for key in checkKeywordList:
             pcState[key] = pcState[pcCheckDictShort[key]]
             pcState['额外'+key] = ''
@@ -1070,11 +1071,14 @@ class Bot:
             if profItem in pcSkillSynonymDict.keys():
                 profItem = pcSkillSynonymDict[profItem]
 
-            if profItem in checkKeywordList:
+            if profItem in profAbleKeywordList:
                 pcState[profItem] += pcState['熟练加值']
                 pcState['熟练项'].append(profItem)
             else:
                 return f'{profItem}不是有效的熟练关键词, 请查看.角色卡模板'
+        # 默认给所有攻击加上熟练加值
+        for attack in pcAttackDict.keys():
+            pcState[attack] += pcState['熟练加值']
 
         pcState['额外加值'] = []
         # linesep = os.linesep
