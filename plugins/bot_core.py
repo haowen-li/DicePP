@@ -3,6 +3,7 @@ import os
 import re
 import math
 import datetime
+import collections
 
 from .tool_dice import RollDiceCommond, SplitDiceCommand, SplitNumberCommand, isDiceCommand, RollResult
 from .type_assert import TypeAssert
@@ -262,7 +263,7 @@ class Bot:
             filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH) #读取所有文件名
             filesPath = sorted(filesPath)
             print(f'找到以下查询资料: {filesPath}')
-            self.queryInfoDict = {}
+            self.queryInfoDict = collections.OrderedDict()
             for fp in filesPath:
                 try:
                     assert fp[-5:] == '.json'
