@@ -1,6 +1,6 @@
 from .custom_config import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .utils import pcAbilityDict, pcSavingDict, pcSkillDict, pcSheetTemplate
-VERSION = '0.5.7'
+VERSION = '0.5.8'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -19,10 +19,11 @@ SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bu
 FIRST_TIME_STR = '伊丽莎白来咯~\n输入.help查看使用帮助\n请不要禁言和踢骰娘, 暂时不需要我的话就at我以后再使用bot off或dismiss功能吧~'
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/22 v0.5.7:\n1.可以在hp指令中用/区分多个目标\n2.增加了长休指令\n3.检定功能支持[属性]攻击的指令了\n4.修复了可以反复加入队伍的bug\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.6:\n1.增加了更新通知与入群提醒功能\n2.会检测可能过时的先攻列表\n3.增加了今日笑话功能\n4.增加了.rs指令\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/21 v0.5.5:\n1.一周不使用骰娘会在警告后退群\n2.更新了新拓展EGtW内容(.查询egtw 可查看最新内容)\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/19 v0.5.4:\n1.加入刷屏检测功能\n2.hp指令与法术位指令的识别条件放宽了\n3.部分新拓展EGtW内容可查询了\n'
+HELP_COMMAND_UPDATE_STR = '2020/3/25 v0.5.8:\n1.优化了查询功能的体验 2.修复了一些bug\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.7:\n1.可以在hp指令中用/区分多个目标 2.增加了长休指令 3.检定功能支持[属性]攻击的指令了 4.修复了可以反复加入队伍的bug\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.6:\n1.增加了更新通知与入群提醒功能 2.会检测可能过时的先攻列表 3.增加了今日笑话功能 4.增加了.rs指令\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/21 v0.5.5:\n1.一周不使用骰娘会在警告后退群 2.更新了新拓展EGtW内容(.查询egtw 可查看最新内容)\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/19 v0.5.4:\n1.加入刷屏检测功能 2.hp指令与法术位指令的识别条件放宽了 3.部分新拓展EGtW内容可查询了\n'
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'

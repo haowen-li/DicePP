@@ -268,13 +268,18 @@ class Bot:
             filesPath = sorted(filesPath)
             print(f'找到以下查询资料: {filesPath}')
             self.queryInfoDict = collections.OrderedDict()
+            self.querySynDict = {}
             for fp in filesPath:
                 try:
                     assert fp[-5:] == '.json'
                     absPath = os.path.join(LOCAL_QUERYINFO_DIR_PATH, fp)
                     currentQueryInfoDict = ReadJson(absPath)
-                    self.queryInfoDict.update(currentQueryInfoDict)
-                    print(f'成功加载{fp}, 共{len(currentQueryInfoDict)}个条目')
+                    if fp[:3] == 'syn':
+                        self.querySynDict.update(currentQueryInfoDict)
+                        print(f'成功加载同义词表{fp}, 共{len(currentQueryInfoDict)}个条目')
+                    else:
+                        self.queryInfoDict.update(currentQueryInfoDict)
+                        print(f'成功加载{fp}, 共{len(currentQueryInfoDict)}个条目')
                 except Exception as e:
                     print(e)
             assert len(self.queryInfoDict) > 0
@@ -1995,10 +2000,17 @@ class Bot:
             return f'现在的记忆中共有{len(self.queryInfoDict)}个条目呢, 可查询内容请输入 .help查询 查看'
 
         try:
-            result = str(self.queryInfoDict[targetStr])
+            result = self.queryInfoDict[targetStr]
             self.dailyInfoDict['querySucc'] += 1
             return result
         except:
+            # 尝试替换同义词
+            if targetStr in self.querySynDict.keys():
+                targetStr = self.querySynDict[targetStr]
+                result = self.queryInfoDict[targetStr]
+                self.dailyInfoDict['querySucc'] += 1
+                return result
+
             # 无法直接找到结果, 尝试搜索
             possResult = []
             keywordList = [k for k in targetStr.split('/') if k]
