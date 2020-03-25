@@ -13,6 +13,8 @@ GROUP_PASSWORD = 'dnd5e-pear'
 MESSAGE_LIMIT_NUM = 12
 # 刷屏阈值
 MESSAGE_LIMIT_TIME = datetime.timedelta(seconds = 6)
+# 每日额外好感度上限
+DAILY_CREDIT_LIMIT = 10
 
 LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
 LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nick_name.json')
@@ -21,9 +23,11 @@ LOCAL_PCSTATE_PATH = os.path.join(LOCAL_DATA_PATH, 'pc_state.json')
 LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_info.json')
 LOCAL_USERINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'user_info.json')
 LOCAL_TEAMINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'team_info.json')
+LOCAL_DAILYINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'daily_info.json')
 
 ALL_LOCAL_DATA_PATH = [LOCAL_NICKNAME_PATH, LOCAL_INITINFO_PATH, LOCAL_PCSTATE_PATH,
-                       LOCAL_GROUPINFO_PATH, LOCAL_USERINFO_PATH, LOCAL_TEAMINFO_PATH]
+                       LOCAL_GROUPINFO_PATH, LOCAL_USERINFO_PATH, LOCAL_TEAMINFO_PATH,
+                       LOCAL_DAILYINFO_PATH]
 
 LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')

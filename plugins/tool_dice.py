@@ -13,7 +13,7 @@ class RollResult:
 
 # 将一个字符串分割为一个骰子列表, 然后输出最终结果 [异常值， 结果字符串， 结果数值]
 @TypeAssert(str)
-def RollDiceCommond(diceCommand) -> (int, str, list):
+def RollDiceCommand(diceCommand) -> (int, str, list):
     diceCommand = diceCommand.upper()
     diceCommand = diceCommand.replace(' ', '')
     

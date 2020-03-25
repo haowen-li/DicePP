@@ -12,7 +12,7 @@ commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'se
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱', '长休']
-commandKeywordList += ['savedata', 'credit', 'notice']
+commandKeywordList += ['savedata', 'credit', 'notice', 'dailyprofile']
 commandKeywordReList = ['^..检定', '^..豁免', '^..攻击', '.*法术位', '.*hp', '^[1-9]环']
 
 @unique
