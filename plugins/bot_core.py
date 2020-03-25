@@ -1922,9 +1922,7 @@ class Bot:
             return '那我就不说话咯~ #潜入水中 (咕嘟咕嘟)'
 
     @TypeAssert(times = int)
-    def __DNDBuild(self, groupId, times) -> str:
-        assert times > 0 and times < 10
-        
+    def __DNDBuild(self, groupId, times) -> str:        
         result = ''
         for i in range(times):
             error, resultStr, rollResult = RollDiceCommand(f'6#4d6k3')
