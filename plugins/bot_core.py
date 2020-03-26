@@ -369,8 +369,18 @@ class Bot:
                     print(f'成功加载{fp}')
                 except Exception as e:
                     print(e)
-            assert len(self.jokeDict) > 0
-            print(f'笑话资料库加载成功!')
+
+            validImgList = []
+            for imgPath in self.jokeDict['img']:
+                absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
+                if os.path.exists(absPath) == True:
+                    validImgList.append(absPath)
+            print(f'{len(validImgList)}个无效图片')
+            self.jokeDict['img'] = validImgList
+
+            assert len(self.jokeDict['word']) > 0
+            assert self.jokeDict['img']
+            print(f'笑话资料库加载成功! 共{len(self.jokeDict['word'])}个文字条目, {len(self.jokeDict['img'])}个图片条目')
         except: 
             print(f'笑话资料库加载失败!')
             self.jokeDict = None
@@ -386,6 +396,7 @@ class Bot:
 
     def DailyUpdate(self):
         result = []
+        activeUserNum = 0
         for pId in self.userInfoDict.keys():
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
@@ -393,6 +404,7 @@ class Bot:
             # 最近一天有过指令则增加好感度
             if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
                 userInfoCur['credit'] += 10
+                activeUserNum += 1
 
         warningGroup = []
         dismissGroup = []
@@ -414,7 +426,7 @@ class Bot:
             result += [CommandResult(CoolqCommandType.DISMISS, groupIdList = dismissGroup)]
             for gId in dismissGroup:
                 del self.groupInfoDict[gId]
-        result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}', MASTER)]
+        result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}\n昨日活跃用户:{activeUserNum}', MASTER)]
         self.dailyInfoDict = UpdateDailyInfoDict(self.dailyInfoDict)
         return result
 
@@ -2143,7 +2155,15 @@ class Bot:
         except:
             return '笑话资料库加载失败了呢...'
 
-        jokeCur = RandomSelectList(self.jokeDict['word'], 1)[0]
+        wordSize = len(self.jokeDict['word'])
+        imgSize = len(self.jokeDict['img'])
+        index = np.random.randint(wordSize+imgSize)
+        if index < wordSize or IS_COOLQ_PRO == False:
+            jokeCur = RandomSelectList(self.jokeDict['word'], 1)[0]
+        else:
+            index = index - wordSize
+            absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, self.jokeDict['img'][index])
+            jokeCur = f' [CQ:image,file=file:///{absPath}]'
         return jokeCur
 
 def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
@@ -2227,12 +2247,6 @@ def UpdateAllUserInfo(userDict):
         if type(userInfoCur) != dict:
             deletedUserList.append(userId)
             continue
-
-        try:
-            if userInfoCur['credit'] >= 40:
-                userInfoCur['credit'] = 30
-        except:
-            pass
 
         for curK in userInfoCur.keys():
             if not curK in userInfoTemp.keys():

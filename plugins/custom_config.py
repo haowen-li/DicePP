@@ -9,6 +9,8 @@ MASTER_GROUP = ['861919492']
 
 GROUP_PASSWORD = 'dnd5e-pear'
 
+# 酷q版本
+IS_COOLQ_PRO = True
 # 刷屏上限
 MESSAGE_LIMIT_NUM = 12
 # 刷屏阈值
