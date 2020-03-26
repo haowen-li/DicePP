@@ -380,7 +380,7 @@ class Bot:
 
             assert len(self.jokeDict['word']) > 0
             assert self.jokeDict['img']
-            print(f'笑话资料库加载成功! 共{len(self.jokeDict['word'])}个文字条目, {len(self.jokeDict['img'])}个图片条目')
+            print(f'笑话资料库加载成功! 共{len(self.jokeDict["word"])}个文字条目, {len(self.jokeDict["img"])}个图片条目')
         except: 
             print(f'笑话资料库加载失败!')
             self.jokeDict = None
