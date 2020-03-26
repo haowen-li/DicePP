@@ -361,21 +361,21 @@ class Bot:
             print(f'找到以下笑话资料: {filesPath}')
             self.jokeDict = {}
             for fp in filesPath:
-                try:
-                    assert fp[-5:] == '.json'
-                    absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
-                    currentJokeDict = ReadJson(absPath)
-                    self.jokeDict.update(currentJokeDict)
-                    print(f'成功加载{fp}')
-                except Exception as e:
-                    print(e)
+                if fp[-5:] == '.json':
+                    try:
+                        absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
+                        currentJokeDict = ReadJson(absPath)
+                        self.jokeDict.update(currentJokeDict)
+                        print(f'成功加载{fp}')
+                    except Exception as e:
+                        print(e)
 
             validImgList = []
             for imgPath in self.jokeDict['img']:
                 absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
                 if os.path.exists(absPath) == True:
                     validImgList.append(absPath)
-            print(f'{len(validImgList)}个无效图片')
+            print(f'{len(validImgList)}个有效图片')
             self.jokeDict['img'] = validImgList
 
             assert len(self.jokeDict['word']) > 0
