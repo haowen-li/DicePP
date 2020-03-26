@@ -371,8 +371,8 @@ class Bot:
 
             validImgList = []
             for imgPath in self.jokeDict['img']:
-                absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fp)
-                if os.path.exists(absPath) == True:
+                absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, fp)
+                if os.path.exists(absPath):
                     validImgList.append(absPath)
             print(f'{len(validImgList)}个有效图片')
             self.jokeDict['img'] = validImgList
@@ -2161,8 +2161,12 @@ class Bot:
             jokeCur = RandomSelectList(self.jokeDict['word'], 1)[0]
         else:
             index = index - wordSize
-            absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, self.jokeDict['img'][index])
-            jokeCur = f' [CQ:image,file=file:///{absPath}]'
+            fileName = self.jokeDict['img'][index]
+            if PLATFORM_NAME == 'DOCKER':
+                jokeCur = f' [CQ:image,file=file:///{WINE_COOLQ_JOKEIMG_PATH}{fileName}]'
+            else:
+                absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fileName)
+                jokeCur = f' [CQ:image,file=file:///{absPath}]'
         return jokeCur
 
 def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):

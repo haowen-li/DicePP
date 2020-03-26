@@ -9,8 +9,9 @@ MASTER_GROUP = ['861919492']
 
 GROUP_PASSWORD = 'dnd5e-pear'
 
-# 酷q版本
+# 环境信息
 IS_COOLQ_PRO = True
+PLATFORM_NAME = 'DOCKER' # 可选为 DOCKER 或 其他任意字符串
 # 刷屏上限
 MESSAGE_LIMIT_NUM = 12
 # 刷屏阈值
@@ -36,10 +37,14 @@ LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
 LOCAL_DECKINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'deck_info')
 LOCAL_MENUINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'menu_info')
 LOCAL_JOKEINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'joke_info')
+LOCAL_JOKEIMG_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'joke_img')
 
 ALL_LOCAL_DIR_PATH = [LOCAL_DATA_PATH, LOCAL_CUSTOM_DATA_PATH, LOCAL_QUERYINFO_DIR_PATH,
                       LOCAL_DECKINFO_DIR_PATH, LOCAL_DECKINFO_DIR_PATH, LOCAL_MENUINFO_DIR_PATH,
                       LOCAL_JOKEINFO_DIR_PATH]
+
+WINE_COOLQ_PATH = 'Z:/home/user/coolq'
+WINE_COOLQ_JOKEIMG_PATH = WINE_COOLQ_PATH + '/data/image/joke/'
 
 GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',
  '珍贵的水晶球(听说吞下去可以转运)', '偷偷带出来的淬毒匕首', '父皇宝库里的幽蓝魔杖',
