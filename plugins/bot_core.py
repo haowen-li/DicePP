@@ -371,10 +371,10 @@ class Bot:
 
             validImgList = []
             for imgPath in self.jokeDict['img']:
-                absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, fp)
+                absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, imgPath)
                 if os.path.exists(absPath):
                     validImgList.append(absPath)
-            print(f'{len(validImgList)}个有效图片')
+            print(f'共{len(validImgList)}个有效图片')
             self.jokeDict['img'] = validImgList
 
             assert len(self.jokeDict['word']) > 0
