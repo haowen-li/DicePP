@@ -358,7 +358,6 @@ class Bot:
         try:
             filesPath = os.listdir(LOCAL_JOKEINFO_DIR_PATH) #读取所有文件名
             filesPath = sorted(filesPath)
-            print(f'找到以下笑话资料: {filesPath}')
             self.jokeDict = {}
             for fp in filesPath:
                 if fp[-5:] == '.json':
