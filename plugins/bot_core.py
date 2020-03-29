@@ -4,6 +4,7 @@ import re
 import math
 import datetime
 import collections
+import copy
 
 from .tool_dice import RollDiceCommand, SplitDiceCommand, SplitNumberCommand, isDiceCommand, RollResult
 from .type_assert import TypeAssert
@@ -692,7 +693,7 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.NOTE:
-            # self.dailyInfoDict['noteCommand'] += 1
+            self.dailyInfoDict['noteCommand'] += 1
             if not groupId:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
@@ -893,7 +894,8 @@ class Bot:
                     result += f'抽卡指令:{self.dailyInfoDict["drawCommand"]}\n角色卡指令:{self.dailyInfoDict["pcCommand"]}\n'
                     result += f'金钱指令:{self.dailyInfoDict["moneyCommand"]}\n生命值指令:{self.dailyInfoDict["hpCommand"]}\n'
                     result += f'检定指令:{self.dailyInfoDict["checkCommand"]}\n法术位指令:{self.dailyInfoDict["slotCommand"]}\n'
-                    result += f'烹饪指令:{self.dailyInfoDict["cookCommand"]}'
+                    result += f'烹饪指令:{self.dailyInfoDict["cookCommand"]}\n'
+                    result += f'笔记指令:{self.dailyInfoDict["noteCommand"]}'
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         # 最后处理
@@ -2372,6 +2374,8 @@ def UpdateAllUserInfo(userDict):
             if not k in userInfoCur.keys():
                 userInfoCur[k] = userInfoTemp[k]
 
+        userDict[userId] = copy.deepcopy(userInfoCur)
+
     for pair in deletedList:
         del userDict[pair[0]][pair[1]]
 
@@ -2388,9 +2392,6 @@ def UpdateAllGroupInfo(groupDict):
             deletedGroupList.append(groupId)
             continue
 
-        # 临时指令, 下一次删除
-        groupInfoCur['note'] = {}
-
         for curK in groupInfoCur.keys():
             if not curK in groupInfoTemp.keys():
                 deletedList.append((groupId, curK))
@@ -2399,7 +2400,7 @@ def UpdateAllGroupInfo(groupDict):
             if not k in groupInfoCur.keys():
                 groupInfoCur[k] = groupInfoTemp[k]
 
-        groupDict[groupId] = groupInfoCur.copy()
+        groupDict[groupId] = copy.deepcopy(groupInfoCur)
 
     for pair in deletedList:
         del groupDict[pair[0]][pair[1]]
@@ -2410,7 +2411,7 @@ def UpdateAllGroupInfo(groupDict):
 def UpdateDailyInfoDict(dailyDict):
     try:
         assert (Str2Datetime(dailyDict['date']) - GetCurrentDateRaw()) < datetime.timedelta(days=1)
-        for k in dailyInfo.keys():
+        for k in dailyDict.keys():
             assert k in dailyInfoTemp.keys()
     except:
         dailyDict = dailyInfoTemp.copy()
