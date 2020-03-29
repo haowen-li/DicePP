@@ -109,6 +109,8 @@ def ParseInput(inputStr):
         return Command(CommandType.QUERY,[target])
     elif commandType == 'dismiss':
         return Command(CommandType.DISMISS, [])
+    elif commandType == 'welcome':
+        return Command(CommandType.WELCOME, [commandStr])
     elif commandType == 'draw':
         target = commandStr.replace(' ', '')
         return Command(CommandType.DRAW, [target])
@@ -154,6 +156,19 @@ def ParseInput(inputStr):
         return Command(CommandType.MONEY, ['清除'])
     elif commandType == '查看金钱':
         return Command(CommandType.MONEY, ['查看'])
+    elif commandType == '记录笔记':
+        return Command(CommandType.NOTE, ['记录', commandStr])
+    elif commandType == '查看笔记' or commandType == '笔记':
+        return Command(CommandType.NOTE, ['查看', commandStr])
+    elif commandType == '清除笔记':
+        return Command(CommandType.NOTE, ['清除', commandStr])
+    elif commandType == '金钱':
+        if commandStr == '':
+            return Command(CommandType.MONEY, ['查看'])
+        else:
+            return Command(CommandType.MONEY, ['更改', commandStr])
+    elif commandType == '长休':
+            return Command(CommandType.REST, ['长休'])
     elif commandType == 'savedata':
         return Command(CommandType.MASTER, ['savedata'])
     elif commandType == 'credit':
@@ -162,13 +177,6 @@ def ParseInput(inputStr):
         return Command(CommandType.MASTER, ['notice', commandStr])
     elif commandType == 'dailyprofile':
         return Command(CommandType.MASTER, ['daily', commandStr])
-    elif commandType == '金钱':
-        if commandStr == '':
-            return Command(CommandType.MONEY, ['查看'])
-        else:
-            return Command(CommandType.MONEY, ['更改', commandStr])
-    elif commandType == '长休':
-            return Command(CommandType.REST, ['长休'])
     elif commandType == '好感度':
         return Command(CommandType.CREDIT, [])
     elif 'hp' in commandType:
@@ -178,9 +186,9 @@ def ParseInput(inputStr):
         hpCommand = None
         commandStr = commandStr.strip()
         if len(commandStr) == 0:
-            return Command(CommandType.SHOWHP, [])
+            return Command(CommandType.HP, ['查看'])
         if commandStr == 'clr':
-            return Command(CommandType.CLRHP, [])
+            return Command(CommandType.HP, ['清除'])
         #是否显式指定了指令类型
         for i in range(len(commandStr)): 
             if commandStr[i] in ['+', '-', '=']:
@@ -205,7 +213,7 @@ def ParseInput(inputStr):
         else:
             hpStr = hpCommand
             maxhpStr = ''
-        return Command(CommandType.SETHP, [targetStr, subType, hpStr, maxhpStr])
+        return Command(CommandType.HP, ['记录', targetStr, subType, hpStr, maxhpStr])
     elif '法术位' in commandType:
         if commandType == '清除法术位':
             return Command(CommandType.SpellSlot, ['清除', commandStr])
@@ -373,7 +381,7 @@ class Bot:
             for imgPath in self.jokeDict['img']:
                 absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, imgPath)
                 if os.path.exists(absPath):
-                    validImgList.append(absPath)
+                    validImgList.append(imgPath)
             print(f'共{len(validImgList)}个有效图片')
             self.jokeDict['img'] = validImgList
 
@@ -392,6 +400,7 @@ class Bot:
         UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
         UpdateJson(self.userInfoDict, LOCAL_USERINFO_PATH)
         UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
+        UpdateJson(self.dailyInfoDict, LOCAL_DAILYINFO_PATH)
 
     def DailyUpdate(self):
         result = []
@@ -589,31 +598,22 @@ class Bot:
                 result = self.__JoinInitList(groupId, personId, name, initAdj, isPC)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
-        elif cType == CommandType.SETHP:
-            self.dailyInfoDict['hpCommand'] += 1
+        elif cType == CommandType.HP:
             if not groupId:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
-                result = None
-                # Args: [targetStr, subType , hpStr, maxhpStr]
-                result = self.__UpdateHP(groupId, personId, *command.cArg, nickName)
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
-
-        elif cType == CommandType.SHOWHP:
-            self.dailyInfoDict['hpCommand'] += 1
-            if not groupId:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            else:
-                result = self.__ShowHP(groupId, personId)
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{nickName}{result}')]
-
-        elif cType == CommandType.CLRHP:
-            self.dailyInfoDict['hpCommand'] += 1
-            if not groupId:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
-            else:
-                self.__ClearHP(groupId, personId)
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')]
+                self.dailyInfoDict['hpCommand'] += 1
+                subType = command.cArg[0]
+                if subType == '记录':
+                    # Args: [targetStr, subType , hpStr, maxhpStr]
+                    result = self.__UpdateHP(groupId, personId, *command.cArg[1:], nickName)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                elif subType == '查看':
+                    result = self.__ShowHP(groupId, personId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{nickName}{result}')]
+                elif subType == '清除':
+                    self.__ClearHP(groupId, personId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'已经忘记了{nickName}的生命值...')]
 
         elif cType == CommandType.PC:
             self.dailyInfoDict['pcCommand'] += 1
@@ -683,13 +683,35 @@ class Bot:
                 subType = command.cArg[0]
                 if subType == '记录':
                     error, result = self.__SetMoney(groupId, personId, command.cArg[1])
-                    result = result
                 elif subType == '清除':
                     result = self.__ClearMoney(groupId, personId)
                 elif subType == '更改':
                     result = nickName + self.__ModifyMoney(groupId, personId, command.cArg[1])
                 elif subType == '查看':
                     result = nickName + '当前的财富:' +self.__ShowMoney(groupId, personId)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.NOTE:
+            # self.dailyInfoDict['noteCommand'] += 1
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                subType = command.cArg[0]
+                if subType == '记录':
+                    info = command.cArg[1].split(':', 1)
+                    if len(info) == 1:
+                        index = ''
+                        content = info[0]
+                    else:
+                        index = info[0]
+                        content = info[1]
+                    result = self.__SetNote(groupId, index, content)
+                elif subType == '清除':
+                    index = command.cArg[1]
+                    result = self.__ClearNote(groupId, index)
+                elif subType == '查看':
+                    index = command.cArg[1]
+                    result = self.__ShowNote(groupId, index)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.TEAM:
@@ -734,6 +756,18 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
                         CommandResult(CoolqCommandType.MESSAGE, feedback)]
 
+        elif cType == CommandType.WELCOME:
+            if not groupId:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            else:
+                info = command.cArg[0].strip()
+                groupInfoCur['welcome'] = info
+                if info:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '已将入群欢迎词设为:\n'+info)]
+                else:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '已经关闭入群欢迎')]
+
+
         elif cType == CommandType.JRRP:
             self.dailyInfoDict['jrrpCommand'] += 1
             commandWeight = 2
@@ -755,7 +789,7 @@ class Bot:
             except:
                 times = 1
             reason = command.cArg[1]
-            result = self.__DNDBuild(groupId, times)
+            result = self.__DNDBuild(times)
             result = f'{nickName}的初始属性: {reason}\n{result}'
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
@@ -1590,6 +1624,73 @@ class Bot:
         curMoneyStr = self.__ShowMoney(groupId, personId)
         return f'的金钱{commandStr} ({preMoneyStr}->{curMoneyStr})'
 
+    def __SetNote(self, groupId, index, content) -> str:
+        try:
+            currentGroupInfo = self.groupInfoDict[groupId]
+        except:
+            return '未知的错误发生了:群信息不存在'
+
+        if not index:
+            index = '临时记录'
+        if len(currentGroupInfo['note']) > 20:
+            return f'一个群里最多只允许20条笔记哦~'
+        if len(content) > 200:
+            return '呜...记不住啦~ 超过两百个字的内容就不要记到笔记上了吧...'
+        totalWords = 0
+        for k in currentGroupInfo['note'].keys():
+            totalWords += len(currentGroupInfo['note'][k])
+        if totalWords + len(content) > 600:
+            return f'呜...记不住啦~ 一个群的笔记总共最多只能保存600个字符哦~'
+        currentGroupInfo['note'][index] = content
+        return f'全部记下来咯~ 索引是"{index}"'
+
+    def __ClearNote(self, groupId, index) -> str:
+        try:
+            currentGroupInfo = self.groupInfoDict[groupId]
+        except:
+            return '未知的错误发生了:群信息不存在'
+
+        if not index:
+            index = '临时记录'
+        if index == '所有笔记':
+            currentGroupInfo['note'] = {}
+            return '成功删除所有笔记~'
+        else:
+            if not index in currentGroupInfo['note'].keys():
+                resList = PairSubstring(index, currentGroupInfo['note'].keys())
+                if len(resList) == 1:
+                    index = resList[0]
+                elif len(resList) > 1:
+                    return f'可能的笔记索引:{resList}'
+                else:
+                    return f'无法找到相应的笔记索引'
+            del currentGroupInfo['note'][index]
+            return f'成功删除索引为{index}的笔记~'
+
+    def __ShowNote(self, groupId, index) -> str:
+        try:
+            currentGroupInfo = self.groupInfoDict[groupId]
+        except:
+            return '未知的错误发生了:群信息不存在'
+
+        result = ''
+        if not index:
+            result = '所有笔记:\n'
+            for k in currentGroupInfo['note'].keys():
+                result += f'{k}:{currentGroupInfo["note"][k]}\n'
+            result = result[:-1]
+        else:
+            if not index in currentGroupInfo['note'].keys():
+                resList = PairSubstring(index, currentGroupInfo['note'].keys())
+                if len(resList) == 1:
+                    index = resList[0]
+                elif len(resList) > 1:
+                    return f'可能的笔记索引:{resList}'
+                else:
+                    return f'无法找到相应的笔记索引'
+            result = f'{index}:{currentGroupInfo["note"][index]}\n'
+        return result
+
     def __LongRest(self, groupId, personId) -> str:
         isValidSlot = False
         isValidHp = False
@@ -1800,7 +1901,7 @@ class Bot:
                 nickName = self.nickNameDict[groupId][pId]
             except:
                 nickName = pId
-            result += f'\n{self.__GetPlayerInfoFull(groupId, pId, nickName)}'
+            result += f'\n----------\n{self.__GetPlayerInfoFull(groupId, pId, nickName)}'
         return result
 
     def __CookCheck(self, cookAdj, keywordList)->(int, str):
@@ -1938,7 +2039,7 @@ class Bot:
             return '那我就不说话咯~ #潜入水中 (咕嘟咕嘟)'
 
     @TypeAssert(times = int)
-    def __DNDBuild(self, groupId, times) -> str:        
+    def __DNDBuild(self, times) -> str:        
         result = ''
         for i in range(times):
             error, resultStr, rollResult = RollDiceCommand(f'6#4d6k3')
@@ -1948,59 +2049,6 @@ class Bot:
             if i != (times-1) and times != 1:
                 result += '\n'
         return result
-
-    @TypeAssert(subType = str)
-    def __GetHelpInfo(self, subType) -> str:
-        if subType == '':
-            return HELP_STR
-        elif subType == '指令':
-            return HELP_COMMAND_STR
-        elif subType == '链接':
-            return HELP_LINK_STR
-        elif subType == '协议':
-            return HELP_AGREEMENT_STR
-        elif subType == '更新':
-            return HELP_COMMAND_UPDATE_STR
-        elif subType == 'r':
-            return HELP_COMMAND_R_STR
-        elif subType == 'nn':
-            return HELP_COMMAND_NN_STR
-        elif subType == 'ri':
-            return HELP_COMMAND_RI_STR
-        elif subType == 'init':
-            return HELP_COMMAND_INIT_STR
-        elif subType == '查询':
-            return HELP_COMMAND_QUERY_STR
-        elif subType == 'hp':
-            return HELP_COMMAND_HP_STR
-        elif '法术位' in subType:
-            return HELP_COMMAND_SpellSlot_STR
-        elif '金钱' in subType:
-            return HELP_COMMAND_Money_STR
-        elif subType == 'jrrp':
-            return HELP_COMMAND_JRRP_STR
-        elif subType == 'send':
-            return HELP_COMMAND_SEND_STR
-        elif subType == 'draw':
-            return HELP_COMMAND_DRAW_STR
-        elif subType == '烹饪':
-            return HELP_COMMAND_COOK_STR
-        elif subType == '点菜':
-            return HELP_COMMAND_ORDER_STR
-        elif subType == '今日菜单':
-            return HELP_COMMAND_MENU_STR
-        elif '角色卡' in subType or '人物卡' in subType:
-            return HELP_COMMAND_PC_STR
-        elif '队伍' in subType:
-            return HELP_COMMAND_TEAM_STR
-        elif '检定' in subType:
-            return HELP_COMMAND_CHECK_STR
-        elif subType == '长休':
-            return HELP_COMMAND_LONGREST_STR
-        elif subType == '技能':
-            return HELP_COMMAND_SKILL_STR
-        else:
-            return None
 
     @TypeAssert(targetStr = str)
     def __QueryInfo(self, targetStr) -> str:
@@ -2168,6 +2216,71 @@ class Bot:
                 absPath = os.path.join(LOCAL_JOKEINFO_DIR_PATH, fileName)
                 jokeCur = f' [CQ:image,file=file:///{absPath}]'
         return jokeCur
+
+    @TypeAssert(subType = str)
+    def __GetHelpInfo(self, subType) -> str:
+        if subType == '':
+            return HELP_STR
+        elif subType == '指令':
+            return HELP_COMMAND_STR
+        elif subType == '链接':
+            return HELP_LINK_STR
+        elif subType == '协议':
+            return HELP_AGREEMENT_STR
+        elif subType == '更新':
+            return HELP_COMMAND_UPDATE_STR
+        elif subType == 'r':
+            return HELP_COMMAND_R_STR
+        elif subType == 'nn':
+            return HELP_COMMAND_NN_STR
+        elif subType == 'ri':
+            return HELP_COMMAND_RI_STR
+        elif subType == 'init':
+            return HELP_COMMAND_INIT_STR
+        elif subType == 'welcome':
+            return HELP_COMMAND_WELCOME_STR
+        elif subType == '查询':
+            return HELP_COMMAND_QUERY_STR
+        elif subType == 'hp':
+            return HELP_COMMAND_HP_STR
+        elif '法术位' in subType:
+            return HELP_COMMAND_SpellSlot_STR
+        elif '金钱' in subType:
+            return HELP_COMMAND_Money_STR
+        elif subType == '长休':
+            return HELP_COMMAND_LONGREST_STR
+        elif subType == '笔记':
+            return HELP_COMMAND_NOTE_STR
+        elif subType == 'jrrp':
+            return HELP_COMMAND_JRRP_STR
+        elif subType == 'send':
+            return HELP_COMMAND_SEND_STR
+        elif subType == 'draw':
+            return HELP_COMMAND_DRAW_STR
+        elif subType == '烹饪':
+            return HELP_COMMAND_COOK_STR
+        elif subType == '点菜':
+            return HELP_COMMAND_ORDER_STR
+        elif subType == '今日菜单':
+            return HELP_COMMAND_MENU_STR
+        elif '角色卡' in subType or '人物卡' in subType:
+            return HELP_COMMAND_PC_STR
+        elif '队伍' in subType:
+            return HELP_COMMAND_TEAM_STR
+        elif '检定' in subType:
+            return HELP_COMMAND_CHECK_STR
+        elif subType == '技能':
+            return HELP_COMMAND_SKILL_STR
+        else:
+            return None
+
+    def GetWelcome(self, groupId) -> str:
+        result = ''
+        try:
+            result = self.groupInfoDict[groupId]['welcome']
+        except:
+            pass
+        return result
 
 def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
     assert subType in ['=', '+', '-']

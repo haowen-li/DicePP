@@ -8,10 +8,11 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send', 'welcome']
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱', '长休']
+commandKeywordList += ['记录笔记', '查看笔记', '清除笔记', '笔记']
 commandKeywordList += ['savedata', 'credit', 'notice', 'dailyprofile']
 commandKeywordReList = ['^..检定', '^..豁免', '^..攻击', '.*法术位', '.*hp', '^[1-9]环']
 
@@ -23,9 +24,8 @@ class CommandType(Enum):
     JRRP = 2
     INIT = 3
     RI = 4
-    SETHP = 5
-    SHOWHP = 6
-    CLRHP = 7
+    HP = 5
+    WELCOME = 6
     BOT = 8
     DND = 9
     HELP = 10
@@ -44,6 +44,7 @@ class CommandType(Enum):
     CREDIT = 23
     TodayJoke = 24
     REST = 25
+    NOTE = 26
 
 
 @unique
@@ -202,3 +203,11 @@ def RandomSelectList(inputList, num=1):
             for i in np.random.permutation(length)[:num]:
                 result.append(inputList[i])
         return result
+
+@TypeAssert(substring = str)
+def PairSubstring(substring, strList)->list:
+    possibleResult = []
+    for strCur in strList:
+        if strCur.find(substring) != -1:
+            possibleResult.append(strCur)
+    return possibleResult

@@ -199,4 +199,5 @@ async def _(session: RequestSession):
 async def _(session: NoticeSession):
     # 发送欢迎消息
     if session.ctx['user_id'] != SELF_ID:
-        await session.send(f'欢迎新人~')
+        welcomeStr = bot.GetWelcome(session.ctx['group_id'])
+        await session.send(welcomeStr)
