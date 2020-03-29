@@ -170,7 +170,7 @@ HELP_COMMAND_NOTE_STR += '.记录笔记 npc名字:镇长约翰, 车夫强森\n'
 HELP_COMMAND_NOTE_STR += '.记录笔记 背包:2瓶治疗药水, 火球术卷轴\n'
 HELP_COMMAND_NOTE_STR += '.笔记  //查看所有笔记\n'
 HELP_COMMAND_NOTE_STR += '.笔记 背包 //查看"背包"对应的笔记\n'
-HELP_COMMAND_NOTE_STR += '.清除笔记 npc'
+HELP_COMMAND_NOTE_STR += '.清除笔记 npc\n'
 HELP_COMMAND_NOTE_STR += '.清除笔记 所有笔记'
 
 HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词. 或许可以加入图片, 但是不保证失效时间~ 入群欢迎词为空则代表不欢迎'

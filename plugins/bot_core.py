@@ -2388,6 +2388,9 @@ def UpdateAllGroupInfo(groupDict):
             deletedGroupList.append(groupId)
             continue
 
+        # 临时指令, 下一次删除
+        groupInfoCur['note'] = {}
+
         for curK in groupInfoCur.keys():
             if not curK in groupInfoTemp.keys():
                 deletedList.append((groupId, curK))
@@ -2395,6 +2398,8 @@ def UpdateAllGroupInfo(groupDict):
         for k in groupInfoTemp.keys():
             if not k in groupInfoCur.keys():
                 groupInfoCur[k] = groupInfoTemp[k]
+
+        groupDict[groupId] = groupInfoCur.copy()
 
     for pair in deletedList:
         del groupDict[pair[0]][pair[1]]
