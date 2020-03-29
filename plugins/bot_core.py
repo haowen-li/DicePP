@@ -2279,9 +2279,10 @@ class Bot:
     def GetWelcome(self, groupId) -> str:
         result = ''
         try:
+            groupId = str(groupId)
             result = self.groupInfoDict[groupId]['welcome']
-        except:
-            pass
+        except Exception as e:
+            print(e)
         return result
 
 def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
@@ -2352,10 +2353,10 @@ def Str2MoneyList(commandStr) -> (int, str, list):
     return 0, '', moneyList
 
 def CreateNewUserInfo(userDict, personId):
-    userDict[personId] = userInfoTemp.copy()
+    userDict[personId] = copy.deepcopy(userInfoTemp)
 
 def CreateNewGroupInfo(groupDict, groupId):
-    groupDict[groupId] = groupInfoTemp.copy()
+    groupDict[groupId] = copy.deepcopy(groupInfoTemp)
 
 def UpdateAllUserInfo(userDict):
     deletedUserList = []
