@@ -19,7 +19,7 @@ SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bu
 FIRST_TIME_STR = '伊丽莎白来咯~\n输入.help查看使用帮助\n请不要禁言和踢骰娘, 暂时不需要我的话就at我以后再使用bot off或dismiss功能吧~'
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容)\n'
+HELP_COMMAND_UPDATE_STR = '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容) 4.查询资料库中加入了拓展种族和眼魔书城主工具\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/25 v0.5.8:\n1.优化了查询功能的体验 2.修复了一些bug\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.7:\n1.可以在hp指令中用/区分多个目标 2.增加了长休指令 3.检定功能支持[属性]攻击的指令了 4.修复了可以反复加入队伍的bug\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.6:\n1.增加了更新通知与入群提醒功能 2.会检测可能过时的先攻列表 3.增加了今日笑话功能 4.增加了.rs指令\n'
@@ -115,7 +115,8 @@ HELP_COMMAND_INIT_STR += '.init del 地精 //在先攻列表中删除地精'
 
 HELP_COMMAND_QUERY_STR =  '查询资料: .查询 查询目标\n'
 HELP_COMMAND_QUERY_STR += '查询指令支持部分匹配, 可用/区分多个关键字\n'
-HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 玩家手册(by梨子,花作噫,邪恶,赵小安,睡帽), 全拓展法术与专长, 怪物图鉴(by花作噫, 梨子), 城主指南部分规则(by梨子), 拓展职业(by惠惠, 梨子), 核心与拓展魔法物品(by花作噫, 惠惠)\n'
+HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 玩家手册(by梨子,花作噫,邪恶,赵小安,睡帽), 全拓展法术与专长, 怪物图鉴(by花作噫, 梨子), '
+HELP_COMMAND_QUERY_STR += '城主指南部分规则(by梨子), 拓展职业(by惠惠, 梨子), 拓展种族(by梨子), 核心与拓展魔法物品(by花作噫, 惠惠), 眼魔书城主工具(by梨子)\n'
 HELP_COMMAND_QUERY_STR += '示例:\n'
 HELP_COMMAND_QUERY_STR += '.查询 借机攻击\n'
 HELP_COMMAND_QUERY_STR += '.查询 长弓\n'
