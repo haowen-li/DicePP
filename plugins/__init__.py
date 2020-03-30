@@ -90,16 +90,13 @@ async def _(session: CommandSession):
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
-        return IntentCommand(90.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':False})
+        return IntentCommand(90.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg, 'only_to_me':False})
 
 @on_natural_language(keywords={'.', '。'}, only_to_me=True)
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
-    index = session.msg_text.find('.')
-    if index == -1:
-        index = session.msg_text.find('。')
-    if index != -1:
-        return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text[index:], 'only_to_me':True})
+    if session.msg_text[0] == '.' or session.msg_text[0] == '。':
+        return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg, 'only_to_me':True})
 
 # @nonebot.scheduler.scheduled_job(
 #     'interval',

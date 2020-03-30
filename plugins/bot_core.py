@@ -405,15 +405,21 @@ class Bot:
 
     def DailyUpdate(self):
         result = []
+        liveUserNum = 0
         activeUserNum = 0
         for pId in self.userInfoDict.keys():
             userInfoCur = self.userInfoDict[pId]
             userInfoCur['warning'] = 0
-            userInfoCur['dailyCredit'] = 0
+            userInfoCur['seenJRRP'] = False
+            userInfoCur['seenJRXH'] = False
+            userInfoCur['seenJRCD'] = False
             # 最近一天有过指令则增加好感度
             if GetCurrentDateRaw() - Str2Datetime(userInfoCur['commandDate']) <= datetime.timedelta(days = 1):
                 userInfoCur['credit'] += 10
+                liveUserNum += 1
+            if userInfoCur['dailyCredit'] >= DAILY_CREDIT_LIMIT:
                 activeUserNum += 1
+            userInfoCur['dailyCredit'] = 0
 
         warningGroup = []
         dismissGroup = []
@@ -435,7 +441,7 @@ class Bot:
             result += [CommandResult(CoolqCommandType.DISMISS, groupIdList = dismissGroup)]
             for gId in dismissGroup:
                 del self.groupInfoDict[gId]
-        result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}\n昨日活跃用户:{activeUserNum}', MASTER)]
+        result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}\n昨日发言用户:{liveUserNum} 活跃用户:{activeUserNum}', MASTER)]
         self.dailyInfoDict = UpdateDailyInfoDict(self.dailyInfoDict)
         return result
 
@@ -770,17 +776,21 @@ class Bot:
 
 
         elif cType == CommandType.JRRP:
-            self.dailyInfoDict['jrrpCommand'] += 1
-            commandWeight = 2
-            date = GetCurrentDateRaw()
-            value = self.__GetJRRP(personId, date)
-            answer = f'{nickName}今天走运的概率是{value}%'
-            if value >= 80:
-                answer += ', 今天运气不错哦~'
-            elif value <= 20:
-                gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
-                answer += f', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, answer)]
+            if not userInfoCur['seenJRRP']:
+                userInfoCur['seenJRRP'] = True
+                self.dailyInfoDict['jrrpCommand'] += 1
+                commandWeight = 2
+                date = GetCurrentDateRaw()
+                value = self.__GetJRRP(personId, date)
+                answer = f'{nickName}今天走运的概率是{value}%'
+                if value >= 80:
+                    answer += ', 今天运气不错哦~'
+                elif value <= 20:
+                    gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
+                    answer += f', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~'
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, answer)]
+            else:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '每天只有一次机会哦~')]
 
         elif cType == CommandType.DND:
             commandWeight = 3
@@ -839,20 +849,28 @@ class Bot:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
 
         elif cType == CommandType.TodayMenu:
-            self.dailyInfoDict['cookCommand'] += 1
-            commandWeight = 4
-            date = GetCurrentDateRaw()
-            result = self.__GetTodayMenu(personId, date)
-            result = f'{nickName}的{result}'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList = [personId])]
+            if not userInfoCur['seenJRCD']:
+                userInfoCur['seenJRCD'] = True
+                self.dailyInfoDict['cookCommand'] += 1
+                commandWeight = 4
+                date = GetCurrentDateRaw()
+                result = self.__GetTodayMenu(personId, date)
+                result = f'{nickName}的{result}'
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList = [personId])]
+            else:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '每天只有一次机会哦~')]
 
         elif cType == CommandType.TodayJoke:
             self.dailyInfoDict['jokeCommand'] += 1
-            commandWeight = 4
-            date = GetCurrentDateRaw()
-            result = self.__GetTodayJoke(personId, date)
-            result = f'{nickName}的今日随机TRPG笑话:\n{result}'
-            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            if not userInfoCur['seenJRXH']:
+                userInfoCur['seenJRXH'] = True
+                commandWeight = 4
+                date = GetCurrentDateRaw()
+                result = self.__GetTodayJoke(personId, date)
+                result = f'{nickName}的今日随机TRPG笑话:\n{result}'
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            else:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '每天只有一次机会哦~')]
 
         elif cType == CommandType.CREDIT:
             try:
