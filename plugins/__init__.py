@@ -102,7 +102,10 @@ async def _(session: NLPSession):
 @on_natural_language(keywords={'.', '。'}, only_to_me=True)
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
-    if session.msg_text[0] == '.' or session.msg_text[0] == '。':
+    index = session.msg_text[0].find('.')
+    if index == -1:
+        index = session.msg_text[0].find('。')
+    if index != -1:
         return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':True})
 
 # @nonebot.scheduler.scheduled_job(

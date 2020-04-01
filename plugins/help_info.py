@@ -28,8 +28,8 @@ HELP_COMMAND_UPDATE_STR += '2020/3/19 v0.5.4:\n1.加入刷屏检测功能 2.hp�
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
-HELP_COMMAND_STR += '@骰娘 .bot 开关\n'
-HELP_COMMAND_STR += '@骰娘 .dismiss 使骰娘退群\n'
+HELP_COMMAND_STR += '.bot 开关 @骰娘 \n'
+HELP_COMMAND_STR += '.dismiss 使骰娘退群 @骰娘\n'
 HELP_COMMAND_STR += '.r 掷骰\n'
 HELP_COMMAND_STR += '.nn 设置昵称\n'
 HELP_COMMAND_STR += '.ri 先攻\n'

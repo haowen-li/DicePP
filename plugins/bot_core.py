@@ -10,6 +10,7 @@ import asyncio
 from .tool_dice import RollDiceCommand, SplitDiceCommand, SplitNumberCommand, isDiceCommand, RollResult
 from .type_assert import TypeAssert
 from .utils import *
+from .utils import UpdateJsonAsync
 from .custom_config import *
 from .help_info import *
 from .data_template import *

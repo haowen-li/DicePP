@@ -168,6 +168,10 @@ def ReadJson(path):
         js = f.read()
         jsonFile = json.loads(js)
         return jsonFile
+
+async def UpdateJsonAsync(jsonFile, path):
+    with open(path,"w", encoding='utf-8') as f:
+        json.dump(jsonFile,f,ensure_ascii=False)
     
 def GetCurrentDateStr():
     current_date = datetime.datetime.now(china_tz)
