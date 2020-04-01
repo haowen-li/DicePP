@@ -9,7 +9,9 @@ PORT = 8080
 SUPERUSERS = {821480843}
 
 DEBUG = False
-SHORT_MESSAGE_MAX_LENGTH = 800
+SHORT_MESSAGE_MAX_LENGTH = 500
+
+SESSION_RUNNING_EXPRESSION = '当前网络延迟较高或服务器压力过大, 请考虑暂停使用...'
 
 
 #sudo docker run --name=coolq -d -p 8080:9000 -v /coolq-data:/home/user/coolq -e VNC_PASSWD=12345678 -e COOLQ_ACCOUNT=2418715861 coolq/wine-coolq

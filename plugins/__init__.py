@@ -3,6 +3,7 @@ __all__ = ["bot_core"]
 import time
 from time import sleep
 import datetime
+import asyncio
 
 import nonebot
 from nonebot import on_command, CommandSession
@@ -41,15 +42,21 @@ async def processCommandResult(session, commandResultList):
                         await botNone.send_private_msg(user_id=pId, message=commandResult.resultStr)
                 # 否则原样返回
                 else:
-                    await session.send(commandResult.resultStr)
+                    if session:
+                        await session.send(commandResult.resultStr)
+                    else:
+                        print('未指定发送对象!')
         elif commandResult.coolqCommand == CoolqCommandType.DISMISS:
             try:
                 if session:
                     botNone = session.bot
                 else:
                     botNone = nonebot.get_bot()
-                for gId in commandResult.groupIdList:
-                    await botNone.set_group_leave(group_id = gId)
+                if commandResult.groupIdList:
+                    for gId in commandResult.groupIdList:
+                        await botNone.set_group_leave(group_id = gId)
+                else:
+                    print('未指定退群对象!')
             except:
                 pass
 
@@ -71,7 +78,7 @@ async def _(session: CommandSession):
     uid = str(session.ctx['user_id'])
     uname = session.ctx['sender']['nickname']
     if 'group_id' not in session.ctx.keys():
-        commandResult = bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
+        commandResult = await bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
     else:
         groupId = str(session.ctx['group_id'])
         # 如果来自群聊, 尝试查询用户的群名片
@@ -82,7 +89,7 @@ async def _(session: CommandSession):
                 uname = memberInfo['card']
         except Exception as e:
             print(e)
-        commandResult = bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
+        commandResult = await bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
 
     session.state['result'] = commandResult
 
@@ -90,13 +97,13 @@ async def _(session: CommandSession):
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
-        return IntentCommand(90.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg, 'only_to_me':False})
+        return IntentCommand(90.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':False})
 
 @on_natural_language(keywords={'.', '。'}, only_to_me=True)
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
-        return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg, 'only_to_me':True})
+        return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':True})
 
 # @nonebot.scheduler.scheduled_job(
 #     'interval',
@@ -118,7 +125,7 @@ async def _(session: NLPSession):
     timezone='Asia/Shanghai'
 )
 async def _():
-    commandResultList = bot.DailyUpdate()
+    commandResultList = await bot.DailyUpdate()
     if commandResultList:
         await processCommandResult(None, commandResultList)
 
@@ -128,8 +135,27 @@ async def _():
     minutes=10,
 )
 async def _():
-    bot.UpdateLocalData()
+    await bot.UpdateLocalData()
 
+
+@nonebot.scheduler.scheduled_job(
+    'interval',
+    hours=12,
+)
+async def _():
+    botNone = nonebot.get_bot()
+    info = None
+    try:
+        info = await nonebot.get_group_list()
+    except CQHttpError:
+        pass
+    if info:
+        groupIdList = []
+        for gInfo in info:
+            groupIdList.append(gInfo['group_id'])
+        commandResultList = await bot.UpdateGroupInfo(groupIdList)
+        if commandResultList:
+            await processCommandResult(None, commandResultList)
 
 @on_command('radio', permission = SUPERUSER)
 async def _(session: CommandSession):

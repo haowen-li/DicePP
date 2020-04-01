@@ -5,6 +5,7 @@ import math
 import datetime
 import collections
 import copy
+import asyncio
 
 from .tool_dice import RollDiceCommand, SplitDiceCommand, SplitNumberCommand, isDiceCommand, RollResult
 from .type_assert import TypeAssert
@@ -14,7 +15,7 @@ from .help_info import *
 from .data_template import *
 
 @TypeAssert(str)
-def ParseInput(inputStr):
+async def ParseInput(inputStr):
     # 接受用户的输入, 输出一个数组, 包含指令类型与对应参数
     # 如不是命令则返回None
     inputStr = inputStr.strip()
@@ -394,16 +395,29 @@ class Bot:
             self.jokeDict = None
 
 
-    def UpdateLocalData(self):
-        UpdateJson(self.nickNameDict, LOCAL_NICKNAME_PATH)
-        UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
-        UpdateJson(self.pcStateDict, LOCAL_PCSTATE_PATH)
-        UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
-        UpdateJson(self.userInfoDict, LOCAL_USERINFO_PATH)
-        UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
-        UpdateJson(self.dailyInfoDict, LOCAL_DAILYINFO_PATH)
+    async def UpdateLocalData(self):
+        await UpdateJsonAsync(self.nickNameDict, LOCAL_NICKNAME_PATH)
+        await UpdateJsonAsync(self.initInfoDict, LOCAL_INITINFO_PATH)
+        await UpdateJsonAsync(self.pcStateDict, LOCAL_PCSTATE_PATH)
+        await UpdateJsonAsync(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
+        await UpdateJsonAsync(self.userInfoDict, LOCAL_USERINFO_PATH)
+        await UpdateJsonAsync(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
+        await UpdateJsonAsync(self.dailyInfoDict, LOCAL_DAILYINFO_PATH)
 
-    def DailyUpdate(self):
+    async def UpdateGroupInfo(self, groupIdList):
+        result = []
+        invalidGroupId = []
+        for gId in self.groupInfoDict.keys():
+            if not gId in groupIdList:
+                invalidGroupId.append(gId)
+        if len(invalidGroupId) != 0:
+            for gId in invalidGroupId:
+                del self.groupInfoDict[gId]
+            result += [CommandResult(CoolqCommandType.MESSAGE, f'已删除不存在群: {invalidGroupId}', personIdList = MASTER)]
+            await UpdateJsonAsync(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
+        return result
+
+    async def DailyUpdate(self):
         result = []
         liveUserNum = 0
         activeUserNum = 0
@@ -446,7 +460,7 @@ class Bot:
         return result
 
     # 接受输入字符串，返回输出字符串
-    def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> list:
+    async def ProcessInput(self, inputStr, personId, personName, groupId = None, only_to_me = False) -> list:
         if groupId: # 当是群聊信息时, 检查是否是激活状态
             try:
                 assert groupId in self.groupInfoDict.keys()
@@ -460,7 +474,7 @@ class Bot:
                     return None
 
         # 检测命令
-        command = ParseInput(inputStr)
+        command = await ParseInput(inputStr)
         if command is None:
             return None
 

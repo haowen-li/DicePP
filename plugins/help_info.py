@@ -174,7 +174,7 @@ HELP_COMMAND_NOTE_STR += '.笔记 背包 //查看"背包"对应的笔记\n'
 HELP_COMMAND_NOTE_STR += '.清除笔记 npc\n'
 HELP_COMMAND_NOTE_STR += '.清除笔记 所有笔记'
 
-HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词. 或许可以加入图片, 但是不保证失效时间~ 入群欢迎词为空则代表不欢迎'
+HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词: .welcome [欢迎词]\n入群欢迎词为空则代表不欢迎'
 
 HELP_COMMAND_TEAM_STR =  '队伍系列指令:\n.加入队伍 [队伍名]\n.队伍信息\n.完整队伍信息\n.清除队伍\n'
 HELP_COMMAND_TEAM_STR += '只有第一个加入队伍的人可以命名队伍\n'
