@@ -1,0 +1,1 @@
+{"title": "天气:降水", "relay": [], "totalWeight": 20, "list": [{"weight": 12, "content": [["TEXT", "1~12  无雨"]], "end": false, "raw": "WEIGHT(12)1~12  无雨"}, {"weight": 5, "content": [["TEXT", "13~17  小雨或小雪"]], "end": false, "raw": "WEIGHT(5)13~17  小雨或小雪"}, {"weight": 3, "content": [["TEXT", "18~20  大雨或大雪"]], "end": false, "raw": "WEIGHT(3)18~20  大雨或大雪"}]}

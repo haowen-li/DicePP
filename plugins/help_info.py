@@ -1,6 +1,6 @@
 from .custom_config import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .utils import pcAbilityDict, pcSavingDict, pcSkillDict, pcSheetTemplate
-VERSION = '0.5.9'
+VERSION = '0.5.9.2'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -19,12 +19,12 @@ SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bu
 FIRST_TIME_STR = '伊丽莎白来咯~\n输入.help查看使用帮助\n请不要禁言和踢骰娘, 暂时不需要我的话就at我以后再使用bot off或dismiss功能吧~'
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
 
-HELP_COMMAND_UPDATE_STR = '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容) 4.查询资料库中加入了拓展种族和眼魔书城主工具\n'
+HELP_COMMAND_UPDATE_STR = '2020/4/15 v0.5.9.2:\n1.增强了.ri和.init指令 2.加入了队伍检定和队伍金钱功能 3.可以在一个属性检定指令中重复投多次骰子了 4.投骰表达式的识别不会忽略空格了, 如.rd2 0将被识别为原因是0的2面骰\n'
+HELP_COMMAND_UPDATE_STR += '2020/4/10 v0.5.9.1:\n1.强化了draw指令\n'
+HELP_COMMAND_UPDATE_STR += '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容) 4.查询资料库中加入了拓展种族和眼魔书城主工具\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/25 v0.5.8:\n1.优化了查询功能的体验 2.修复了一些bug\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.7:\n1.可以在hp指令中用/区分多个目标 2.增加了长休指令 3.检定功能支持[属性]攻击的指令了 4.修复了可以反复加入队伍的bug\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.6:\n1.增加了更新通知与入群提醒功能 2.会检测可能过时的先攻列表 3.增加了今日笑话功能 4.增加了.rs指令\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/21 v0.5.5:\n1.一周不使用骰娘会在警告后退群 2.更新了新拓展EGtW内容\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/19 v0.5.4:\n1.加入刷屏检测功能 2.hp指令与法术位指令的识别条件放宽了 3.部分新拓展EGtW内容可查询了\n'
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
@@ -101,10 +101,12 @@ HELP_COMMAND_ORDER_STR += '示例:\n'
 HELP_COMMAND_ORDER_STR += '.点菜 //随机点一道菜, 可能遇到黑暗料理\n'
 HELP_COMMAND_ORDER_STR += '.点菜4 野炊/主食 //点4道含有野炊与主食关键字的食物'
 
-HELP_COMMAND_RI_STR =  '加入先攻(群聊限定)：.ri([优劣势][加值]) ([名称])\n'
+HELP_COMMAND_RI_STR =  '加入先攻(群聊限定)：.ri([优劣势][加值]) ([名称][/(投骰表达式#)名称/...])\n'
 HELP_COMMAND_RI_STR += '示例:\n'
 HELP_COMMAND_RI_STR += '.ri优势+1 //以昵称加入先攻列表\n'
-HELP_COMMAND_RI_STR += '.ri20 地精 //将地精以固定先攻20加入先攻列表'
+HELP_COMMAND_RI_STR += '.ri20 地精 //将地精以固定先攻20加入先攻列表\n'
+HELP_COMMAND_RI_STR += '.ri+2 地精/灵活地精+1/笨拙地精-1 //将3个地精分别加入先攻列表\n'
+HELP_COMMAND_RI_STR += '.ri-2 2#食人魔僵尸/1d4#兽人僵尸 //将2个食人魔僵尸(a,b)以相同的先攻加入先攻列表, 将1d4个兽人僵尸(a~d)以相同的先攻加入先攻列表'
 
 HELP_COMMAND_INIT_STR =  '显示先攻列表：.init ([可选指令]) [可选指令]:clr 清空先攻列表 del 删除指定先攻条目\n'
 HELP_COMMAND_INIT_STR += 'del指令支持部分匹配\nhp信息也会在先攻列表上显示\n'
@@ -112,6 +114,7 @@ HELP_COMMAND_INIT_STR += '示例:\n'
 HELP_COMMAND_INIT_STR += '.init //查看先攻列表\n'
 HELP_COMMAND_INIT_STR += '.init clr //清空先攻列表\n'
 HELP_COMMAND_INIT_STR += '.init del 地精 //在先攻列表中删除地精'
+HELP_COMMAND_INIT_STR += '.init del 地精a/地精b/地精c //在先攻列表中删除地精abc'
 
 HELP_COMMAND_QUERY_STR =  '查询资料: .查询 查询目标\n'
 HELP_COMMAND_QUERY_STR += '查询指令支持部分匹配, 可用/区分多个关键字\n'
@@ -122,9 +125,10 @@ HELP_COMMAND_QUERY_STR += '.查询 借机攻击\n'
 HELP_COMMAND_QUERY_STR += '.查询 长弓\n'
 HELP_COMMAND_QUERY_STR += '.查询 法师/6环'
 
-HELP_COMMAND_DRAW_STR =  '抽取牌库: .draw 目标牌库\n'
+HELP_COMMAND_DRAW_STR =  '抽取牌库: .draw [抽取次数#]目标牌库\n'
 HELP_COMMAND_DRAW_STR += '目标牌库支持部分匹配, 可用/区分多个关键字\n'
-HELP_COMMAND_DRAW_STR += '查看支持的牌库请输入.draw'
+HELP_COMMAND_DRAW_STR += '查看支持的牌库请输入.draw\n'
+HELP_COMMAND_DRAW_STR += '示例: .draw狂野 .draw3#魔法物品表a'
 
 HELP_COMMAND_HP_STR =  '记录/调整生命值: .hp ([调整目标])([符号]) [骰子表达式/数值](/[最大生命值])\n'
 HELP_COMMAND_HP_STR += 'hp关键字可出现在任意处\n'
@@ -176,12 +180,14 @@ HELP_COMMAND_NOTE_STR += '.清除笔记 所有笔记'
 
 HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词: .welcome [欢迎词]\n入群欢迎词为空则代表不欢迎'
 
-HELP_COMMAND_TEAM_STR =  '队伍系列指令:\n.加入队伍 [队伍名]\n.队伍信息\n.完整队伍信息\n.清除队伍\n'
+HELP_COMMAND_TEAM_STR =  '队伍系列指令:\n.加入队伍 [队伍名]\n.队伍信息\n.完整队伍信息\n.清除队伍\n.队伍[技能]检定\n.队伍金钱 [调整值]\n'
 HELP_COMMAND_TEAM_STR += '只有第一个加入队伍的人可以命名队伍\n'
 HELP_COMMAND_TEAM_STR += '完整队伍信息会通过私聊发送给查询者\n'
 HELP_COMMAND_TEAM_STR += '示例:\n'
 HELP_COMMAND_TEAM_STR += '.加入队伍 灰色小队\n'
-HELP_COMMAND_TEAM_STR += '.队伍信息'
+HELP_COMMAND_TEAM_STR += '.队伍信息\n'
+HELP_COMMAND_TEAM_STR += '.队伍先攻检定\n'
+HELP_COMMAND_TEAM_STR += '.队伍金钱+110gp // 队伍内每个人获得110gp'
 
 HELP_COMMAND_LONGREST_STR =  '长休指令指令: .长休\n必须先设置最大生命值或最大法术位才有效哦'
 
@@ -203,7 +209,7 @@ HELP_COMMAND_SKILL_STR = f'所有技能关键字:{list(pcSkillDict.keys())}'
 
 HELP_COMMAND_SEND_STR = f'发送消息：.send 想对Master说的话\n如果用来调戏Master请做好心理准备'
 
-HELP_COMMAND_CHECK_STR = '属性检定系列功能: .[属性检定或豁免检定][优/劣势][加值] [原因]\n'
+HELP_COMMAND_CHECK_STR = '属性检定系列功能: .[次数#][属性检定或豁免检定][优/劣势][加值] [原因]\n'
 HELP_COMMAND_CHECK_STR += '必须先设定角色卡才能使用哦~\n'
 HELP_COMMAND_CHECK_STR += '属性检定其实没有大成功和大失败, 只是娱乐效果\n'
 HELP_COMMAND_CHECK_STR += '攻击检定已经自动加上了熟练加值\n'
@@ -213,4 +219,5 @@ HELP_COMMAND_CHECK_STR += '.说服检定\n'
 HELP_COMMAND_CHECK_STR += '.敏捷豁免优势\n'
 HELP_COMMAND_CHECK_STR += '.体质豁免+4 圣武士光环\n'
 HELP_COMMAND_CHECK_STR += '.敏捷攻击优势\n'
+HELP_COMMAND_CHECK_STR += '.3#敏捷攻击\n'
 HELP_COMMAND_CHECK_STR += '.感知攻击 使用曳光弹'

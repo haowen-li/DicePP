@@ -311,11 +311,13 @@ def RollDice(diceStr)->(int, str, int):
 def SplitDiceCommand(inputStr)->(str, str):
     # 将投掷表达式与后面的无关部分分开
     # 如SplitDiceCommand('d20优势+5攻击地精')将返回('d20优势+5', '攻击地精')
-    singleKeywords = ['+', '-', 'k', 'd', '#', ' ', '\n'] + [str(i) for i in range(10)]
+    singleKeywords = ['+', '-', 'k', 'd', '#'] + [str(i) for i in range(10)]
     doubleKeywords = ['优势', '劣势', '抗性', '易伤']
-    inputStr = inputStr.replace(' ', '')
+    # inputStr = inputStr.replace(' ', '')
     splitIndex = 0 # splitIndex以及之后的内容都是无关内容
     while splitIndex < len(inputStr):
+        if inputStr[splitIndex] == ' ': # 遇到空格则停止
+            break
         if inputStr[splitIndex] in singleKeywords:
             splitIndex += 1
         else:
@@ -325,7 +327,7 @@ def SplitDiceCommand(inputStr)->(str, str):
             except:
                 break
                 
-    return inputStr[:splitIndex], inputStr[splitIndex:]
+    return inputStr[:splitIndex], inputStr[splitIndex:].strip()
 
 @TypeAssert(str)
 def SplitNumberCommand(inputStr)->(str, str):
@@ -345,12 +347,17 @@ def SplitNumberCommand(inputStr)->(str, str):
 @TypeAssert(str)
 def isDiceCommand(inputStr)->(bool):
     # 判断一个字符串是不是合法的投骰表达式
-    singleKeywords = ['+', '-', 'k', 'd', '#', ' ', '\n'] + [str(i) for i in range(10)]
+    singleKeywords = ['+', '-', 'k', 'd', '#'] + [str(i) for i in range(10)]
     doubleKeywords = ['优势', '劣势', '抗性', '易伤']
     inputStr = inputStr.replace(' ', '')
     splitIndex = 0
+    hasContent = False
     while splitIndex < len(inputStr):
         if inputStr[splitIndex] in singleKeywords:
+            if inputStr[splitIndex] == '#':
+                hasContent == False
+            else:
+                hasContent = True
             splitIndex += 1
         else:
             try:
@@ -358,5 +365,5 @@ def isDiceCommand(inputStr)->(bool):
                 splitIndex += 2
             except:
                 return False
-                
-    return True
+    if hasContent:
+        return True

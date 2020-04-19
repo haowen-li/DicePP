@@ -1,0 +1,1 @@
+{"title": "天气", "relay": ["天气:风", "天气:降水", "天气:温度"], "totalWeight": 1, "list": [{"weight": 1, "content": [["DRAW", "天气:温度"], ["DRAW", "天气:风"], ["DRAW", "天气:降水"]], "end": false, "raw": "DRAW(天气:温度) DRAW(天气:风) DRAW(天气:降水)"}]}

@@ -19,6 +19,62 @@ bot = Bot()
 DEBUG_MODE = False
 LIMIT_MODE = False
 
+@on_command('PROCESS_MESSAGE', only_to_me=True)
+async def processMessage(session: CommandSession):
+    commandResultList = session.get('result')
+    if DEBUG_MODE:
+        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
+    if commandResultList:
+        await processCommandResult(session, commandResultList)
+
+
+@processMessage.args_parser
+async def _(session: CommandSession):
+    content = session.current_arg['arg']
+    onlyToMe = session.current_arg['only_to_me']
+    if DEBUG_MODE:
+        print(f'Input:{content}')
+    uid = str(session.ctx['user_id'])
+    uname = session.ctx['sender']['nickname']
+    groupId = None
+    if 'group_id' in session.ctx.keys():
+        groupId = str(session.ctx['group_id'])
+        # 如果来自群聊, 尝试查询用户的群名片
+        # try:
+        #     nonebot = session.bot
+        #     memberInfo = nonebot.get_group_member_info(groupId, uid)
+        #     if memberInfo['card']:
+        #         uname = memberInfo['card']
+        # except Exception as e:
+        #     print(e)
+
+    commandResult = await bot.ProcessMessage(content, uid, uname, groupId, onlyToMe)
+
+    session.state['result'] = commandResult
+
+@on_natural_language(keywords=None, only_to_me=False)
+async def _(session: NLPSession):
+    # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
+    return IntentCommand(90.0, 'PROCESS_MESSAGE', current_arg = {'arg':session.msg_text, 'only_to_me':False})
+
+@on_natural_language(keywords=None, only_to_me=True)
+async def _(session: NLPSession):
+    # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
+    return IntentCommand(91.0, 'PROCESS_MESSAGE', current_arg = {'arg':session.msg_text, 'only_to_me':True})
+
+
+# @on_natural_language(keywords={'.', '。'}, only_to_me=False)
+# async def _(session: NLPSession):
+#     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
+#     if session.msg_text[0] == '.' or session.msg_text[0] == '。':
+#         return IntentCommand(90.0, 'PROCESS_MESSAGE', current_arg = {'arg':session.msg_text, 'only_to_me':False})
+
+# @on_natural_language(keywords={'.', '。'}, only_to_me=True)
+# async def _(session: NLPSession):
+#     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
+#     text = session.msg_text.strip()
+#     if text[0] == '.' or text[0] == '。':
+#         return IntentCommand(91.0, 'PROCESS_MESSAGE', current_arg = {'arg':text, 'only_to_me':True})
 
 async def processCommandResult(session, commandResultList):
     for commandResult in commandResultList:
@@ -60,54 +116,6 @@ async def processCommandResult(session, commandResultList):
             except:
                 pass
 
-@on_command('PROCESS_COMMAND', only_to_me=True)
-async def processCommand(session: CommandSession):
-    commandResultList = session.get('result')
-    if DEBUG_MODE:
-        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
-    if commandResultList:
-        await processCommandResult(session, commandResultList)
-
-
-@processCommand.args_parser
-async def _(session: CommandSession):
-    content = session.current_arg['arg']
-    only_to_me = session.current_arg['only_to_me']
-    if DEBUG_MODE:
-        print(f'Input:{content}')
-    uid = str(session.ctx['user_id'])
-    uname = session.ctx['sender']['nickname']
-    if 'group_id' not in session.ctx.keys():
-        commandResult = await bot.ProcessInput(content, uid, uname, only_to_me = only_to_me)
-    else:
-        groupId = str(session.ctx['group_id'])
-        # 如果来自群聊, 尝试查询用户的群名片
-        try:
-            nonebot = session.bot
-            memberInfo = nonebot.get_group_member_info(groupId, uid)
-            if memberInfo['card']:
-                uname = memberInfo['card']
-        except Exception as e:
-            print(e)
-        commandResult = await bot.ProcessInput(content, uid, uname, groupId, only_to_me = only_to_me)
-
-    session.state['result'] = commandResult
-
-@on_natural_language(keywords={'.', '。'}, only_to_me=False)
-async def _(session: NLPSession):
-    # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
-    if session.msg_text[0] == '.' or session.msg_text[0] == '。':
-        return IntentCommand(90.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':False})
-
-@on_natural_language(keywords={'.', '。'}, only_to_me=True)
-async def _(session: NLPSession):
-    # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
-    index = session.msg_text[0].find('.')
-    if index == -1:
-        index = session.msg_text[0].find('。')
-    if index != -1:
-        return IntentCommand(91.0, 'PROCESS_COMMAND', current_arg = {'arg':session.msg_text, 'only_to_me':True})
-
 # @nonebot.scheduler.scheduled_job(
 #     'interval',
 #     # weeks=0,
@@ -143,7 +151,7 @@ async def _():
 
 @nonebot.scheduler.scheduled_job(
     'interval',
-    hours=12,
+    hours=2,
 )
 async def _():
     botNone = nonebot.get_bot()
@@ -153,30 +161,12 @@ async def _():
     except CQHttpError:
         pass
     if info:
-        groupIdList = []
+        groupInfoDictUpdate = {}
         for gInfo in info:
-            groupIdList.append(gInfo['group_id'])
-        commandResultList = await bot.UpdateGroupInfo(groupIdList)
+            groupInfoDictUpdate[gInfo['group_id']] = gInfo['group_name']
+        commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
         if commandResultList:
             await processCommandResult(None, commandResultList)
-
-@on_command('radio', permission = SUPERUSER)
-async def _(session: CommandSession):
-    msg = session.current_arg_text
-    nonebot = session.bot
-    try:
-        info = await nonebot.get_group_list()
-    except CQHttpError:
-        pass
-
-    for groupInfo in info:
-        try:
-            await nonebot.send_group_msg(group_id=groupInfo['group_id'], message=msg)
-            sleep(10)
-            # print(f'RADIO to {groupInfo['group_name']} {groupInfo['group_id']}:{msg}')
-        except:
-            pass
-
 
 # 将函数注册为好友请求处理器
 @on_request('friend')

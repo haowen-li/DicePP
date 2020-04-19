@@ -1,0 +1,1 @@
+{"title": "天气:风", "relay": [], "totalWeight": 20, "list": [{"weight": 12, "content": [["TEXT", "1~12  无风"]], "end": false, "raw": "WEIGHT(12)1~12  无风"}, {"weight": 5, "content": [["TEXT", "13~17  微风"]], "end": false, "raw": "WEIGHT(5)13~17  微风"}, {"weight": 3, "content": [["TEXT", "18~20  强风"]], "end": false, "raw": "WEIGHT(3)18~20  强风"}]}

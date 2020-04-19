@@ -11,10 +11,11 @@ from .type_assert import TypeAssert
 commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send', 'welcome']
 commandKeywordList += ['查询', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
-commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '金钱', '长休']
+commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '队伍金钱', '金钱' ,'长休']
 commandKeywordList += ['记录笔记', '查看笔记', '清除笔记', '笔记']
 commandKeywordList += ['savedata', 'credit', 'notice', 'dailyprofile']
-commandKeywordReList = ['^..检定', '^..豁免', '^..攻击', '.*法术位', '.*hp', '^[1-9]环']
+commandKeywordReList = ['^([1-9]#)?..检定', '^([1-9]#)?..豁免', '^([1-9]#)?..攻击', '.*法术位', '.*hp', '^[1-9]环']
+commandKeywordReList += ['^队伍..检定']
 
 @unique
 class CommandType(Enum):
@@ -45,6 +46,12 @@ class CommandType(Enum):
     TodayJoke = 24
     REST = 25
     NOTE = 26
+    TeamCheck = 27
+    TeamMoney = 28
+
+dndCommandDict = {CommandType.Roll, CommandType.INIT, CommandType.RI, CommandType.HP, CommandType.QUERY, CommandType.PC, 
+                 CommandType.CHECK, CommandType.SpellSlot, CommandType.TEAM, CommandType.MONEY, CommandType.REST,
+                 CommandType.TeamCheck,  CommandType.TeamMoney}
 
 
 @unique
@@ -65,7 +72,7 @@ pcSkillDict = {'运动':'力量调整值', '体操':'敏捷调整值', '巧手':
                '欺瞒':'魅力调整值', '威吓':'魅力调整值', '表演':'魅力调整值', '游说':'魅力调整值'}
 
 pcSkillSynonymDict = {'特技':'体操', '潜行':'隐匿', '隐蔽':'隐匿', '躲藏':'隐匿', '驯养':'驯兽', '驯服':'驯兽', '医疗':'医药',
-                       '医术':'医药', '观察':'察觉', '生存':'求生', '欺骗':'欺瞒', '哄骗':'欺瞒', '唬骗':'欺瞒', '威胁':'威吓',
+                       '医术':'医药', '观察':'察觉', '生存':'求生', '欺骗':'欺瞒', '欺诈':'欺瞒', '哄骗':'欺瞒', '唬骗':'欺瞒', '威胁':'威吓',
                        '妙手':'巧手', '说服':'游说'}
 pcCheckDictShort = {**pcSavingDict, **pcSkillDict, **pcAttackDict}
 pcCheckDictLong = {**pcAbilityDict, **pcCheckDictShort}
