@@ -1,10 +1,10 @@
 from .utils import *
-from .help_info import *
+from .info_help import *
 
-userInfoTemp = {'credit':0, 'spamDate':GetCurrentDateStr(), 'spamAccu':0, 'commandAccu':0, 'messageAccu':0, 'dndCommandAccu':0, 'commandDaily':0, 'messageDaily': 0, 'dndCommandDaily':0 ,
-				 'warning':0, 'ban':0, 'dailyCredit':0, 'seenJRRP':False, 'seenJRXH':False, 'seenJRCD':False}
+userInfoTemp = {'credit':0, 'activeDate':GetCurrentDateStr(), 'spamAccu':0, 'commandAccu':0, 'messageAccu':0, 'dndCommandAccu':0, 'commandDaily':0, 'messageDaily': 0, 'dndCommandDaily':0 ,
+				 'warning':0, 'ban':0, 'dailyCredit':0, 'seenJRRP':False, 'seenJRXH':False, 'seenJRCD':False, 'title':[]}
 userDictTemp = {'userId':userInfoTemp}
-groupInfoTemp = {'name':'未知群名称' , 'activeDate':GetCurrentDateStr(), 'active':True, 'credit':0,
+groupInfoTemp = {'name':'未知群名称' , 'activeDate':GetCurrentDateStr(), 'chatDate':GetCurrentDateStr(), 'active':True, 'credit':0,
 				 'commandAccu':0, 'messageAccu':0, 'dndCommandAccu':0, 'commandDaily':0, 'messageDaily': 0, 'dndCommandDaily':0 ,
 				 'welcome':'欢迎新人~', 'warning':0, 'noticeBool':True, 'noticeStr':FIRST_TIME_STR, 'note':{}}
 groupDictTemp = {'groupId':groupInfoTemp}

@@ -159,7 +159,8 @@ async def _():
     try:
         info = await nonebot.get_group_list()
     except CQHttpError:
-        pass
+        for pId in MASTER:
+            await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
     if info:
         groupInfoDictUpdate = {}
         for gInfo in info:

@@ -1,6 +1,6 @@
-from .custom_config import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
-from .utils import pcAbilityDict, pcSavingDict, pcSkillDict, pcSheetTemplate
-VERSION = '0.5.9.2'
+from .info_game import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
+from .info_game import PC_SKILL_DICT, PC_SHEET_TEMPLATE
+VERSION = '0.6.0'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -19,7 +19,8 @@ SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bu
 FIRST_TIME_STR = '伊丽莎白来咯~\n输入.help查看使用帮助\n请不要禁言和踢骰娘, 暂时不需要我的话就at我以后再使用bot off或dismiss功能吧~'
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
 
-HELP_COMMAND_UPDATE_STR = '2020/4/15 v0.5.9.2:\n1.增强了.ri和.init指令 2.加入了队伍检定和队伍金钱功能 3.可以在一个属性检定指令中重复投多次骰子了 4.投骰表达式的识别不会忽略空格了, 如.rd2 0将被识别为原因是0的2面骰\n'
+HELP_COMMAND_UPDATE_STR = '2020/4/25 v0.6.0:\n1.大幅改动了代码结构, 可拓展性增强了 2.记录笔记可以递增记录了 3.修复了一些指令的bug 4.加入了一些聊天彩蛋\n'
+HELP_COMMAND_UPDATE_STR += '2020/4/15 v0.5.9.2:\n1.增强了.ri和.init指令 2.加入了队伍检定和队伍金钱功能 3.可以在一个属性检定指令中重复投多次骰子了 4.投骰表达式的识别不会忽略空格了, 如.rd2 0将被识别为原因是0的2面骰\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/10 v0.5.9.1:\n1.强化了draw指令\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容) 4.查询资料库中加入了拓展种族和眼魔书城主工具\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/25 v0.5.8:\n1.优化了查询功能的体验 2.修复了一些bug\n'
@@ -118,12 +119,15 @@ HELP_COMMAND_INIT_STR += '.init del 地精a/地精b/地精c //在先攻列表中
 
 HELP_COMMAND_QUERY_STR =  '查询资料: .查询 查询目标\n'
 HELP_COMMAND_QUERY_STR += '查询指令支持部分匹配, 可用/区分多个关键字\n'
+HELP_COMMAND_QUERY_STR += '可以用索引指令查询词条名\n'
 HELP_COMMAND_QUERY_STR += '目前可查询的内容有: 玩家手册(by梨子,花作噫,邪恶,赵小安,睡帽), 全拓展法术与专长, 怪物图鉴(by花作噫, 梨子), '
 HELP_COMMAND_QUERY_STR += '城主指南部分规则(by梨子), 拓展职业(by惠惠, 梨子), 拓展种族(by梨子), 核心与拓展魔法物品(by花作噫, 惠惠), 眼魔书城主工具(by梨子)\n'
 HELP_COMMAND_QUERY_STR += '示例:\n'
 HELP_COMMAND_QUERY_STR += '.查询 借机攻击\n'
 HELP_COMMAND_QUERY_STR += '.查询 长弓\n'
-HELP_COMMAND_QUERY_STR += '.查询 法师/6环'
+HELP_COMMAND_QUERY_STR += '.查询 法师/6环\n'
+HELP_COMMAND_QUERY_STR += '.索引 长弓 // 返回所有含有长弓的词条(如物品, 怪物, 魔法物品, 能力)\n'
+HELP_COMMAND_QUERY_STR += '.索引 昏迷/施法时间 //利用法术词条中必然含有施法时间的特性查询和昏迷相关的法术'
 
 HELP_COMMAND_DRAW_STR =  '抽取牌库: .draw [抽取次数#]目标牌库\n'
 HELP_COMMAND_DRAW_STR += '目标牌库支持部分匹配, 可用/区分多个关键字\n'
@@ -167,11 +171,12 @@ HELP_COMMAND_Money_STR += '.金钱-10gp+50cp  //花费10gp并得到50cp'
 
 HELP_COMMAND_NOTE_STR =  '笔记功能:\n.记录笔记 [索引:]内容\n.(查看)笔记[索引]\n.清除笔记[索引]\n'
 HELP_COMMAND_NOTE_STR += '清除所有笔记请输入.清除笔记 所有笔记\n'
+HELP_COMMAND_NOTE_STR += '新增笔记请在最前面写一个+\n'
 HELP_COMMAND_NOTE_STR += '索引名支持部分匹配功能\n'
 HELP_COMMAND_NOTE_STR += '默认索引为:临时记录\n'
 HELP_COMMAND_NOTE_STR += '示例:\n'
 HELP_COMMAND_NOTE_STR += '.记录笔记 下次开团时间是周六\n'
-HELP_COMMAND_NOTE_STR += '.记录笔记 npc名字:镇长约翰, 车夫强森\n'
+HELP_COMMAND_NOTE_STR += '.记录笔记 npc名字:+镇长约翰, 车夫强森\n'
 HELP_COMMAND_NOTE_STR += '.记录笔记 背包:2瓶治疗药水, 火球术卷轴\n'
 HELP_COMMAND_NOTE_STR += '.笔记  //查看所有笔记\n'
 HELP_COMMAND_NOTE_STR += '.笔记 背包 //查看"背包"对应的笔记\n'
@@ -194,6 +199,8 @@ HELP_COMMAND_LONGREST_STR =  '长休指令指令: .长休\n必须先设置最大
 HELP_COMMAND_JRRP_STR =  '这个指令也不清楚怎么用吗? #吃惊\n'
 HELP_COMMAND_JRRP_STR += '.jrrp 查看今日人品'
 
+HELP_COMMAND_DND_STR = '.dnd 生成的属性值来自于r6#4d6k3'
+
 HELP_COMMAND_MENU_STR =  '.今日菜单 查看今日菜单, 找不到对应关键词的菜肴时会删减关键词甚至删掉这道菜'
 
 HELP_COMMAND_PC_STR =  '角色卡相关功能:\n.记录角色卡 [角色卡模板]\n.查看角色卡\n.完整角色卡\n.清除角色卡\n'
@@ -205,7 +212,7 @@ HELP_COMMAND_PC_STR += '- 记录角色卡时输入的名称等同于.nn [名称]
 HELP_COMMAND_PC_STR += '- 如果不确定自己的理解是否正确的话, 输入".完整角色卡"确认一下吧~\n'
 HELP_COMMAND_PC_STR += '- 查看所有技能名请输入.help技能'
 
-HELP_COMMAND_SKILL_STR = f'所有技能关键字:{list(pcSkillDict.keys())}'
+HELP_COMMAND_SKILL_STR = f'所有技能关键字:{list(PC_SKILL_DICT.keys())}'
 
 HELP_COMMAND_SEND_STR = f'发送消息：.send 想对Master说的话\n如果用来调戏Master请做好心理准备'
 

@@ -91,6 +91,7 @@ def RollDiceCommand(diceCommand) -> (int, str, list):
 
 
     # 开始投骰并输出结果
+    np.random.seed(datetime.datetime.now().microsecond+np.random.randint(10000))
     totalValueList = []
     rawValueList = []
     if repeatTime == 1:
@@ -127,7 +128,6 @@ def RollDiceList(diceList, scale = 1)->(int, str, int, list):
     if not scale in [0.5, 1, 2]:
         return -1, f'比例不在可选择的范围内, 请向开发者报告', None, None
     # 生成随机种子
-    np.random.seed(datetime.datetime.now().microsecond+np.random.randint(10000))
     finalAnswer = ''
     totalValue = 0
     totalValueList = []
