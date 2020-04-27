@@ -27,6 +27,9 @@ async def processMessage(session: CommandSession):
     if commandResultList:
         await processCommandResult(session, commandResultList)
 
+@on_command('TEST', only_to_me=True)
+async def fooFunc(session: CommandSession):
+    pass
 
 @processMessage.args_parser
 async def _(session: CommandSession):
@@ -157,7 +160,24 @@ async def _():
     botNone = nonebot.get_bot()
     info = None
     try:
-        info = await nonebot.get_group_list()
+        info = await botNone.get_group_list()
+    except CQHttpError:
+        for pId in MASTER:
+            await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
+    if info:
+        groupInfoDictUpdate = {}
+        for gInfo in info:
+            groupInfoDictUpdate[gInfo['group_id']] = gInfo['group_name']
+        commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
+        if commandResultList:
+            await processCommandResult(None, commandResultList)
+
+@on_command('pull group', only_to_me=True)
+async def _(session: CommandSession):
+    botNone = nonebot.get_bot()
+    info = None
+    try:
+        info = await botNone.get_group_list()
     except CQHttpError:
         for pId in MASTER:
             await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
@@ -184,14 +204,9 @@ async def _(session: RequestSession):
 async def _(session: RequestSession):
     # 判断验证信息是否符合要求
     if session.ctx['sub_type'] == 'invite':
-        if LIMIT_MODE and session.ctx['comment'] != GROUP_PASSWORD:
-        # 验证信息错误，拒绝入群
-            await session.reject('请输入正确的暗号')
-        else:
-        # 验证信息正确或不需要验证，同意入群
+        isValid = await bot.ValidateGroupInvite(session.ctx["group_id"], session.ctx["user_id"])
+        if isValid:
             try:
-                # for mId in MASTER:
-                #     await nonebot.send_private_msg(user_id=mId, message=f'经{session.ctx["user_id"]}邀请, 加入群{session.ctx["group_id"]}')
                 nonebot = session.bot
                 try:
                     strangerInfo = await nonebot.get_stranger_info(user_id = str(session.ctx["user_id"]))
@@ -201,7 +216,7 @@ async def _(session: RequestSession):
                     groupInfo = await nonebot.get_group_info (group_id = str(session.ctx["group_id"]))
                 except:
                     groupInfo = {'group_name':''}
-                    
+                
                 for gId in MASTER_GROUP:
                     await nonebot.send_group_msg(group_id=gId, message=f'经{strangerInfo["nickname"]} {session.ctx["user_id"]}邀请, 加入群{groupInfo["group_name"]}{session.ctx["group_id"]}')
             except Exception as e:
@@ -211,6 +226,9 @@ async def _(session: RequestSession):
                 except:
                     pass
             await session.approve()
+        else:
+            # 拒绝入群
+            await session.reject('请输入正确的暗号')
 
 @on_notice('group_increase')
 async def _(session: NoticeSession):

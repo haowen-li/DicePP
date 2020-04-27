@@ -8,12 +8,12 @@ from enum import Enum, unique
 from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
-commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send', 'welcome']
+commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send', 'welcome', 'name']
 commandKeywordList += ['查询', '索引', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '队伍金钱', '金钱' ,'长休']
 commandKeywordList += ['记录笔记', '查看笔记', '清除笔记', '笔记']
-commandKeywordList += ['savedata', 'credit', 'notice', 'dailyprofile']
+commandKeywordList += ['savedata', 'credit', 'notice', 'dp']
 commandKeywordReList = ['^([1-9]#)?..检定', '^([1-9]#)?..豁免', '^([1-9]#)?..攻击', '.*法术位', '.*hp', '^[1-9]环']
 commandKeywordReList += ['^队伍..检定']
 
@@ -27,6 +27,7 @@ class CommandType(Enum):
     RI = 4
     HP = 5
     WELCOME = 6
+    NAME = 7
     BOT = 8
     DND = 9
     HELP = 10
@@ -192,3 +193,15 @@ def PairSubstring(substring, strList)->list:
         if strCur.find(substring) != -1:
             possibleResult.append(strCur)
     return possibleResult
+
+def PairSubstringList(substringList, strList) -> list:
+    possResult = []
+    for strCur in strList:
+        isPoss = True
+        for keyword in substringList:
+            if strCur.find(keyword) == -1:
+                isPoss = False
+                break
+        if isPoss:
+            possResult.append(strCur)
+    return possResult

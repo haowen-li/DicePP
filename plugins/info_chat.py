@@ -8,14 +8,35 @@ GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别�
 
 COOK_FAIL_STR_LIST = ['略加思索', '灵机一动', '毫不犹豫', '啊!就是这个', '不如这样']
 
-NAME2TITLE = {'梨子':'伊丽莎白最喜欢的水果~',
+CREDIT_LEVEL_FEED = {0:['呐，{name}你问这个是想做什么呀？',
+                        '现在对{name}还不是很熟悉呢~',
+                        '我们才认识没多久，问这个不是很好吧~',
+                        '对{name}还没什么印象呢。。。'],
+                     100:['认识{name}有一些日子了，但是还需要更多时间来了解你哦~',
+                          '{name}？应该不是坏人吧？'],
+                     200:['{name}么？也可以算得上是朋友吧~',
+                          '{name}大概是伊丽莎白的朋友吧~',
+                          '{name}想和伊丽莎白做朋友吗？还要多努力哦~'],
+                     300:['{name}当然是我的朋友啦~',
+                          '伊丽莎白觉得{name}作为一个人类来说还不错啦~'],
+                     400:['{name}是伊丽莎白的好朋友哦~',
+                          '伊丽莎白觉得{name}是个好人!$点赞$'],
+                     500:['诶？好感吗？不要问这个啦~{name}，这是我刚做好的棒棒糖，要来一根吗？',
+                          '今天{name}要和伊丽莎白一起比赛游泳吗？我不会输的哦~',
+                          '{name}是伊丽莎白可以信赖的人哦~',
+                          '{name}, 待会退潮的时候和伊丽莎白一起向群青公主祈祷吧!$祈祷$']
+                    }
+
+NAME2TITLE = {'梨子':'伊丽莎白最喜欢的水果',
               '群青公主':'群青公主 Ultramarine Princess是伊丽莎白信仰的神明哦~ 祂的真名是阿弗洛狄忒 Aphrodite, 祂是深海之主，厄运之神，美丽与欲望的化身，梦境与幻象的主宰.',
               '阿弗洛狄忒':'阿弗洛狄忒 Aphrodite被我们人鱼一族尊称为群青公主 Ultramarine Princess, 祂的神职是海洋 Ocean; 灾厄 Adversity; 繁殖 Breed; 梦境 Dream; 幻象 Illusion.',
-              '群青公主阿弗洛狄忒': '群青公主 Ultramarine Princess 阿弗洛狄忒 Aphrodite 是深海之主，厄运之神，美丽与欲望的化身，梦境与幻象的主宰. 阿弗洛狄忒的教会分成数个教派，不同教派的理念相差很大，主要包括由我们人鱼领导的克制派与鱼人和海怪组成的放纵派。',
-              
-              'printf()':'一个为了让你们可以开怀大笑而尽了一份力的男人。',
+              '群青公主阿弗洛狄忒': '群青公主 Ultramarine Princess 阿弗洛狄忒 Aphrodite 是深海之主，厄运之神，美丽与欲望的化身，梦境与幻象的主宰. 阿弗洛狄忒的教会分成数个教派，不同教派的理念相差很大，主要包括由我们人鱼领导的克制派与邪恶鱼人和海怪组成的放纵派。',
+              '伊丽莎白':'一条小人鱼',
+
+              '小安':'伊丽莎白派往人类的牧者',
+              'printf（）':'一个为了让你们可以开怀大笑而尽了一份力的男人。',
               '困囿四囝':'幽默地精的保护者',
-              '邪恶':'黑暗料理之王',
+              '邪恶勇者':'黑暗料理之王',
               '牧龙人':'精精牧龙人'
               }
 
@@ -50,7 +71,7 @@ CHAT_COMMAND_COMMON = {'the shadow.*':[(CHAT_CREDIT_LV0, 'The shadow! (激动地
                 '赞.?':[(CHAT_CREDIT_LV2, '$点赞$'),(CHAT_CREDIT_LV3, '$双重点赞$')]
                 }
 
-def GetPersonTitle(inputStr):
+def GetPersonTitle(inputStr, credit):
     name = inputStr[:inputStr.find('是谁')]
     if name in NAME2TITLE.keys():
         return NAME2TITLE[name]
@@ -67,5 +88,7 @@ def InsertEmotion(inputStr, emotionDict):
             except:
                 inputStr = f'#{inputStr}'
             return inputStr
-
-    return re.sub('\$.+?\$', replaceByEmotion, inputStr)
+    if emotionDict:
+        return re.sub('\$.+?\$', replaceByEmotion, inputStr)
+    else:
+        return inputStr
