@@ -137,7 +137,11 @@ async def ParseInput(inputStr):
     elif commandType == '今日菜单':
         return Command(CommandType.TodayMenu, [])
     elif commandType == '今日笑话':
-        return Command(CommandType.TodayJoke, [])
+        return Command(CommandType.TodayJoke, [0])
+    elif commandType == '昨日笑话':
+        return Command(CommandType.TodayJoke, [-1])
+    elif commandType == '明日笑话':
+        return Command(CommandType.TodayJoke, [1])
     elif commandType == '角色卡' or commandType == '查看角色卡':
         return Command(CommandType.PC, ['查看', commandStr])
     elif commandType == '记录角色卡':
@@ -177,6 +181,8 @@ async def ParseInput(inputStr):
         return Command(CommandType.TeamMoney, [commandStr])
     elif commandType == '长休':
             return Command(CommandType.REST, ['长休'])
+    elif commandType == '答题':
+            return Command(CommandType.Question, [commandStr])
     elif commandType == 'savedata':
         return Command(CommandType.MASTER, ['savedata'])
     elif commandType == 'credit':
@@ -414,7 +420,9 @@ class Bot:
                 try:
                     name, suffix = fp.split('.')
                     assert suffix in ['jpg', 'png', 'gif']
-                    self.emotionDict[name] = os.path.join(LOCAL_EMOTIMG_DIR_PATH, fp)
+                    absPath = os.path.join(LOCAL_EMOTIMG_DIR_PATH, fp)
+                    if os.path.exists(absPath):
+                        self.emotionDict[name] = absPath
                 except:
                     pass
             assert len(self.emotionDict) != 0
@@ -439,6 +447,17 @@ class Bot:
             print(f'姓名资料库加载失败! {e}')
             self.nameInfoDict = None
 
+        # 尝试加载题库
+        try:
+            self.questionDict = ReadJson(LOCAL_QUESINFO_PATH)
+            for k in self.questionDict.keys():
+                assert len(self.questionDict[k]) != 0
+            assert len(self.questionDict) != 0
+            print(f'题库加载成功! 共{len(self.questionDict)}个条目, 分别是{[(k, len(self.questionDict[k])) for k in self.questionDict.keys()]}')
+        except:
+            print(f'题库加载失败!')
+            self.questionDict = None
+
 
     async def UpdateLocalData(self):
         await UpdateJsonAsync(self.nickNameDict, LOCAL_NICKNAME_PATH)
@@ -462,20 +481,17 @@ class Bot:
                 for gId in invalidGroupId:
                     del self.groupInfoDict[gId]
                 result += [CommandResult(CoolqCommandType.MESSAGE, f'已删除不存在群: {invalidGroupId}', personIdList = MASTER)]
-                await UpdateJsonAsync(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
         except Exception as e:
             result = [CommandResult(CoolqCommandType.MESSAGE, f'更新群信息时出现错误: {e}', personIdList = MASTER)]
+        # 清除无用信息
+        DeleteInvalidInfo(self.nickNameDict, self.groupInfoDict.keys())
+        DeleteInvalidInfo(self.initInfoDict, self.groupInfoDict.keys())
+        DeleteInvalidInfo(self.pcStateDict, self.groupInfoDict.keys())
+        DeleteInvalidInfo(self.teamInfoDict, self.groupInfoDict.keys())
         return result
 
     async def DailyUpdate(self):
-            # 只保留键在sourceKeys中的targetDict条目
-        def DeleteInvalidInfo(targetDict, sourceKeys):
-            invalidGroupId = []
-            for gId in targetDict.keys():
-                if not gId in sourceKeys:
-                    invalidGroupId.append(gId)
-            for gId in invalidGroupId:
-                del targetDict[gId]
+        # 只保留键在sourceKeys中的targetDict条目
         result = []
         errorInfo = ''
         # 逐个处理用户信息
@@ -486,8 +502,8 @@ class Bot:
             try:
                 userInfoCur = self.userInfoDict[pId]
                 userInfoCur['warning'] = 0
+                userInfoCur['seenJoke'] = [1,1,1]
                 userInfoCur['seenJRRP'] = False
-                userInfoCur['seenJRXH'] = False
                 userInfoCur['seenJRCD'] = False
                 userInfoCur['seenCredit'] = False
                 # 最近一天有过dnd指令则增加好感度
@@ -507,9 +523,9 @@ class Bot:
                     IAInfo = userInfoCur['IACommand'][i]
                     if Str2Datetime(IAInfo['date']) < GetCurrentDateRaw():
                         userInfoCur['IACommand'].pop(i)
-                # 清除过久没有使用的用户
+                # 清除过久没有使用的用户 (不清除拉黑用户)
                 lastTime = GetCurrentDateRaw() - Str2Datetime(groupInfoCur['activeDate'])
-                if lastTime >= datetime.timedelta(days = 10):
+                if lastTime >= datetime.timedelta(days = 10) and userInfoCur['credit'] >= 0:
                     userInfoCur['credit'] -= 10
                     if userInfoCur['credit'] < 0:
                         invalidUser.append(pId)
@@ -544,7 +560,7 @@ class Bot:
         if warningGroup:
             result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR, groupIdList = warningGroup)]
         if dismissGroup:
-            result += [CommandResult(CoolqCommandType.DISMISS, groupIdList = dismissGroup)]
+            result += [CommandResult(CoolqCommandType.DISMISS, LEAVE_NOTICE_STR, groupIdList = dismissGroup)]
             for gId in dismissGroup:
                 del self.groupInfoDict[gId]
         
@@ -554,13 +570,6 @@ class Bot:
         except Exception as e:
             errorInfo += f'\n更新日志时的异常:{e}'
 
-        # self.nickNameDict = ReadJson(LOCAL_NICKNAME_PATH)
-        # self.initInfoDict = ReadJson(LOCAL_INITINFO_PATH)
-        # self.pcStateDict = ReadJson(LOCAL_PCSTATE_PATH)
-        # self.groupInfoDict = ReadJson(LOCAL_GROUPINFO_PATH)
-        # self.userInfoDict = ReadJson(LOCAL_USERINFO_PATH)
-        # self.teamInfoDict = ReadJson(LOCAL_TEAMINFO_PATH)
-        # self.dailyInfoDict = ReadJson(LOCAL_DAILYINFO_PATH)
         # 清除无用信息
         DeleteInvalidInfo(self.nickNameDict, self.groupInfoDict.keys())
         DeleteInvalidInfo(self.initInfoDict, self.groupInfoDict.keys())
@@ -572,8 +581,6 @@ class Bot:
             result += [CommandResult(CoolqCommandType.MESSAGE, '异常信息:'+errorInfo, MASTER)]
         await self.UpdateLocalData()
         return result
-
-
 
     async def ProcessMessage(self, inputStr, personId, personName, groupId = None, onlyToMe = False):
         # 检查个人信息是否存在
@@ -613,25 +620,53 @@ class Bot:
                 return resultList
 
         # 检测交互命令
-        resultList = None
+        resultList = []
         if userInfoCur['IACommand']:
             newIAList = []
+            # 先检查有效性
             for i in range(len(userInfoCur['IACommand'])):
                 IAInfo = userInfoCur['IACommand'][i]
                 # 如果该条交互指令且已经过期或已经处理该条交互指令, 则不保留该条交互指令
                 if Str2Datetime(IAInfo['date']) < GetCurrentDateRaw():
-                    continue
+                    try:
+                        if IAInfo['warning']:
+                            if groupId:
+                                resultList += [CommandResult(CoolqCommandType.MESSAGE, IAInfo['warning'], personIdList = [personId], groupIdList = [groupId])]
+                            else:
+                                resultList += [CommandResult(CoolqCommandType.MESSAGE, IAInfo['warning'], personIdList = [personId])]
+                    except:
+                        pass
+                else:
+                    newIAList.append(IAInfo)
+            userInfoCur['IACommand'] = newIAList
+
+            # 再处理指令 (要考虑有些指令可能会在中途注册指令)
+            for i in range(len(userInfoCur['IACommand'])):
+                IAInfo = userInfoCur['IACommand'][i]
                 if (groupId and IAInfo['groupId'] == groupId) or (not groupId and IAInfo['groupId'] == 'Private'):
-                    if inputStr in ['q', 'Q']:
-                        continue
                     targetFun = getattr(self, IAInfo['name'])
-                    result = targetFun(*IAInfo['args'], inputStr)
+                    result = targetFun(IAInfo, inputStr)
+                    try:
+                        if not IAInfo['isRepeat'] or inputStr in ['q', 'Q']:
+                            IAInfo['isValid'] = False
+                    except:
+                        IAInfo['isValid'] = False
                     if result:
                         self.dailyInfoDict['IACommand'] += 1
-                        resultList = [CommandResult(CoolqCommandType.MESSAGE, result)]
-                newIAList.append(IAInfo)
+                        resultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+            # 最后删除valid不为false的指令
+            newIAList = []
+            for i in range(len(userInfoCur['IACommand'])):
+                IAInfo = userInfoCur['IACommand'][i]
+                try:
+                    if IAInfo['isValid']:
+                        newIAList.append(IAInfo)
+                except:
+                    pass
             userInfoCur['IACommand'] = newIAList
-        if resultList:
+
+        if len(resultList) != 0:
             commandWeight = 2
             # 刷屏检测
             try:
@@ -641,6 +676,7 @@ class Bot:
                 userInfoCur['spamAccu'] = accuNum
                 if isSpam and not personId in MASTER:
                     userInfoCur['credit'] -= 100
+                    userWarning = userInfoCur['warning']
                     if userWarning == 0:
                         resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 黄牌警告!')]
                     elif userWarning == 1:
@@ -684,7 +720,7 @@ class Bot:
             nickName = self.nickNameDict[groupId][personId]
         except:
             try:
-                nickName = self.nickNameDict['Default'][personId]
+                nickName = self.nickNameDict['Private'][personId]
             except:
                 nickName = personName
 
@@ -702,6 +738,7 @@ class Bot:
             userInfoCur['spamAccu'] = accuNum
             if isSpam and not personId in MASTER:
                 userInfoCur['credit'] -= 100
+                userWarning = userInfoCur['warning']
                 if userWarning == 0:
                     resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 黄牌警告!')]
                 elif userWarning == 1:
@@ -726,13 +763,14 @@ class Bot:
     async def ProcessChatCommand(self, inputStr, credit):
         # 检测可能的聊天信息
         possChatList = []
+
         for keyRe in CHAT_COMMAND_COMMON.keys():
             result = re.match(keyRe, inputStr, flags = re.I)
             if result:
                 possChatList.append(CHAT_COMMAND_COMMON[keyRe])
         if len(possChatList) != 0:
             possChatList = RandomSelectList(possChatList)[0]
-            possChatList = [info[1] for info in possChatList if credit>=info[0]]
+            possChatList = [info[1] for info in possChatList if credit>=info[0] and ((len(info))!=3 or credit<= info[2])]
             if possChatList == 0:
                 return None
             result = RandomSelectList(possChatList)[0]
@@ -757,6 +795,8 @@ class Bot:
         commandResultList = []
         commandWeight = 1
         cType = command.cType
+        if not groupId:
+            groupId = 'Private'
         if cType == CommandType.Roll:
             self.dailyInfoDict['rollCommand'] += 1
             diceCommand = command.cArg[0]
@@ -802,7 +842,7 @@ class Bot:
                     pass
 
                 if isHide:
-                    if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '群聊时才能暗骰哦~')]
+                    if groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '群聊时才能暗骰哦~')]
                     finalResult = f'暗骰结果:{finalResult}'
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList = [personId]),
                             CommandResult(CoolqCommandType.MESSAGE, f'{nickName}进行了一次暗骰')]
@@ -811,7 +851,7 @@ class Bot:
 
         elif cType == CommandType.BOT:
             commandWeight = 3
-            if not groupId: commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
+            if groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             
             subType = command.cArg[0]
             if subType == 'show':
@@ -829,11 +869,9 @@ class Bot:
                                   CommandResult(CoolqCommandType.DISMISS,groupIdList = [groupId])]
 
         elif cType == CommandType.NickName:
-            if not groupId: newGroupId = 'Default'
-            else: newGroupId = groupId
             newNickName = command.cArg[0]
             if len(newNickName) <= 20:
-                result = self.UpdateNickName(newGroupId, personId, newNickName)
+                result = self.UpdateNickName(groupId, personId, newNickName)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             else:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'你的名字是什么呀...记不住啦~')]
@@ -848,7 +886,7 @@ class Bot:
             self.dailyInfoDict['initCommand'] += 1
             commandWeight = 4
             subType = command.cArg[0]
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 if not subType:
@@ -869,7 +907,7 @@ class Bot:
 
         elif cType == CommandType.RI:
             self.dailyInfoDict['initCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 initAdj = command.cArg[0]
@@ -895,7 +933,7 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
 
         elif cType == CommandType.HP:
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 self.dailyInfoDict['hpCommand'] += 1
@@ -916,7 +954,7 @@ class Bot:
             commandWeight = 3
             subType = command.cArg[0]
             infoStr = command.cArg[1]
-            if not groupId and subType != '模板':
+            if groupId == 'Private' and subType != '模板':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 if subType == '记录':
@@ -935,7 +973,7 @@ class Bot:
 
         elif cType == CommandType.CHECK:
             self.dailyInfoDict['checkCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 itemArgs = command.cArg[0].split('#')
@@ -961,7 +999,7 @@ class Bot:
 
         elif cType == CommandType.TeamCheck:
             self.dailyInfoDict['checkCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 valid = False
@@ -999,7 +1037,7 @@ class Bot:
 
         elif cType == CommandType.SpellSlot:
             self.dailyInfoDict['slotCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 # Args: [subType, *args]
@@ -1024,7 +1062,7 @@ class Bot:
 
         elif cType == CommandType.MONEY:
             self.dailyInfoDict['moneyCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 subType = command.cArg[0]
@@ -1040,7 +1078,7 @@ class Bot:
 
         elif cType == CommandType.TeamMoney:
             self.dailyInfoDict['moneyCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 valid = False
@@ -1066,7 +1104,7 @@ class Bot:
 
         elif cType == CommandType.NOTE:
             self.dailyInfoDict['noteCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 subType = command.cArg[0]
@@ -1089,7 +1127,7 @@ class Bot:
 
         elif cType == CommandType.TEAM:
             self.dailyInfoDict['teamCommand'] += 1
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 subType = command.cArg[0]
@@ -1108,7 +1146,7 @@ class Bot:
                             CommandResult(CoolqCommandType.MESSAGE, '已将队伍的完整信息私聊给你啦~')]
 
         elif cType == CommandType.REST:
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 subType = command.cArg[0]
@@ -1121,7 +1159,7 @@ class Bot:
             if len(command.cArg[0]) < 10 or len(command.cArg[0])>100:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '请不要随便骚扰Master哦~ (信息长度限制为10~100)')]
             else:
-                if groupId:
+                if groupId != 'Private':
                     message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
                 else:
                     message = f'来自用户{personId}的信息: {command.cArg[0]}'
@@ -1129,8 +1167,22 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
                         CommandResult(CoolqCommandType.MESSAGE, feedback)]
 
+        elif cType == CommandType.Question:
+            commandWeight = 4
+            if not command.cArg[0]:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'当前可用的题库是: {list(self.questionDict.keys())}')]
+            else:
+                possKey = PairSubstring(command.cArg[0].strip(), self.questionDict.keys())
+                if len(possKey) == 0:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'找不到这个题库哦~')]
+                elif len(possKey) > 1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'想找的是哪一个题库呢?\n{possKey}')]
+                else:
+                    result = self.__StartExam(possKey[0], personId, groupId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+
         elif cType == CommandType.WELCOME:
-            if not groupId:
+            if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有在群聊中才能使用该功能哦')]
             else:
                 info = command.cArg[0].strip()
@@ -1194,18 +1246,14 @@ class Bot:
             self.dailyInfoDict['queryCommand'] += 1
             commandWeight = 3
             targetStr = str(command.cArg[0])
-            if groupId: groupIdQ = groupId
-            else: groupIdQ = 'Private'
-            queryResult = self.__QueryInfo(targetStr, personId, groupIdQ)
+            queryResult = self.__QueryInfo(targetStr, personId, groupId)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, queryResult)]
 
         elif cType == CommandType.INDEX:
             self.dailyInfoDict['queryCommand'] += 1
             commandWeight = 3
             targetStr = str(command.cArg[0])
-            if groupId: groupIdQ = groupId
-            else: groupIdQ = 'Private'
-            queryResult = self.__IndexInfo(targetStr, personId, groupIdQ)
+            queryResult = self.__IndexInfo(targetStr, personId, groupId)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, queryResult)]
 
         elif cType == CommandType.DRAW:
@@ -1261,13 +1309,22 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '每天只有一次机会哦~')]
 
         elif cType == CommandType.TodayJoke:
-            self.dailyInfoDict['jokeCommand'] += 1
-            if not userInfoCur['seenJRXH']:
-                userInfoCur['seenJRXH'] = True
-                commandWeight = 4
-                date = GetCurrentDateRaw()
+            flag = ''
+            if command.cArg[0] == 0 and userInfoCur['seenJoke'][1] != 0:
+                flag = '今'
+                userInfoCur['seenJoke'][1] = 0
+            elif command.cArg[0] == -1 and userInfoCur['seenJoke'][0] != 0:
+                flag = '昨'
+                userInfoCur['seenJoke'][0] = 0
+            elif command.cArg[0] == 1 and userInfoCur['seenJoke'][2] != 0:
+                flag = '明'
+                userInfoCur['seenJoke'][2] = 0
+            if flag:
+                self.dailyInfoDict['jokeCommand'] += 1
+                commandWeight = 2
+                date = GetCurrentDateRaw() + command.cArg[0] * datetime.timedelta(days = 1)
                 result = self.__GetTodayJoke(personId, date)
-                result = f'{nickName}的今日随机TRPG笑话:\n{result}'
+                result = f'{nickName}的{flag}日随机TRPG笑话:\n{result}'
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             else:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '每天只有一次机会哦~')]
@@ -1306,7 +1363,8 @@ class Bot:
                             value = int(commandArgs[1])
                             self.userInfoDict[targetId]['credit'] += value
                             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}'),
-                                                  CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}', personIdList=[targetId])]
+                                                  CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}',
+                                                   personIdList=[targetId])]
                         else: # 查看
                             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度是{self.userInfoDict[targetId]["credit"]}')]
                     except Exception as e:
@@ -1341,20 +1399,26 @@ class Bot:
         except:
             return False
         
-    def RegisterIACommand(self, personId, groupId, funcName, argsList, IAType = -1):
-        if len(self.userInfoDict[personId]['IACommand']) >= IA_LIMIT_NUM:
-            self.userInfoDict[personId]['IACommand'].pop(0)
+    def RegisterIACommand(self, personId, groupId, funcName, argsList, IAType = -1, expireTime = IA_EXPIRE_TIME, expireWarning = '', isRepeat = False):
         # 查找已有的同类交互指令并删除
         for i in range(len(self.userInfoDict[personId]['IACommand'])-1, -1, -1):
             if self.userInfoDict[personId]['IACommand'][i]['groupId'] == groupId and self.userInfoDict[personId]['IACommand'][i]['IAType'] == IAType:
-                self.userInfoDict[personId]['IACommand'].pop(0)
+                self.userInfoDict[personId]['IACommand'].pop(i)
                 break
+
+        if len(self.userInfoDict[personId]['IACommand']) >= IA_LIMIT_NUM:
+            self.userInfoDict[personId]['IACommand'].pop(0)
+        
         info = {}
         info['name'] = funcName
-        info['date'] = Datetime2Str(GetCurrentDateRaw()+IA_EXPIRE_TIME)
+        info['date'] = Datetime2Str(GetCurrentDateRaw()+expireTime)
+        info['personId'] = personId
         info['groupId'] = groupId
         info['args'] = argsList
         info['IAType'] = IAType
+        info['warning'] = expireWarning
+        info['isRepeat'] = isRepeat
+        info['isValid'] = True
         self.userInfoDict[personId]['IACommand'].append(info)
 
     def UpdateNickName(self, groupId, personId, nickName) -> str:
@@ -1364,9 +1428,12 @@ class Bot:
             self.nickNameDict[groupId] = {}
 
         if nickName: # 如果指定了昵称, 则更新昵称
-            imposterList = PairSubstring(nickName, NAME2TITLE.keys())
+            imposterList = []
+            for strCur in NAME2TITLE.keys():
+                if nickName.find(strCur) != -1:
+                    imposterList.append(strCur)
             if imposterList:
-                return f'我所知道的{nickName}是{NAME2TITLE[imposterList[0]]}'
+                return f'{nickName}是{NAME2TITLE[imposterList[0]]}哦~请换个名字吧!'
             self.nickNameDict[groupId][personId] = nickName
             # 尝试修改先攻列表
             try:
@@ -1423,13 +1490,13 @@ class Bot:
             index = '临时记录'
         if len(currentGroupInfo['note']) > 20:
             return f'一个群里最多只允许20条笔记哦~'
-        if len(content) > 200:
-            return '呜...记不住啦~ 超过两百个字的内容就不要记到笔记上了吧...'
+        if len(content) > 300:
+            return '呜...记不住啦~ 超过三百个字的内容就不要记到笔记上了吧...'
         totalWords = 0
         for k in currentGroupInfo['note'].keys():
             totalWords += len(currentGroupInfo['note'][k])
-        if totalWords + len(content) > 600:
-            return f'呜...记不住啦~ 一个群的笔记总共最多只能保存600个字符哦~'
+        if totalWords + len(content) > 1000:
+            return f'呜...记不住啦~ 一个群的笔记总共最多只能保存一千个字哦~'
         currentGroupInfo['note'][index] = content
         return f'记下来咯~ 索引是"{index}"'
 
@@ -1798,7 +1865,7 @@ class Bot:
                 else:
                     result = f'找到多个匹配的条目: {result[:-1]}等, 共{len(possResult)}个条目\n回复序号可直接查询对应内容'
                 self.dailyInfoDict['queryMult'] += 1
-                self.RegisterIACommand(personId, groupId, 'IA_QueryInfoWithIndex', [targetStr], 0)
+                self.RegisterIACommand(personId, groupId, 'IA_QueryInfoWithIndex', [targetStr], 0, isRepeat = True)
                 return result
             elif len(possResult) == 1:
                 result = str(self.queryInfoDict[possResult[0]])
@@ -1809,7 +1876,8 @@ class Bot:
                 self.dailyInfoDict['queryFail'] += 1
                 return '唔...找不到呢...'
 
-    def IA_QueryInfoWithIndex(self, targetStr, index) -> str:
+    def IA_QueryInfoWithIndex(self, IAInfo, index) -> str:
+        targetStr = IAInfo['args'][0]
         try:
             index = int(index)
             assert index > 0 and index <= QUERY_SHOW_LIMIT
@@ -1859,10 +1927,11 @@ class Bot:
                 result = f'以下词条含有关键字{keywordList}:\n{result[:-1]}\n回复序号可直接查询对应内容'
             else:
                 result = f'以下词条含有关键字{keywordList}:\n{result[:-1]}等, 共{len(possResult)}个条目\n回复序号可直接查询对应内容'
-            self.RegisterIACommand(personId, groupId, 'IA_IndexInfoWithIndex', [targetStr], 0)
+            self.RegisterIACommand(personId, groupId, 'IA_IndexInfoWithIndex', [targetStr], 0, isRepeat = True)
             return result
 
-    def IA_IndexInfoWithIndex(self, targetStr, index) -> str:
+    def IA_IndexInfoWithIndex(self, IAInfo, index) -> str:
+        targetStr = IAInfo['args'][0]
         try:
             index = int(index)
             assert index > 0 and index <= QUERY_SHOW_LIMIT
@@ -1935,6 +2004,57 @@ class Bot:
             else:
                 return '唔...找不到呢...'
 
+    def __StartExam(self, examKey, personId, groupId, questionNum = 10) -> str:
+        if not examKey in self.questionDict.keys():
+            return f'{examKey}不是可用的题库!'
+
+        size = len(self.questionDict[examKey])
+        questionNum = min(size, questionNum)
+        questionIndexList = np.random.permutation(size)[:questionNum].tolist()
+        examState = [0,0,0] # 当前序号, 正确, 错误数量
+        self.RegisterIACommand(personId, groupId, 'IA_AnserQuestion', [examKey, questionIndexList, examState], 1, datetime.timedelta(seconds = 120), '时间到咯, 请你重新开始吧~')
+        result = f'{examKey}考试开始啦, 下面是从{size}道题中为你随机选择的{questionNum}道题~\n'
+        result += '判断题输入T/F 或 Y/N回答, 选择题请输入序号。答案是大小写都可以\n每道题只有2分钟的有效时间, 错过了就请重新开始吧~\n'
+        result += '输入Q即可中止考试\n'
+        result += f'听好咯, 第一道题目是:\n{self.questionDict[examKey][questionIndexList[0]][0]}'
+        return result
+
+    def IA_AnserQuestion(self, IAInfo, answer) -> str:
+        personId = IAInfo['personId']
+        groupId = IAInfo['groupId']
+        examKey, questionIndexList, examState = IAInfo['args']
+        questionInfo = self.questionDict[examKey][questionIndexList[examState[0]]]
+        answer = answer.strip().upper()
+        if answer == 'Q':
+            return f'那么考试就到这里咯~ 你总共答对了{examState[1]}道题, 答错了{examState[2]}道题'
+        groundTruth = questionInfo[1]
+        explaination = questionInfo[2]
+        isCorrect = False
+        if groundTruth == 'T' or groundTruth == 'F':
+            if groundTruth == 'T' and (answer == 'T' or answer == 'Y'):
+                isCorrect = True
+            elif groundTruth == 'F' and (answer == 'F' or answer == 'N'):
+                isCorrect = True
+        elif groundTruth == answer:
+            isCorrect = True
+        result = ''
+        if isCorrect:
+            result += '回答正确~\n'
+            examState[1] += 1
+        else:
+            result += f'回答错误~ 答案是{groundTruth}\n'
+            examState[2] += 1
+        if explaination:
+            result += f'解析: {explaination}\n\n'
+
+        examState[0] += 1
+        if examState[0] < len(questionIndexList):
+            self.RegisterIACommand(personId, groupId, 'IA_AnserQuestion', [examKey, questionIndexList, examState], 1, datetime.timedelta(seconds = 120), '时间到咯, 请你重新开始吧~')
+            result += f'下一道题来咯!\n第{examState[0]+1}题:{self.questionDict[examKey][questionIndexList[examState[0]]][0]}'
+        else:
+            result += f'考试结束咯, 你答对了{len(questionIndexList)}道题中的{examState[1]}道, 正确率为{100*examState[1]/len(questionIndexList)}%~'
+        return result
+
     def __GetTodayMenu(self, personId, date) -> str:
         seed = 0
         temp = 1
@@ -1994,9 +2114,6 @@ class Bot:
         else:
             index = index - wordSize
             fileName = self.jokeDict['img'][index]
-            # if PLATFORM_NAME == 'DOCKER':
-            #     jokeCur = f' [CQ:image,file=file:///{WINE_COOLQ_JOKEIMG_PATH}{fileName}]'
-            # else:
             absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, fileName)
             jokeCur = f'[CQ:image,file=file:///{absPath}]'
         return jokeCur
@@ -2051,6 +2168,8 @@ class Bot:
             return HELP_COMMAND_COOK_STR
         elif subType == '点菜':
             return HELP_COMMAND_ORDER_STR
+        elif subType == '答题':
+            return HELP_COMMAND_QUESTION_STR
         elif subType == '今日菜单':
             return HELP_COMMAND_MENU_STR
         elif '角色卡' in subType or '人物卡' in subType:
@@ -2133,7 +2252,8 @@ def GenerateName(nameInfoDict, target, times):
     if not target:
         return f'当前可选的姓名有:{list(nameInfoDict["meta"].keys())}'
     if not target in nameInfoDict['meta'].keys():
-        possTarget = PairSubstring(target, nameInfoDict['meta'].keys())
+        targetList = target.split('/')
+        possTarget = PairSubstringList(targetList, nameInfoDict['meta'].keys())
         if len(possTarget) == 0:
             return f'无法找到与{target}相关的姓名库~'
         elif len(possTarget) > 1:

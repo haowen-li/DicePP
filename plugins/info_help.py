@@ -1,6 +1,6 @@
 from .info_game import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .info_game import PC_SKILL_DICT, PC_SHEET_TEMPLATE
-VERSION = '0.6.2'
+VERSION = '0.6.3'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -18,16 +18,16 @@ SHOW_STR += '欢迎加入交流群:861919492或联系开发者:821480843报告bu
 
 FIRST_TIME_STR = '伊丽莎白来咯~\n我是D&D5E专用骰娘, 请不要把我拉进无关的群哦~\n输入.help查看使用帮助\n请不要禁言和踢骰娘, 暂时不需要我的话就at我以后再加上.bot off或.dismiss吧~'
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
+LEAVE_NOTICE_STR = '一只人鱼趁着夜色离开了你的队伍。'
 
-HELP_COMMAND_UPDATE_STR = '2020/4/26 v0.6.2:\n1.实验性地于查询指令中加入了交互命令, 具体使用方法请输入.help交互 或 .help查询 查看\n'
+HELP_COMMAND_UPDATE_STR = '2020/5/5 v0.6.3:\n1.加入了答题功能 2.增加了更多的随机姓名 3.增加了更多的今日笑话\n'
+HELP_COMMAND_UPDATE_STR += '2020/4/26 v0.6.2:\n1.实验性地于查询指令中加入了交互命令, 具体使用方法请输入.help交互 或 .help查询 查看\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/26 v0.6.1:\n1.加入了随机姓名指令\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/25 v0.6.0:\n1.大幅改动了代码结构, 可拓展性增强了 2.记录笔记可以递增记录了 3.修复了一些指令的bug 4.加入了一些聊天彩蛋\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/15 v0.5.9.2:\n1.增强了.ri和.init指令 2.加入了队伍检定和队伍金钱功能 3.可以在一个属性检定指令中重复投多次骰子了 4.投骰表达式的识别不会忽略空格了, 如.rd2 0将被识别为原因是0的2面骰\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/10 v0.5.9.1:\n1.强化了draw指令\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容) 4.查询资料库中加入了拓展种族和眼魔书城主工具\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/25 v0.5.8:\n1.优化了查询功能的体验 2.修复了一些bug\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.7:\n1.可以在hp指令中用/区分多个目标 2.增加了长休指令 3.检定功能支持[属性]攻击的指令了 4.修复了可以反复加入队伍的bug\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/22 v0.5.6:\n1.增加了更新通知与入群提醒功能 2.会检测可能过时的先攻列表 3.增加了今日笑话功能 4.增加了.rs指令\n'
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'
@@ -47,6 +47,7 @@ HELP_COMMAND_STR += '.队伍 主要用来快速查看队员属性, 请输入.hel
 HELP_COMMAND_STR += '.长休 回复生命值与法术环位\n'
 HELP_COMMAND_STR += '.查询 查询资料\n'
 HELP_COMMAND_STR += '.draw 抽取牌库\n'
+HELP_COMMAND_STR += '.答题 回答提问\n'
 HELP_COMMAND_STR += '.烹饪 进行随机的烹饪检定\n'
 HELP_COMMAND_STR += '.点菜 模拟点菜\n'
 HELP_COMMAND_STR += '.今日菜单\n'
@@ -194,6 +195,10 @@ HELP_COMMAND_NOTE_STR += '.笔记  //查看所有笔记\n'
 HELP_COMMAND_NOTE_STR += '.笔记 背包 //查看"背包"对应的笔记\n'
 HELP_COMMAND_NOTE_STR += '.清除笔记 npc\n'
 HELP_COMMAND_NOTE_STR += '.清除笔记 所有笔记'
+
+HELP_COMMAND_QUESTION_STR =  '答题功能:\n.答题 [考题]\n'
+HELP_COMMAND_QUESTION_STR += '直接输入.答题 可查看所有可用考题\n'
+HELP_COMMAND_QUESTION_STR += '开始答题后用户的所有输入都被视为回答, 请不要输入其他无关内容\n提前结束考试请输入Q'
 
 HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词: .welcome [欢迎词]\n入群欢迎词为空则代表不欢迎'
 

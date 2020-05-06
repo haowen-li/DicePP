@@ -52,33 +52,44 @@ CHAT_COMMAND_COMMON = {'the shadow.*':[(CHAT_CREDIT_LV0, 'The shadow! (激动地
                                 (CHAT_CREDIT_LV2, 'The shadow! (惊恐地)'),
                                 (CHAT_CREDIT_LV2, 'The shadow... (平静地)'),
                                 (CHAT_CREDIT_LV2, 'The shadow? (无奈地)'),
-                                (CHAT_CREDIT_LV3, 'I\'m the SHADOW! (嚣张地)')],
-                '.*伊丽莎白保佑.*':[(CHAT_CREDIT_LV0, '向群青公主阿弗洛狄忒祈祷吧~$祈祷$'),
-                                   (CHAT_CREDIT_LV0, '没问题~$抛全1骰子$'),
-                                   (CHAT_CREDIT_LV0, '你的想法我已经知道了哦~$抛全1骰子$'),
+                                (CHAT_CREDIT_LV3, '$没有思考$I\'m the SHADOW! (嚣张地)')],
+                '^伊丽莎白$':[ (CHAT_CREDIT_LV0, '$没有思考$哦好的好的, 再见', CHAT_CREDIT_LV1),
+                            (CHAT_CREDIT_LV0, '$没有思考$我推荐我自己!', CHAT_CREDIT_LV1),
+                            (CHAT_CREDIT_LV1, '$看书$伊丽莎白在这里哦~', CHAT_CREDIT_LV4),
+                            (CHAT_CREDIT_LV1, '$没有思考$有什么可以帮到你吗?', CHAT_CREDIT_LV4),
+                            (CHAT_CREDIT_LV3, '$祈祷$愿群青公主护佑着你'),
+                            (CHAT_CREDIT_LV3, '$看书$今天也是要好好学习规则的一天呢~')],
+                '.*伊丽莎白保佑.*':[(CHAT_CREDIT_LV0, '$祈祷$向群青公主阿弗洛狄忒祈祷吧~', CHAT_CREDIT_LV2),
+                                   (CHAT_CREDIT_LV0, '$看书$#伊丽莎白意味深长地看着你', CHAT_CREDIT_LV1),
+                                   (CHAT_CREDIT_LV0, '$抛全1骰子$没问题~', CHAT_CREDIT_LV1),
+                                   (CHAT_CREDIT_LV0, '$抛全1骰子$你的想法我已经知道了哦~', CHAT_CREDIT_LV1),
                                    (CHAT_CREDIT_LV0, '$抛骰子$'),
-                                   (CHAT_CREDIT_LV1, '厄运只是群青公主对我们的考验, 勇敢向前吧!$祈祷$'),
-                                   (CHAT_CREDIT_LV1, '好运和厄运都只是暂时的, 请不要把它们放在心上$祈祷$'),
-                                   (CHAT_CREDIT_LV3, '愿群青公主护佑着你~$祈祷$'),
-                                   (CHAT_CREDIT_LV4, '加油~$点赞$'),
-                                   (CHAT_CREDIT_LV4, '加油加油~$双重点赞$')],
-                '有团吗.?':[(CHAT_CREDIT_LV0, '自己不开团就不会有团跑~ $抛骰子$'),
-                           (CHAT_CREDIT_LV3, '等伊丽莎白给你开团吧~$看书$')],
-                '伊丽莎白带团.*':[(CHAT_CREDIT_LV1, '唔~规则太难啦!$疑惑翻书$'),
-                                 (CHAT_CREDIT_LV2, '唔...$看卷轴$'),
-                                 (CHAT_CREDIT_LV3, '等伊丽莎白再看多一会书吧...$没有思考$'),
-                                 (CHAT_CREDIT_LV4, '玩家手册我完全搞懂了, 找时间带团吧~$完全搞懂了$')],
+                                   (CHAT_CREDIT_LV1, '$祈祷$厄运只是群青公主对我们的考验, 勇敢向前吧!'),
+                                   (CHAT_CREDIT_LV1, '$祈祷$好运和厄运都只是暂时的, 请不要把它们放在心上', CHAT_CREDIT_LV3),
+                                   (CHAT_CREDIT_LV3, '$祈祷$愿群青公主护佑着你'),
+                                   (CHAT_CREDIT_LV4, '$点赞$加油~'),
+                                   (CHAT_CREDIT_LV4, '$双重点赞$加油加油~')],
+                '有团吗.?':[(CHAT_CREDIT_LV0, '让我们换一个话题', CHAT_CREDIT_LV1),
+                           (CHAT_CREDIT_LV1, '祝您长寿~'),
+                           (CHAT_CREDIT_LV1, '升级到凡戴尔的失落矿坑\n需求: DM (你没有)\n花费: 全家桶'),
+                           (CHAT_CREDIT_LV0, '我们在与哈劳斯国王、拉盖娅女皇、雅米拉女士、酒馆侍女和海寇跑团。', CHAT_CREDIT_LV1),
+                           (CHAT_CREDIT_LV2, '伊丽莎白表彰了你的热情, 但是她决定将下一个团的名额留给梨子。她会出0第纳尔作为你的补偿。'),
+                           (CHAT_CREDIT_LV3, '$看书$等伊丽莎白给你开团吧~')],
+                '伊丽莎白带团.*':[(CHAT_CREDIT_LV1, '$疑惑翻书$唔~规则太难啦!'),
+                                 (CHAT_CREDIT_LV2, '$看卷轴$唔...'),
+                                 (CHAT_CREDIT_LV3, '$没有思考$等伊丽莎白再看多一会书吧...'),
+                                 (CHAT_CREDIT_LV4, '$完全搞懂了$玩家手册我完全搞懂了, 找时间带团吧~')],
                 '赞.?':[(CHAT_CREDIT_LV2, '$点赞$'),(CHAT_CREDIT_LV3, '$双重点赞$')]
                 }
 
 def GetPersonTitle(inputStr, credit):
-    name = inputStr[:inputStr.find('是谁')]
+    name = inputStr[:inputStr.find('是')]
     if name in NAME2TITLE.keys():
         return NAME2TITLE[name]
     else:
         return None
 
-CHAT_COMMAND_FUNCTION = {'.+是谁.?':GetPersonTitle}
+CHAT_COMMAND_FUNCTION = {'.+是谁.?':GetPersonTitle, '.+是什么.?':GetPersonTitle}
 
 def InsertEmotion(inputStr, emotionDict):
     def replaceByEmotion(matched):

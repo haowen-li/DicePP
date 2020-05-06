@@ -9,10 +9,10 @@ from .type_assert import TypeAssert
 
 # 注意! 有重复字符的长指令必须放在短指令前面, 否则会被覆盖!
 commandKeywordList = ['ri', 'r', 'nn', 'jrrp', 'init', 'bot', 'dnd', 'help', 'send', 'welcome', 'name']
-commandKeywordList += ['查询', '索引', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话']
+commandKeywordList += ['查询', '索引', 'dismiss', 'draw', '烹饪', '点菜', '今日菜单', '好感度', '今日笑话', '昨日笑话', '明日笑话']
 commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','查看角色卡', '完整角色卡', '清除角色卡', '角色卡']
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '记录金钱', '清除金钱', '查看金钱', '队伍金钱', '金钱' ,'长休']
-commandKeywordList += ['记录笔记', '查看笔记', '清除笔记', '笔记']
+commandKeywordList += ['记录笔记', '查看笔记', '清除笔记', '笔记', '答题']
 commandKeywordList += ['savedata', 'credit', 'notice', 'dp']
 commandKeywordReList = ['^([1-9]#)?..检定', '^([1-9]#)?..豁免', '^([1-9]#)?..攻击', '.*法术位', '.*hp', '^[1-9]环']
 commandKeywordReList += ['^队伍..检定']
@@ -50,6 +50,7 @@ class CommandType(Enum):
     TeamCheck = 27
     TeamMoney = 28
     INDEX = 29
+    Question = 30
 
 dndCommandDict = {CommandType.Roll, CommandType.INIT, CommandType.RI, CommandType.HP, CommandType.QUERY, CommandType.INDEX, CommandType.PC, 
                  CommandType.CHECK, CommandType.SpellSlot, CommandType.TEAM, CommandType.MONEY, CommandType.REST,
@@ -205,3 +206,11 @@ def PairSubstringList(substringList, strList) -> list:
         if isPoss:
             possResult.append(strCur)
     return possResult
+
+def DeleteInvalidInfo(targetDict, sourceKeys):
+    invalidGroupId = []
+    for gId in targetDict.keys():
+        if not gId in sourceKeys:
+            invalidGroupId.append(gId)
+    for gId in invalidGroupId:
+        del targetDict[gId]

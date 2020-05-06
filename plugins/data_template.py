@@ -2,7 +2,7 @@ from .utils import *
 from .info_help import *
 
 userInfoTemp = {'credit':0, 'activeDate':GetCurrentDateStr(), 'spamAccu':0, 'commandAccu':0, 'messageAccu':0, 'dndCommandAccu':0, 'commandDaily':0, 'messageDaily': 0, 'dndCommandDaily':0 ,
-				 'warning':0, 'ban':0, 'dailyCredit':0, 'seenJRRP':False, 'seenJRXH':False, 'seenJRCD':False, 'seenCredit':False, 'IACommand':[]} 
+				 'warning':0, 'ban':0, 'dailyCredit':0, 'seenJoke':[1,1,1], 'seenJRRP':False, 'seenJRCD':False, 'seenCredit':False, 'IACommand':[]} 
 # IACommand = [{'name':'IAFunctionName', 'date':'expireDateStr', 'groupId':groupId'|'Private', 'args':argsList, 'IAType':0,1,2...}]
 # IATYPE: -1:未定义 0:查询或索引
 userDictTemp = {'userId':userInfoTemp}
