@@ -502,7 +502,9 @@ class Bot:
             try:
                 userInfoCur = self.userInfoDict[pId]
                 userInfoCur['warning'] = 0
-                userInfoCur['seenJoke'] = [1,1,1]
+                userInfoCur['seenJoke'][0] = userInfoCur['seenJoke'][1]
+                userInfoCur['seenJoke'][1] = userInfoCur['seenJoke'][2]
+                userInfoCur['seenJoke'][2] = 1
                 userInfoCur['seenJRRP'] = False
                 userInfoCur['seenJRCD'] = False
                 userInfoCur['seenCredit'] = False
@@ -1327,7 +1329,12 @@ class Bot:
                 result = f'{nickName}的{flag}日随机TRPG笑话:\n{result}'
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             else:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '每天只有一次机会哦~')]
+                if command.cArg[0] == -1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的今日笑话就是今天的昨日笑话, 你已经看过啦~')]
+                elif command.cArg[0] == 0:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的明日笑话就是今天的今日笑话, 你已经看过啦~')]
+                elif command.cArg[0] == 1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~你已经提前把明天的笑话看过啦~')]
 
         elif cType == CommandType.CREDIT:
             if userInfoCur['seenCredit']:
@@ -1433,7 +1440,7 @@ class Bot:
                 if nickName.find(strCur) != -1:
                     imposterList.append(strCur)
             if imposterList:
-                return f'{nickName}是{NAME2TITLE[imposterList[0]]}哦~请换个名字吧!'
+                return f'{imposterList[0]}是{NAME2TITLE[imposterList[0]]}哦~请换个名字吧!'
             self.nickNameDict[groupId][personId] = nickName
             # 尝试修改先攻列表
             try:

@@ -24,9 +24,9 @@ IA_LIMIT_NUM = 3
 # 交互命令有效期
 IA_EXPIRE_TIME = datetime.timedelta(seconds = 60)
 # 每日固定好感度
-DAILY_CREDIT_FIX = 10
+DAILY_CREDIT_FIX = 5
 # 每日额外好感度上限
-DAILY_CREDIT_LIMIT = 10
+DAILY_CREDIT_LIMIT = 15
 # 查询最多显示的条目
 QUERY_SHOW_LIMIT = 50
 

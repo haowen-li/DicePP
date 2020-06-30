@@ -617,12 +617,12 @@ def ModifyMoney(bot, groupId, personId, commandStr):
 
     # 当前的银币不足以支付要求的银币, 则用铜币或金币换取
     if moneyList[1] + adjList[1] < 0:
-        # 加上铜币
+        # 加上铜币如果仍然不够
         if adjList[1]+moneyList[1]+moneyList[2]//10 < 0:
             # 再加上金币
             gpNum = math.ceil((adjList[1]+moneyList[1]+moneyList[2]//10)/-10)
             moneyList[1] = adjList[1]+moneyList[1]+moneyList[2]//10+gpNum*10
-            moneyList[2] -= moneyList[2]//10
+            moneyList[2] -= (moneyList[2]//10)*10
             moneyList[0] -= gpNum
         else:
             #换取部分铜币支付
@@ -639,7 +639,7 @@ def ModifyMoney(bot, groupId, personId, commandStr):
             # 依然不够则加上铜币支付
             cpNum = (adjList[0]+moneyList[0]+moneyList[1]//10)*-100
             moneyList[0] = 0
-            moneyList[1] -= moneyList[1]//10
+            moneyList[1] -= (moneyList[1]//10)*10
             moneyList[2] -= cpNum
         else:
             spNum = (adjList[0]+moneyList[0])*-10

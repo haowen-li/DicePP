@@ -27,12 +27,12 @@ async def processMessage(session: CommandSession):
     if commandResultList:
         await processCommandResult(session, commandResultList)
 
-@on_command('TEST', only_to_me=True)
-async def _(session: CommandSession):
-    botNone = nonebot.get_bot()
-    botNone.clean_data_dir('image')
-    botNone.clean_data_dir('record')
-    botNone.clean_plugin_log()
+# @on_command('TEST', only_to_me=True)
+# async def _(session: CommandSession):
+#     botNone = nonebot.get_bot()
+#     await botNone.clean_data_dir(data_dir='image')
+#     await botNone.clean_data_dir(data_dir='record')
+#     await botNone.clean_plugin_log()
 
 
 @on_command('pull group', only_to_me=True)
@@ -182,14 +182,14 @@ async def _():
 )
 async def _():
     botNone = nonebot.get_bot()
-    botNone.clean_data_dir('image')
-    botNone.clean_data_dir('record')
-    botNone.clean_plugin_log()
+    await botNone.clean_data_dir(data_dir='image')
+    await botNone.clean_data_dir(data_dir='record')
+    await botNone.clean_plugin_log()
 
 
 @nonebot.scheduler.scheduled_job(
     'interval',
-    hours=2,
+    hours=24,
 )
 async def _():
     botNone = nonebot.get_bot()
