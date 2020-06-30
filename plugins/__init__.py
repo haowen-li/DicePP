@@ -176,15 +176,15 @@ async def _():
 async def _():
     await bot.UpdateLocalData()
 
-@nonebot.scheduler.scheduled_job(
-    'interval',
-    hours=1,
-)
-async def _():
-    botNone = nonebot.get_bot()
-    await botNone.clean_data_dir(data_dir='image')
-    await botNone.clean_data_dir(data_dir='record')
-    await botNone.clean_plugin_log()
+# @nonebot.scheduler.scheduled_job(
+#     'interval',
+#     hours=1,
+# )
+# async def _():
+#     botNone = nonebot.get_bot()
+#     await botNone.clean_data_dir(data_dir='image')
+#     await botNone.clean_data_dir(data_dir='record')
+#     await botNone.clean_plugin_log()
 
 
 @nonebot.scheduler.scheduled_job(
