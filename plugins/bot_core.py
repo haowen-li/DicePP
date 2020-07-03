@@ -1312,29 +1312,32 @@ class Bot:
 
         elif cType == CommandType.TodayJoke:
             flag = ''
-            if command.cArg[0] == 0 and userInfoCur['seenJoke'][1] != 0:
-                flag = '今'
-                userInfoCur['seenJoke'][1] = 0
-            elif command.cArg[0] == -1 and userInfoCur['seenJoke'][0] != 0:
-                flag = '昨'
-                userInfoCur['seenJoke'][0] = 0
-            elif command.cArg[0] == 1 and userInfoCur['seenJoke'][2] != 0:
-                flag = '明'
-                userInfoCur['seenJoke'][2] = 0
-            if flag:
-                self.dailyInfoDict['jokeCommand'] += 1
-                commandWeight = 2
-                date = GetCurrentDateRaw() + command.cArg[0] * datetime.timedelta(days = 1)
-                result = self.__GetTodayJoke(personId, date)
-                result = f'{nickName}的{flag}日随机TRPG笑话:\n{result}'
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            if True:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '今日笑话功能将在收到足够数量的投稿后恢复~敬请期待吧~')]
             else:
-                if command.cArg[0] == -1:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的今日笑话就是今天的昨日笑话, 你已经看过啦~')]
-                elif command.cArg[0] == 0:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的明日笑话就是今天的今日笑话, 你已经看过啦~')]
-                elif command.cArg[0] == 1:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~你已经提前把明天的笑话看过啦~')]
+                if command.cArg[0] == 0 and userInfoCur['seenJoke'][1] != 0:
+                    flag = '今'
+                    userInfoCur['seenJoke'][1] = 0
+                elif command.cArg[0] == -1 and userInfoCur['seenJoke'][0] != 0:
+                    flag = '昨'
+                    userInfoCur['seenJoke'][0] = 0
+                elif command.cArg[0] == 1 and userInfoCur['seenJoke'][2] != 0:
+                    flag = '明'
+                    userInfoCur['seenJoke'][2] = 0
+                if flag:
+                    self.dailyInfoDict['jokeCommand'] += 1
+                    commandWeight = 2
+                    date = GetCurrentDateRaw() + command.cArg[0] * datetime.timedelta(days = 1)
+                    result = self.__GetTodayJoke(personId, date)
+                    result = f'{nickName}的{flag}日随机TRPG笑话:\n{result}'
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                else:
+                    if command.cArg[0] == -1:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的今日笑话就是今天的昨日笑话, 你已经看过啦~')]
+                    elif command.cArg[0] == 0:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的明日笑话就是今天的今日笑话, 你已经看过啦~')]
+                    elif command.cArg[0] == 1:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~你已经提前把明天的笑话看过啦~')]
 
         elif cType == CommandType.CREDIT:
             if userInfoCur['seenCredit']:

@@ -1,4 +1,4 @@
-FROM alpine
+FROM alpine:3.7
 COPY . /home/user/DicePP
 RUN apk add --no-cache tzdata python3-dev py3-multidict py3-yarl && \
 	apk add --no-cache gcc g++ make automake freetype-dev && \
