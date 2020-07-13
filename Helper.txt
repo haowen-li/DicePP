@@ -1,0 +1,20 @@
+下载文件
+git clone https://github.com/haowen-li/DicePP.git
+
+cp ./DicePP/tools/docker-compose.yml ./
+sudo cp ./DicePP/tools/docker-compose-linux-x64 /usr/local/bin/docker-compose
+sudo chmod +x /usr/local/bin/docker-compose
+
+安装docker
+curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+启动docker守护
+sudo systemctl enable docker
+sudo systemctl start docker
+添加当前用户至docker用户组
+sudo usermod -aG docker $USER
+切换以生效
+sudo su
+su ubuntu //当前用户名
+
+启动docker
+docker-compose up  // -d 后台运行 --build 重新搭建
