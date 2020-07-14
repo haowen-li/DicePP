@@ -11,8 +11,8 @@ GROUP_PASSWORD = 'dnd5e-pear'
 
 # 环境信息
 IS_COOLQ_PRO = True
-# PLATFORM_NAME = 'DOCKER' # 可选为 DOCKER 或 其他任意字符串
-PLATFORM_NAME = 'WIN' # 可选为 DOCKER 或 其他任意字符串
+PLATFORM_NAME = 'DOCKER' # 可选为 DOCKER 或 其他任意字符串
+# PLATFORM_NAME = 'WIN' # 可选为 DOCKER 或 其他任意字符串
 # 刷屏上限
 MESSAGE_LIMIT_NUM = 12
 # 刷屏阈值
