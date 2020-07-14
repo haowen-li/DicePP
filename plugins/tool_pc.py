@@ -698,6 +698,18 @@ def ShowTeam(bot, groupId) -> str:
         
     return result
 
+def CallTeam(bot, groupId) -> str:
+    try:
+        teamDict = bot.teamInfoDict[groupId]
+        name = teamDict['name']
+        # assert teamDict['members']
+    except:
+        return '还没有创建队伍哦~'
+    result = f'{name}的成员快来呀~\n'
+    for pId in teamDict['members']:
+        result += f'[CQ:at,qq={pId}] '
+    return result[:-1]
+
 def ShowTeamFull(bot, groupId) -> str:
     try:
         teamDict = bot.teamInfoDict[groupId]

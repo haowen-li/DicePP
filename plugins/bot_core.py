@@ -160,6 +160,8 @@ async def ParseInput(inputStr):
         return Command(CommandType.TEAM, ['完整'])
     elif commandType == '清除队伍':
         return Command(CommandType.TEAM, ['清除'])
+    elif commandType == '队伍点名':
+        return Command(CommandType.TEAM, ['点名'])
     elif commandType == '记录金钱':
         return Command(CommandType.MONEY, ['记录', commandStr])
     elif commandType == '清除金钱':
@@ -1141,6 +1143,9 @@ class Bot:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '查看':
                     result = ShowTeam(self, groupId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                elif subType == '点名':
+                    result = CallTeam(self, groupId)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '完整':
                     result = ShowTeamFull(self, groupId)

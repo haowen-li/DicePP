@@ -202,11 +202,12 @@ HELP_COMMAND_QUESTION_STR += '开始答题后用户的所有输入都被视为�
 
 HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词: .welcome [欢迎词]\n入群欢迎词为空则代表不欢迎'
 
-HELP_COMMAND_TEAM_STR =  '队伍系列指令:\n.加入队伍 [队伍名]\n.队伍信息\n.完整队伍信息\n.清除队伍\n.队伍[技能]检定\n.队伍金钱 [调整值]\n'
+HELP_COMMAND_TEAM_STR =  '队伍系列指令:\n.加入队伍 [队伍名]\n.队伍信息\n.队伍点名\n.完整队伍信息\n.清除队伍\n.队伍[技能]检定\n.队伍金钱 [调整值]\n'
 HELP_COMMAND_TEAM_STR += '只有第一个加入队伍的人可以命名队伍\n'
 HELP_COMMAND_TEAM_STR += '完整队伍信息会通过私聊发送给查询者\n'
 HELP_COMMAND_TEAM_STR += '示例:\n'
 HELP_COMMAND_TEAM_STR += '.加入队伍 灰色小队\n'
+HELP_COMMAND_TEAM_STR += '.队伍点名\n'
 HELP_COMMAND_TEAM_STR += '.队伍信息\n'
 HELP_COMMAND_TEAM_STR += '.队伍先攻检定\n'
 HELP_COMMAND_TEAM_STR += '.队伍金钱+110gp // 队伍内每个人获得110gp'
