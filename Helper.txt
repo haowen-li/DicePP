@@ -1,8 +1,8 @@
 下载文件
 git clone https://github.com/haowen-li/DicePP.git
 
-cp ./DicePP/tools/docker-compose.yml ./
-sudo cp ./DicePP/tools/docker-compose-linux-x64 /usr/local/bin/docker-compose
+cp ~/DicePP/tools/docker-compose.yml ~/
+sudo cp ~/DicePP/tools/docker-compose-linux-x64 /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
 
 安装docker
@@ -14,7 +14,12 @@ sudo systemctl start docker
 sudo usermod -aG docker $USER
 切换以生效
 sudo su
-su ubuntu //当前用户名
+su ubuntu     //当前用户名
 
 启动docker
-docker-compose up  // -d 后台运行 --build 重新搭建
+docker-compose up      // -d 后台运行 --build 重新搭建
+
+启动自动清理脚本
+chmod a+x ~/DicePP/tools/auto_clean.sh
+crontab -e           //修改 crontab 文件，如果文件不存在会自动创建。输入下面一行
+0 0/6 * * * /home/ubuntu/DicePP/tools/auto_clean.sh          //从凌晨0点起每6小时运行一次清理程序

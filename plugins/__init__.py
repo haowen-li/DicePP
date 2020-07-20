@@ -4,6 +4,7 @@ import time
 from time import sleep
 import datetime
 import asyncio
+import os
 
 import nonebot
 from nonebot import on_command, CommandSession
@@ -27,12 +28,20 @@ async def processMessage(session: CommandSession):
     if commandResultList:
         await processCommandResult(session, commandResultList)
 
-# @on_command('TEST', only_to_me=True)
-# async def _(session: CommandSession):
-#     botNone = nonebot.get_bot()
-#     await botNone.clean_data_dir(data_dir='image')
-#     await botNone.clean_data_dir(data_dir='record')
-#     await botNone.clean_plugin_log()
+@on_command('TEST', only_to_me=True)
+async def _(session: CommandSession):
+    try:
+        print('JOKE IMG PATH')
+        for i,j,k in os.walk(WINE_COOLQ_JOKEIMG_PATH):
+            print(i,j,k)
+        print('EMO IMG PATH')
+        for i,j,k in os.walk(WINE_COOLQ_EMOTIMG_PATH):
+            print(i,j,k)
+        print('COOLQ IMG PATH')
+        for i,j,k in os.walk(WINE_COOLQ_PATH):
+            print(i,j,k)
+    except Error as e:
+        print(e)
 
 
 @on_command('pull group', only_to_me=True)
@@ -176,6 +185,7 @@ async def _():
 async def _():
     await bot.UpdateLocalData()
 
+# 无法正常处理Linux环境的情况, 应改用额外脚本清理
 # @nonebot.scheduler.scheduled_job(
 #     'interval',
 #     hours=1,
@@ -186,26 +196,26 @@ async def _():
 #     await botNone.clean_data_dir(data_dir='record')
 #     await botNone.clean_plugin_log()
 
-
-@nonebot.scheduler.scheduled_job(
-    'interval',
-    hours=24,
-)
-async def _():
-    botNone = nonebot.get_bot()
-    info = None
-    try:
-        info = await botNone.get_group_list()
-    except CQHttpError:
-        for pId in MASTER:
-            await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
-    if info:
-        groupInfoDictUpdate = {}
-        for gInfo in info:
-            groupInfoDictUpdate[str(gInfo['group_id'])] = gInfo['group_name']
-        commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
-        if commandResultList:
-            await processCommandResult(None, commandResultList)
+# 可能会删除存在的群, 暂时不执行该命令
+# @nonebot.scheduler.scheduled_job(
+#     'interval',
+#     hours=24,
+# )
+# async def _():
+#     botNone = nonebot.get_bot()
+#     info = None
+#     try:
+#         info = await botNone.get_group_list()
+#     except CQHttpError:
+#         for pId in MASTER:
+#             await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
+#     if info:
+#         groupInfoDictUpdate = {}
+#         for gInfo in info:
+#             groupInfoDictUpdate[str(gInfo['group_id'])] = gInfo['group_name']
+#         commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
+#         if commandResultList:
+#             await processCommandResult(None, commandResultList)
 
 # 将函数注册为好友请求处理器
 @on_request('friend')
