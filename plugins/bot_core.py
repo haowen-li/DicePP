@@ -417,7 +417,7 @@ class Bot:
         # 尝试加载表情包
         try:
             self.emotionDict = {}
-            filesPath = os.listdir(LOCAL_EMOTIMG_DIR_PATH)
+            filesPath = os.listdir(LOCAL_EMOTSAVE_DIR_PATH)
             for fp in filesPath:
                 try:
                     name, suffix = fp.split('.')
