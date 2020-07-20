@@ -22,4 +22,10 @@ docker-compose up      // -d 后台运行 --build 重新搭建
 启动自动清理脚本
 chmod a+x ~/DicePP/tools/auto_clean.sh
 crontab -e           //修改 crontab 文件，如果文件不存在会自动创建。输入下面一行
-0 0/6 * * * /home/ubuntu/DicePP/tools/auto_clean.sh          //从凌晨0点起每6小时运行一次清理程序
+0 0 * * * /home/ubuntu/DicePP/tools/auto_clean.sh
+
+service crond status     //查看crontab服务状态
+service crond start     //启动服务 
+service crond stop     //关闭服务 
+service crond restart     //重启服务 
+service crond reload     //重新载入配置

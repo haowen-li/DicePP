@@ -402,7 +402,7 @@ class Bot:
             validImgList = []
             for imgPath in self.jokeDict['img']:
                 absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, imgPath)
-                if os.path.exists(absPath):
+                if PLATFORM_NAME == 'DOCKER' or os.path.exists(absPath):  # 如果是Docker环境则无法直接检查有效性
                     validImgList.append(imgPath)
             print(f'共{len(validImgList)}个有效图片')
             self.jokeDict['img'] = validImgList
@@ -423,7 +423,7 @@ class Bot:
                     name, suffix = fp.split('.')
                     assert suffix in ['jpg', 'png', 'gif']
                     absPath = os.path.join(LOCAL_EMOTIMG_DIR_PATH, fp)
-                    if os.path.exists(absPath):
+                    if PLATFORM_NAME == 'DOCKER' or os.path.exists(absPath): # 如果是Docker环境则无法直接检查有效性
                         self.emotionDict[name] = absPath
                 except:
                     pass
