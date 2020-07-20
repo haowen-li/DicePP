@@ -47,10 +47,10 @@ LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
 LOCAL_DECKINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'deck_info')
 LOCAL_MENUINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'menu_info')
-
 LOCAL_JOKEINFO_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'joke.json')
 LOCAL_NAMEINFO_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'name.json')
 LOCAL_QUESINFO_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'question.json')
+LOCAL_EMOTINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'emotion_img')
 
 if PLATFORM_NAME == 'DOCKER':
     LOCAL_JOKEIMG_DIR_PATH = WINE_COOLQ_JOKEIMG_PATH

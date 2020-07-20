@@ -417,7 +417,7 @@ class Bot:
         # 尝试加载表情包
         try:
             self.emotionDict = {}
-            filesPath = os.listdir(LOCAL_EMOTIMG_DIR_PATH)
+            filesPath = os.listdir(LOCAL_EMOTINFO_DIR_PATH)
             for fp in filesPath:
                 try:
                     name, suffix = fp.split('.')
@@ -429,8 +429,8 @@ class Bot:
                     pass
             assert len(self.emotionDict) != 0
             print(f'表情包加载成功! 共{len(self.emotionDict)}个条目, 分别是{self.emotionDict.keys()}')
-        except:
-            print(f'表情包加载失败!')
+        except Exception as e:
+            print(f'表情包加载失败!', e)
             self.emotionDict = None
 
         # 尝试加载姓名资料库
