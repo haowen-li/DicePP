@@ -1318,8 +1318,6 @@ class Bot:
         elif cType == CommandType.TodayJoke:
             flag = ''
             if True:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '今日笑话功能将在收到足够数量的投稿后恢复~敬请期待吧~')]
-            else:
                 if command.cArg[0] == 0 and userInfoCur['seenJoke'][1] != 0:
                     flag = '今'
                     userInfoCur['seenJoke'][1] = 0
@@ -1343,6 +1341,9 @@ class Bot:
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~昨天的明日笑话就是今天的今日笑话, 你已经看过啦~')]
                     elif command.cArg[0] == 1:
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '只有一次机会哦~你已经提前把明天的笑话看过啦~')]
+            else:
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '今日笑话功能将在收到足够数量的投稿后恢复~敬请期待吧~')]
+                
 
         elif cType == CommandType.CREDIT:
             if userInfoCur['seenCredit']:
