@@ -221,11 +221,11 @@ async def _():
 @on_request('friend')
 async def _(session: RequestSession):
     # 判断验证信息是否符合要求
-    # if session.ctx['comment'] == 'DND5E':
-    #     # 验证信息正确，同意
-    #     await session.approve()
-    # await session.reject('请说正确的暗号')
-    await session.approve()
+    if session.ctx['comment'] == '伊丽傻白':
+        # 验证信息正确，同意
+        await session.approve()
+    await session.reject('请说正确的暗号')
+    # await session.approve()
 
 # 将函数注册为群请求处理器
 @on_request('group')
@@ -235,7 +235,7 @@ async def _(session: RequestSession):
     personId = str(session.ctx["user_id"])
     if session.ctx['sub_type'] == 'invite':
         isValid = await bot.ValidateGroupInvite(groupId, personId)
-        if isValid:
+        if isValid and session.ctx['comment'] == '伊丽傻白':
             try:
                 nonebot = session.bot
                 try:
