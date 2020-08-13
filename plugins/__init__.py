@@ -224,7 +224,8 @@ async def _(session: RequestSession):
     if session.ctx['comment'] == '伊丽傻白':
         # 验证信息正确，同意
         await session.approve()
-    await session.reject('请说正确的暗号')
+    else:
+        await session.reject('请说正确的暗号')
     # await session.approve()
 
 # 将函数注册为群请求处理器
@@ -235,7 +236,7 @@ async def _(session: RequestSession):
     personId = str(session.ctx["user_id"])
     if session.ctx['sub_type'] == 'invite':
         isValid = await bot.ValidateGroupInvite(groupId, personId)
-        if isValid and session.ctx['comment'] == '伊丽傻白':
+        if isValid:
             try:
                 nonebot = session.bot
                 try:

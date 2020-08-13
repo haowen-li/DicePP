@@ -10,6 +10,9 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
         CreateHP(bot, groupId, personId, 0)
         pcState = bot.pcStateDict[groupId][personId]
 
+    # linesep = os.linesep
+    linesep = '\n'
+
     infoStr = infoStr.strip()
     infoLength = len(infoStr)
     numberStrList = [str(n) for n in range(10)] + [' ']
@@ -50,7 +53,7 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
 
     # 给技能, 豁免, 攻击加上熟练加值
     index = infoStr.find('熟练项:')
-    lastIndex = infoStr[index:].find('\n')
+    lastIndex = infoStr[index:].find(linesep)
     if index == -1:
         return f'无法找到关键词"熟练项", 请查看.角色卡模板'
     if lastIndex == -1:
@@ -75,8 +78,7 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
         pcState[attack] += pcState['熟练加值']
 
     pcState['额外加值'] = []
-    # linesep = os.linesep
-    linesep = '\n'
+    
     if '额外加值:' in infoStr:
         index = infoStr.find('额外加值:') + 5
         lastIndex = infoStr[index:].find(linesep)

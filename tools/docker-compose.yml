@@ -11,7 +11,7 @@ services:
       - "./DicePP/plugins/custom_data/emotion_img:/home/user/coolq/data/image/emotion"
     environment:
       - VNC_PASSWD=dicepp
-      - COOLQ_ACCOUNT=2192720436
+      - COOLQ_ACCOUNT=1342245532
       # 要登录的 QQ 账号，可选但建议填
       - COOLQ_URL=https://dlsec.cqp.me/cqp-tuling
       - FORCE_ENV=true

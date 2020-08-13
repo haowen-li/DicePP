@@ -80,14 +80,17 @@ def RollDiceCommand(diceCommand) -> (int, str, list):
         if diceList[i][-1] == 'D': 
             diceList[i] += defaultDiceType
             diceCommand = diceCommand[:length] + defaultDiceType + diceCommand[length:]
+            length += len(defaultDiceType)
         elif len(diceList[i])>=3 and (diceList[i][-3:] == 'D优势' or diceList[i][-3:] == 'D劣势'):
             diceList[i] = diceList[i][:-2] + defaultDiceType + diceList[i][-2:]
             diceCommand = diceCommand[:length-2] + defaultDiceType + diceCommand[length-2:]
+            length += len(defaultDiceType)
         elif diceList[i].find('DK') != -1:
             index = diceList[i].find('DK')
             commandIndex = length-len(diceList[i])+index+1
             diceList[i] = diceList[i][:index+1] + defaultDiceType + diceList[i][index+1:]
             diceCommand = diceCommand[:commandIndex] + defaultDiceType + diceCommand[commandIndex:]
+            length += len(defaultDiceType)
 
 
     # 开始投骰并输出结果
