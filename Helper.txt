@@ -1,3 +1,5 @@
+(由于酷Q无法使用，该说明已过期)
+
 下载文件
 git clone https://github.com/haowen-li/DicePP.git
 

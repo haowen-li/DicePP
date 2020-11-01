@@ -1,6 +1,6 @@
 from .info_game import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .info_game import PC_SKILL_DICT, PC_SHEET_TEMPLATE
-VERSION = '0.6.3'
+VERSION = '0.6.4'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -20,14 +20,14 @@ FIRST_TIME_STR = '伊丽莎白来咯~\n我是D&D5E专用骰娘, 请不要把我�
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
 LEAVE_NOTICE_STR = '一只人鱼趁着夜色离开了你的队伍。'
 
-HELP_COMMAND_UPDATE_STR = '2020/5/5 v0.6.3:\n1.加入了答题功能 2.增加了更多的随机姓名 3.增加了更多的今日笑话\n'
+HELP_COMMAND_UPDATE_STR = '2020/11/1 v0.6.4:\n1.更改了好感度设定 2.修复了若干文本问题\n'
+HELP_COMMAND_UPDATE_STR += '2020/5/5 v0.6.3:\n1.加入了答题功能 2.增加了更多的随机姓名 3.增加了更多的今日笑话\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/26 v0.6.2:\n1.实验性地于查询指令中加入了交互命令, 具体使用方法请输入.help交互 或 .help查询 查看\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/26 v0.6.1:\n1.加入了随机姓名指令\n'
-HELP_COMMAND_UPDATE_STR += '2020/4/25 v0.6.0:\n1.大幅改动了代码结构, 可拓展性增强了 2.记录笔记可以递增记录了 3.修复了一些指令的bug 4.加入了一些聊天彩蛋\n'
+HELP_COMMAND_UPDATE_STR += '2020/4/25 v0.6.0:\n1.大幅改动了代码结构, 增强了可拓展性 2.记录笔记可以递增记录了 3.修复了一些指令的bug 4.加入了一些聊天彩蛋\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/15 v0.5.9.2:\n1.增强了.ri和.init指令 2.加入了队伍检定和队伍金钱功能 3.可以在一个属性检定指令中重复投多次骰子了 4.投骰表达式的识别不会忽略空格了, 如.rd2 0将被识别为原因是0的2面骰\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/10 v0.5.9.1:\n1.强化了draw指令\n'
 HELP_COMMAND_UPDATE_STR += '2020/3/29 v0.5.9:\n1.新增了笔记指令 2.加入了自定义欢迎词功能 3.更新了EGtW的一些npc选项和怪物(.查询egtw 可查看最新内容) 4.查询资料库中加入了拓展种族和眼魔书城主工具\n'
-HELP_COMMAND_UPDATE_STR += '2020/3/25 v0.5.8:\n1.优化了查询功能的体验 2.修复了一些bug\n'
 HELP_COMMAND_UPDATE_STR += '画饼中的功能请在交流群:861919492查看~'
 
 HELP_COMMAND_STR = '主要指令包括:\n'

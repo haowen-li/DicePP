@@ -12,7 +12,7 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
 
     # linesep = os.linesep
     linesep = '\n'
-
+    print(infoStr)
     infoStr = infoStr.strip()
     infoLength = len(infoStr)
     numberStrList = [str(n) for n in range(10)] + [' ']
@@ -234,7 +234,7 @@ def GetPlayerInfoShort(bot, groupId, personId, name)->str:
         if moneyList[1] != 0:
             result += f' {moneyList[1]}sp'
         if moneyList[2] != 0:
-            result += f' {moneyList[2]}sp'
+            result += f' {moneyList[2]}cp'
     except:
         pass
     try:
