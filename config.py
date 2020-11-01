@@ -4,7 +4,7 @@ SUPERUSERS = {821480843} # 超级用户
 
 COMMAND_START = {'sudo '} # 命令起始字符 (目前只应用于特殊命令)
 
-HOST = '0.0.0.0'
+HOST = '127.0.0.1'
 PORT = 8080
 SUPERUSERS = {821480843}
 
