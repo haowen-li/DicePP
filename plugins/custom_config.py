@@ -1,21 +1,18 @@
+import sys 
 import os
 import datetime
 import platform
+sys.path.append('..') 
 
 from .utils import ReadJson, UpdateJson
-
-SELF_ID = '1342245532'
-MASTER = ['821480843']
-MASTER_GROUP = ['861919492']
-
-GROUP_PASSWORD = 'dnd5e-pear'
+from master_config import *
 
 # 环境信息
 IS_COOLQ_PRO = True
 # if platform.system() == 'Linux':
 #   PLATFORM_NAME = 'DOCKER' # 可选为 DOCKER 或 其他任意字符串
 # else:
-PLATFORM_NAME = 'WIN' # 可选为 DOCKER 或 其他任意字符串
+PLATFORM_NAME = 'WIN'
 # 刷屏上限
 MESSAGE_LIMIT_NUM = 12
 # 刷屏阈值

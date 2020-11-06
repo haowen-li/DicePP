@@ -1,0 +1,34 @@
+---------------------- 基于Windows ---------------------- 
+自行安装python3.7+，git
+
+下载文件
+git clone https://github.com/haowen-li/DicePP.git
+
+安装python依赖库
+pip install "nonebot[scheduler]"
+pip install -r ./DicePP/requirements.txt
+如果下载速度过慢，可以换国内镜像，比如清华
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple -r ./DicePP/requirements.txt
+
+新建配置文件
+在DicePP文件夹下新建一个文件master_config.py
+用记事本打开，加入如下内容，#后的内容为注释，可以不写
+SELF_ID = '12345678' # 骰娘账号
+MASTER = ['87654321'] # Master账号，如有多个，可以写为['87654321', '000000']的格式，注意是英文逗号
+MASTER_GROUP = ['666666'] # 管理群号，目前会将加入的群自动播报至管理群，如果不需要则写为[ ]即可
+GROUP_PASSWORD = '伊丽傻白' # 好友验证码，必须输入该验证码才会通过好友请求，如果不需要验证码请将其设为空字符串 ''
+
+运行
+python DicePP/dicepp.py
+
+解压go-cqhttp.exe文件至任意目录（注意版本号可能改变，注意系统是linux还是windows）
+DicePP/tool/go-cqhttp-v0.9.29-fix2-windows-amd64.zip
+初次运行go-cqhttp.exe生成配置文件
+编辑config.json：
+修改uin为qq账号，password为密码
+将http_config，ws_config，web_ui的enabled属性都设置为false
+将ws_reverse_servers的enabled属性设置为true，将reverse_url属性设置为"ws://127.0.0.1:8080/ws/"
+注意本身有双引号的写在双引号里，没有则不需双引号
+再次运行go-cqhttp
+
+注意dicepp.py和go-cqhttp必须同时运行！

@@ -221,11 +221,14 @@ async def _():
 @on_request('friend')
 async def _(session: RequestSession):
     # 判断验证信息是否符合要求
-    if session.ctx['comment'] == '伊丽傻白':
-        # 验证信息正确，同意
-        await session.approve()
+    if GROUP_PASSWORD:
+        if session.ctx['comment'] == GROUP_PASSWORD:
+            # 验证信息正确，同意
+            await session.approve()
+        else:
+            await session.reject('请说正确的暗号')
     else:
-        await session.reject('请说正确的暗号')
+        await session.approve()
     # await session.approve()
 
 # 将函数注册为群请求处理器

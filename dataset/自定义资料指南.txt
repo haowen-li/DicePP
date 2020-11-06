@@ -1,0 +1,26 @@
+为了更好的安全性，需要将txt格式的文件转换为json格式，再由骰娘读取
+该文件夹包含了一些必要工具，下面是详细说明
+注意，所有txt文件必须被保存为UTF-8的编码！保存方式（windows下的记事本为例）：文件-另存为-编码（选择UTF-8）-保存
+
+对于查询和菜谱，一个json文件可以包含多个条目，同一文件夹下的资料可以互相覆盖，以逆序文件名为优先级。如有两个查询资料01_xxx.json和02_yyy都包含一个词条，则以02_yyy为准。而一个牌堆对应一个文件，请不要重名~
+
+还有一些资料如姓名库，查询同义词，笑话，题目等还未整理为开放代码，感兴趣的可以自行查看DicePP\tools.ipynb或者催梨子整理（趴）
+
+----------- 自定义查询 -----------
+格式非常简单，请参考conver_query_template.txt，还不会我也没办法 #摊手
+在命令行中输入以下指令转换文件
+python convert_query.py -s 你自定义的资料.txt
+将生成的json文件放到plugins/custom_data/query_info/目录下
+
+----------- 自定义牌堆 -----------
+格式略有一点复杂，相关说明写在了牌堆格式说明.txt中
+因此给了两个示例convert_deck_template1.txt和convert_deck_template2.txt
+在命令行中输入以下指令转换文件
+python convert_deck.py -s 你自定义的牌堆.txt
+将生成的json文件放到plugins/custom_data/deck_info/目录下
+
+----------- 自定义菜谱 -----------
+大概也不难，请参考conver_dish_template.txt
+在命令行中输入以下指令转换文件
+python convert_dish.py -s 你自定义的菜谱.txt
+将生成的json文件放到plugins/custom_data/menu_info/目录下

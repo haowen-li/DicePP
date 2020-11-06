@@ -1,0 +1,6 @@
+﻿个体宝藏cr0-4(示例牌堆)
+WEIGHT(30)01~30 ROLL(5d6)铜币(cp)
+WEIGHT(30)31~60 ROLL(4d6)银币(sp)
+WEIGHT(10)61~70 ROLL(3d6)银金币(ep)
+WEIGHT(25)71~95 ROLL(3d6)金币(gp)
+WEIGHT(5)96~00 ROLL(1d6)铂金币(pp)

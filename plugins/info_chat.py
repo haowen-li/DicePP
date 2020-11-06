@@ -1,11 +1,24 @@
 import re
 
-GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',
- '珍贵的水晶球(听说吞下去可以转运)', '椰蛋树牌椰汁', '椰羊牌椰奶',
-  '最新的海底八卦杂志', '皇宫大殿的WiFi密码', '回火的木棒', '俺寻思之力',
-  '咸鱼味果冻', '阿罗德斯之镜', '甜甜花酿鸡', '琉璃袋', '溪木镇的鸡']
+def GetPersonTitle(inputStr, credit):
+    name = inputStr[:inputStr.find('是')]
+    if name in NAME2TITLE.keys():
+        return NAME2TITLE[name]
+    else:
+        return None
 
-COOK_FAIL_STR_LIST = ['略加思索', '灵机一动', '毫不犹豫', '啊!就是这个', '不如这样']
+def InsertEmotion(inputStr, emotionDict):
+    def replaceByEmotion(matched):
+            inputStr = matched.group()[1:-1]
+            try:
+                inputStr = f'[CQ:image,file=file:///{emotionDict[inputStr]}]'
+            except:
+                inputStr = f'#{inputStr}'
+            return inputStr
+    if emotionDict:
+        return re.sub('\$.+?\$', replaceByEmotion, inputStr)
+    else:
+        return inputStr
 
 CHAT_CREDIT_LV0 = 100
 CHAT_CREDIT_LV1 = 300
@@ -14,6 +27,7 @@ CHAT_CREDIT_LV3 = 1000
 CHAT_CREDIT_LV4 = 1500
 CHAT_CREDIT_LV5 = 2000
 
+CREDIT_REPEAT_FEED = '哎~今天已经问过了呀~'
 CREDIT_LEVEL_FEED = {0:['呐，{name}你问这个是想做什么呀？',
                         '现在对{name}还不是很熟悉呢~',
                         '我们才认识没多久，问这个不是很好吧~',
@@ -121,24 +135,107 @@ CHAT_COMMAND_COMMON = {'the shadow.*':[(CHAT_CREDIT_LV0, 'The shadow! (激动地
                 '赞.?':[(CHAT_CREDIT_LV2, '$点赞$'),(CHAT_CREDIT_LV3, '$双重点赞$')]
                 }
 
-def GetPersonTitle(inputStr, credit):
-    name = inputStr[:inputStr.find('是')]
-    if name in NAME2TITLE.keys():
-        return NAME2TITLE[name]
-    else:
-        return None
+GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',
+ '珍贵的水晶球(听说吞下去可以转运)', '椰蛋树牌椰汁', '椰羊牌椰奶',
+  '最新的海底八卦杂志', '皇宫大殿的WiFi密码', '回火的木棒', '俺寻思之力',
+  '咸鱼味果冻', '阿罗德斯之镜', '甜甜花酿鸡', '琉璃袋', '溪木镇的鸡']
+
+COOK_FAIL_STR_LIST = ['略加思索', '灵机一动', '毫不犹豫', '啊!就是这个', '不如这样']
 
 CHAT_COMMAND_FUNCTION = {'.+是谁.?':GetPersonTitle, '.+是什么.?':GetPersonTitle}
 
-def InsertEmotion(inputStr, emotionDict):
-    def replaceByEmotion(matched):
-            inputStr = matched.group()[1:-1]
-            try:
-                inputStr = f'[CQ:image,file=file:///{emotionDict[inputStr]}]'
-            except:
-                inputStr = f'#{inputStr}'
-            return inputStr
-    if emotionDict:
-        return re.sub('\$.+?\$', replaceByEmotion, inputStr)
-    else:
-        return inputStr
+BOT_ON_STR = '伊丽莎白来啦~'
+BOT_OFF_STR = '那我就不说话咯~ #潜入水中 (咕嘟咕嘟)'
+
+ROLL_FEED_STR = '{reason}{nickName}掷出了{resultStr}' # 普通的掷骰指令
+ROLL_REASON_STR = '由于{reason},' # reason部分的格式
+N20_FEED_STR = ', 大成功!' # 单次掷骰大成功提示
+N01_FEED_STR = ', 大失败!' # 单次掷骰大失败提示
+N20_FEED_MULT_STR = '{succTimes}次大成功!' # 多次掷骰大成功提示
+N01_FEED_MULT_STR = '{failTimes}次大失败!' # 多次掷骰大失败提示
+
+HROLL_FEED_STR = '{nickName}进行了一次暗骰' # 使用暗骰指令后在群里发送的提示
+HROLL_RES_STR = '暗骰结果:{finalResult}' # 使用暗骰指令后私聊发送的提示
+
+JRRP_FEED_STR = '{nickName}今天走运的概率是{value}%' # JRRP指令回复
+JRRP_GOOD_STR = ', 今天运气不错哦~' # 好运提示
+JRRP_BAD_STR = ', 今天跑团的时候小心点... 给你{gift}作为防身道具吧~' # 厄运提示
+JRRP_REPEAT_STR = '不是已经问过了嘛~ 你走运的概率是{value}%, 记好了哦!'
+
+NN_FEED_STR = '要称呼你为{nickName}吗? 没问题!' # nn指令回复
+NN_RESET_STR = '要用本来的名字称呼你吗? 了解!'
+
+INIT_MISS_STR = '还没有做好先攻列表哦'
+INIT_CLEAR_STR = '先攻列表已经删除啦'
+INIT_CLEAR_FAIL_STR = '无法删除不存在的先攻列表哦'
+INIT_REMOVE_STR = '已经将{name}从先攻列表中删除'
+INIT_REMOVE_FAIL_STR = '在先攻列表中找不到与"{name}"相关的名字哦'
+INIT_REMOVE_MULT_STR = '在先攻列表找到多个可能的名字: {val}'
+INIT_WARN_STR = '先攻列表上一次更新是一小时以前, 请注意~'
+
+DISMISS_FEED_STR = '再见咯~' # 使用dismiss指令退群后发送
+NICKNAME_LEN_LIMIT_STR = '你的名字是什么呀...记不住啦~' # 昵称超过20个字符后发送的提示
+GROUP_COMMAND_ONLY_STR = '只有在群聊中才能使用该功能哦' # 在私聊中使用群聊功能时发送的提示
+HP_CLEAR_STR = '已经忘记了{nickName}的生命值...' # 删除生命值后的提示
+PC_CLEAR_STR = '成功删除了{nickName}的角色卡~' # 删除角色卡后的提示
+CHECK_TIME_LIMIT_STR = '重复的次数必须在1~9之间哦~' # 检定次数超出范围后的提示
+TEAM_NEED_STR = '必须先加入队伍哦~' # 需要先加入队伍的提示
+TEAM_INFO_FEED_STR = '已将队伍的完整信息私聊给你啦~' # 查看队伍信息后的提示
+SPELL_SLOT_ADJ_INVALID_STR = '{val}是无效的法术位调整值~ 合法范围:[-9, +9]' # 无效法术位调整提示
+SEND_LEN_LIMIT_STR = '请不要随便骚扰Master哦~ (信息长度限制为10~100)' # 给Master发送的信息超过范围后的提示
+SEND_FEED_STR = '已将信息转发给Master了~' # 给Master发送信息后的提示
+EXAM_LIST_STR = '当前可用的题库是: {val}' # 题库列表
+EXAM_MISS_STR = '找不到这个题库哦~' # 找不到题库
+EXAM_MULT_STR = '想找的是哪一个题库呢?\n{possKey}' # 找到多个题库
+WELCOME_FEED_STR = '已将入群欢迎词设为:' # 设置入群关键词
+WELCOME_CLEAR_STR = '已经关闭入群欢迎' # 关闭入群关键词
+NAME_FORMAT_STR = '输入的格式有些错误呢~' # 生成随机姓名指令格式不正确
+NAME_LIMIT_STR = '生成的名字个数必须在1~10之间哦~' # 生成随机姓名指令数量不正确
+DND_FEED_STR = '{nickName}的初始属性: {reason}\n{result}' # 生成属性的回复
+JOKE_FEED_STR = '{nickName}的{flag}日随机TRPG笑话:\n{result}' # 今日笑话回复, flag为[昨, 今, 明]
+JOKE_LIMIT_LAST_STR = '只有一次机会哦~昨天的今日笑话就是今天的昨日笑话, 你已经看过啦~'
+JOKE_LIMIT_TODAY_STR = '只有一次机会哦~昨天的明日笑话就是今天的今日笑话, 你已经看过啦~'
+JOKE_LIMIT_NEXT_STR = '只有一次机会哦~你已经提前把明天的笑话看过啦~'
+ERROR2MASTER_STR = '啊咧, 遇到一点问题, 请汇报给梨子~' # 遇到错误时的反馈
+MASTER_LIMIT_STR = '只有Master才能使用这个命令!'
+SAVE_FEED_STR = '成功将所有资料保存到本地咯~'
+INFO_MISS_STR = '{val}资料库加载失败了呢...'
+
+NOTE_FEED_STR = '记下来咯~ 索引是"{index}"'
+NOTE_NUM_LIMIT_STR = '一个群里最多只允许20条笔记哦~'
+NOTE_LEN_LIMIT_STR = '呜...记不住啦~ 超过三百个字的内容就不要记到笔记上了吧...'
+NOTE_TOTAL_LIMIT_STR = '呜...记不住啦~ 一个群的笔记总共最多只能保存两千个字哦~'
+NOTE_CLEAR_ALL_STR = '成功删除所有笔记~'
+NOTE_CLEAR_STR = '成功删除索引为{index}的笔记~'
+NOTE_MULT_INDEX_STR = '可能的笔记索引:{resList}'
+NOTE_MISS_STR = '无法找到相应的笔记索引'
+
+COOK_FEED_STR = '{nickName}的烹饪结果是:\n{cookResult}' # 烹饪回复
+ORDER_FEED_STR = '{nickName}的菜单:\n{orderResult}' # 点菜回复
+ORDER_FEED_P2_STR = '于{num1}个备选中选择了{num2}种食物:\n'
+ORDER_LIMIT_MIN_STR = '呃,您要不要点菜呢?' # 点菜数量小于1
+ORDER_LIMIT_MAX_STR = '一个人点那么多会浪费的吧, 请将数量控制在5以内哦' # 点菜数量大于5
+ORDER_INVALID_STR = '{key}不是有效的关键词, 请查看.help烹饪'
+ORDER_FAIL_ALL_STR = '想不到满足要求的食物呢...'
+ORDER_FAIL_PART_STR = '在无视了关键词{delKeyList}后, '
+
+MENU_LIMIT_STR = '每天只有一个菜单哦~' # 今日菜单超出次数
+
+QUERY_NOTICE_STR = '现在的记忆中共有{num}个条目呢, 可查询内容请输入 .help查询 查看'
+QUERY_KEY_LIMIT_STR = '指定的关键词太多咯'
+QUERY_MULT_SHORT_STR = '找到多个匹配的条目: {info}\n回复序号可直接查询对应内容'
+QUERY_MULT_LONG_STR = '找到多个匹配的条目: {info}等, 共{num}个条目\n回复序号可直接查询对应内容'
+QUERY_MISS_STR = '唔...找不到呢...'
+QUERY_FEED_COMP_STR = '要找的是{key}吗?\n{result}'
+INDEX_MISS_STR = '资料库中找不到任何含有关键字{keywordList}的词条呢~'
+
+DRAW_NOTICE_STR = '现在的记忆中共有{num}个牌堆呢, 分别是{val}'
+DRAW_NUM_LIMIT_STR = '抽取的数量必须为1到10之间的整数~'
+DRAW_FEED_STR = '从{targetStr}中抽取的结果: \n{result}'
+DRAW_MULT_SHORT_STR = '找到多个匹配的牌堆: {info}'
+DRAW_MULT_LONG_STR = '找到多个匹配的牌堆: {info}等, 共{num}个牌堆'
+
+EXAM_MISS_STR = '{key}不是可用的题库!'
+EXAM_EXPIRE_STR = '时间到咯, 请你重新开始吧~'
+EXAM_TRUE_STR = '回答正确~'
+EXAM_FALSE_STR = '回答错误~ 答案是{answer}'

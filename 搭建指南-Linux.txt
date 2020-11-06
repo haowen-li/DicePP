@@ -1,8 +1,3 @@
----------------------- 写在最前面 ---------------------- 
-在搭设私骰前，最好先联系开发者（QQ：821480843）
-由于时间精力限制，本项目尚有许多不足，敬请谅解
-请勿将本代码用于违法犯罪用途！
-
 ---------------------- 基于腾讯云 Ubuntu 18.04 LTS ---------------------- 
 下载文件
 git clone https://github.com/haowen-li/DicePP.git
@@ -21,7 +16,7 @@ sudo pip install launchpadlib
 rm get-pip.py
 
 安装依赖库
-pip3 install --no-cache-dir "nonebot[scheduler]" && pip3 install --no-cache-dir -r ./DicePP/requirements.txt
+pip3.7 install --no-cache-dir "nonebot[scheduler]" && pip3.7 install --no-cache-dir -r ./DicePP/requirements.txt
 
 设置go-cqhttp客户端 （注意版本号可能改变，可按tab自动补全，注意系统是linux还是windows）
 tar -xzvf DicePP/tools/go-cqhttp-v0.9.29-fix2-linux-amd64.tar.gz
@@ -35,6 +30,17 @@ vim config.json
 将ws_reverse_servers的enabled属性设置为true，将reverse_url属性设置为"ws://127.0.0.1:8080/ws/"
 注意本身有双引号的写在双引号里，没有则不需双引号
 最后按esc退出编辑模式，输入:wq保存并退出
+
+更改DicePP配置文件
+在DicePP文件夹下新建一个文件master_config.py
+touch master_config.py
+更改配置文件
+vim master_config.py
+仿照前一步，新增如下内容，#后的内容为注释，可以不写
+SELF_ID = '12345678' # 骰娘账号
+MASTER = ['87654321'] # Master账号，如有多个，可以写为['87654321', '000000']的格式，注意是英文逗号
+MASTER_GROUP = ['666666'] # 管理群号，目前会将加入的群自动播报至管理群，如果不需要则写为[ ]即可
+GROUP_PASSWORD = '伊丽傻白' # 好友验证码，必须输入该验证码才会通过好友请求，如果不需要验证码请将其设为空字符串 ''
 
 ---------- 在服务器上的自动部署方法 ----------
 安装supervisor
@@ -59,34 +65,16 @@ mkdir ~/superlogs
 sudo cp ~/DicePP/tools/dicepp.conf /etc/supervisord.d/dicepp.conf
 sudo cp ~/DicePP/tools/gocqhttp.conf /etc/supervisord.d/gocqhttp.conf
 
-启动supervisor，dicepp和gocqhttp会自动开始运行
+启动supervisor，dicepp和gocqhttp会自动在后台开始运行
 supervisord -c /etc/supervisord.conf
 其他指令
 supervisorctl status all                            #查看所有进程状态
 supervisorctl stop   all                            #停止所有进程
 supervisorctl start  all                            #启动所有进程
 supervisorctl restart all                           #重启所有进程
-supervisorctl reoload all                           #重载所有进程
+supervisorctl reload                          #重新启动supervisor，重载配置
 
-
----------------------- 基于Windows ---------------------- 
-自行安装python3.7+，git
-
-下载文件
-git clone https://github.com/haowen-li/DicePP.git
-
-安装python依赖库
-pip3 install --no-cache-dir "nonebot[scheduler]" && pip3 install --no-cache-dir -r ./DicePP/requirements.txt
-
-运行nonebot
-python DicePP/dicepp.py
-
-解压go-cqhttp.exe文件至任意目录（注意版本号可能改变，注意系统是linux还是windows）
-DicePP/tool/go-cqhttp-v0.9.29-fix2-windows-amd64.zip
-初次运行go-cqhttp.exe生成配置文件
-编辑config.json：
-修改uin为qq账号，password为密码
-将http_config，ws_config，web_ui的enabled属性都设置为false
-将ws_reverse_servers的enabled属性设置为true，将reverse_url属性设置为"ws://127.0.0.1:8080/ws/"
-注意本身有双引号的写在双引号里，没有则不需双引号
-再次运行go-cqhttp
+---------- 写在最后 ----------
+注意，在自动部署前，必须先手动运行go-cqhttp确保可以正常登陆
+如果按前文的方法进行了自动部署，则在启动supervisor后就可以正常使用
+产生的输出会存在用户目录下的superlogs文件夹中，如果要查看可以用vim打开，按下shift+g可以快速到达最底部
