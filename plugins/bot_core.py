@@ -20,7 +20,7 @@ from .data_template import *
 
 @TypeAssert(str)
 async def ParseInput(inputStr):
-    # 接受用户的输入, 输出一个数组, 包含指令类型与对应参数
+    # 接受用户的输入, 输出一个Command类实例, 包含指令类型与对应参数
     # 如不是命令则返回None
     inputStr = inputStr.strip()
     # 空字符串直接返回
@@ -98,6 +98,19 @@ async def ParseInput(inputStr):
             return Command(CommandType.BOT, ['off'])
         else:
             return Command(CommandType.BOT, ['show'])
+    elif commandType == '群管理':
+        if commandStr.find('启用功能') != -1:
+            index = commandStr.find('启用功能')
+            return Command(CommandType.GROUP, ['启用功能', commandStr[index+4:].strip()])
+        elif commandStr.find('禁用功能') != -1:
+            index = commandStr.find('禁用功能')
+            return Command(CommandType.GROUP, ['禁用功能', commandStr[index+4:].strip()])
+        elif commandStr.find('查看禁用功能') != -1:
+            return Command(CommandType.GROUP, ['查看禁用功能'])
+        elif commandStr.find('信息') != -1:
+            return Command(CommandType.GROUP, ['信息'])
+        else:
+            return Command(CommandType.GROUP, ['帮助'])
     elif commandType == 'dnd':
         number, reason = SplitNumberCommand(commandStr)
         return Command(CommandType.DND,[number, reason])
@@ -279,9 +292,11 @@ class Bot:
         self.userInfoDict = ReadJson(LOCAL_USERINFO_PATH)
         self.teamInfoDict = ReadJson(LOCAL_TEAMINFO_PATH)
         self.dailyInfoDict = ReadJson(LOCAL_DAILYINFO_PATH)
+        self.memberInfoDict = ReadJson(LOCAL_MEMBERINFO_PATH)
         
-        UpdateAllGroupInfo(self.groupInfoDict)
-        UpdateAllUserInfo(self.userInfoDict)
+        UpdateAllGroupInfo(self)
+        UpdateAllUserInfo(self)
+        UpdateAllMemberInfo(self)
         self.dailyInfoDict = UpdateDailyInfoDict(self.dailyInfoDict)
 
         print(f'个人资料库加载成功!')
@@ -469,33 +484,43 @@ class Bot:
         await UpdateJsonAsync(self.userInfoDict, LOCAL_USERINFO_PATH)
         await UpdateJsonAsync(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
         await UpdateJsonAsync(self.dailyInfoDict, LOCAL_DAILYINFO_PATH)
+        await UpdateJsonAsync(self.memberInfoDict, LOCAL_MEMBERINFO_PATH)
 
     async def UpdateGroupInfo(self, groupInfoDictUpdate):
         result = []
         invalidGroupId = []
+        validGroupNum = 0
+        newGroupNum = 0
         try:
+            for gId in groupInfoDictUpdate.keys():
+                if gId not in self.groupInfoDict.keys():
+                    CreateNewGroupInfo(self.groupInfoDict, gId)
+                    newGroupNum += 1
+
             for gId in self.groupInfoDict.keys():
                 if not gId in groupInfoDictUpdate.keys():
                     invalidGroupId.append(gId)
-                else:
+                elif groupInfoDictUpdate[gId]:
+                    validGroupNum += 1
                     self.groupInfoDict[gId]['name'] = groupInfoDictUpdate[gId]
-            if len(invalidGroupId) != 0:
-                for gId in invalidGroupId:
-                    del self.groupInfoDict[gId]
-                result += [CommandResult(CoolqCommandType.MESSAGE, f'已删除不存在群: {invalidGroupId}', personIdList = MASTER)]
+            resultStr = f'检测到{validGroupNum}个有效群信息, 新增{newGroupNum}个群信息, {len(invalidGroupId)}个群没有找到群信息'
+            result += [CommandResult(CoolqCommandType.MESSAGE, resultStr, personIdList = MASTER)]
+            # if len(invalidGroupId) != 0:
+            #     for gId in invalidGroupId:
+            #         del self.groupInfoDict[gId]
+            #     result += [CommandResult(CoolqCommandType.MESSAGE, f'已删除不存在群: {invalidGroupId}', personIdList = MASTER)]
         except Exception as e:
-            result = [CommandResult(CoolqCommandType.MESSAGE, f'更新群信息时出现错误: {e}', personIdList = MASTER)]
-        # 清除无用信息
-        DeleteInvalidInfo(self.nickNameDict, self.groupInfoDict.keys())
-        DeleteInvalidInfo(self.initInfoDict, self.groupInfoDict.keys())
-        DeleteInvalidInfo(self.pcStateDict, self.groupInfoDict.keys())
-        DeleteInvalidInfo(self.teamInfoDict, self.groupInfoDict.keys())
+            result += [CommandResult(CoolqCommandType.MESSAGE, f'更新群信息时出现错误: {e}', personIdList = MASTER)]
+        # # 清除无用信息
+        # DeleteInvalidInfo(self.nickNameDict, self.groupInfoDict.keys())
+        # DeleteInvalidInfo(self.initInfoDict, self.groupInfoDict.keys())
+        # DeleteInvalidInfo(self.pcStateDict, self.groupInfoDict.keys())
+        # DeleteInvalidInfo(self.teamInfoDict, self.groupInfoDict.keys())
         return result
 
-    async def DailyUpdate(self):
-        # 只保留键在sourceKeys中的targetDict条目
+    async def DailyUpdate(self, saveData = True):
         result = []
-        errorInfo = ''
+        errorList = []
         # 逐个处理用户信息
         liveUserNum = 0
         activeUserNum = 0
@@ -534,7 +559,7 @@ class Bot:
                     if userInfoCur['credit'] < 0:
                         invalidUser.append(pId)
             except Exception as e:
-                errorInfo += f'\n处理用户{pId}时的异常:{e}'
+                errorList.append(f'\n处理用户{pId}时的异常:{e}')
 
         for pId in invalidUser:
             del self.userInfoDict[pId]
@@ -559,7 +584,7 @@ class Bot:
                 groupInfoCur['dndCommandDaily'] = 0
                 groupInfoCur['days'] += 1
             except Exception as e:
-                errorInfo += f'\n处理群{gId}时的异常:{e}'
+                errorList.append(f'\n处理群{gId}时的异常:{e}')
 
         if warningGroup:
             result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR, groupIdList = warningGroup)]
@@ -572,18 +597,39 @@ class Bot:
         try:
             self.dailyInfoDict = UpdateDailyInfoDict(self.dailyInfoDict)
         except Exception as e:
-            errorInfo += f'\n更新日志时的异常:{e}'
+            errorList.append(f'\n更新日志时的异常:{e}')
 
         # 清除无用信息
         DeleteInvalidInfo(self.nickNameDict, self.groupInfoDict.keys())
         DeleteInvalidInfo(self.initInfoDict, self.groupInfoDict.keys())
         DeleteInvalidInfo(self.pcStateDict, self.groupInfoDict.keys())
         DeleteInvalidInfo(self.teamInfoDict, self.groupInfoDict.keys())
+        DeleteInvalidInfo(self.memberInfoDict, self.groupInfoDict.keys())
+
+        # 清除无效的群成员信息
+        for gId in self.memberInfoDict.keys():
+            try:
+                memberInfoCur = self.memberInfoDict[gId]
+                invalidMember = []
+                for pId in memberInfoCur.keys():
+                    if pId not in self.userInfoDict.keys():
+                        invalidMember.append(pId)
+                        continue
+                    lastTime = GetCurrentDateRaw() - Str2Datetime(memberInfoCur[pId]['activeDate'])
+                    if lastTime >= datetime.timedelta(days = 30): # 30天没有发言则彻底删除记录
+                        invalidMember.append(pId)
+                        continue
+                    memberInfoCur[pId]['days'] += 1
+                for pId in invalidMember:
+                    del memberInfoCur[pId]
+            except Exception as e:
+                errorList.append(f'\n处理群成员{gId}时的异常:{e}')
 
         result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}\n昨日发言用户:{liveUserNum} 活跃用户:{activeUserNum}', MASTER)]
-        if errorInfo:
-            result += [CommandResult(CoolqCommandType.MESSAGE, '异常信息:'+errorInfo, MASTER)]
-        await self.UpdateLocalData()
+        if errorList:
+            result += [CommandResult(CoolqCommandType.MESSAGE, '异常信息:'+str(errorList[:10]), MASTER)]
+        if saveData:
+            await self.UpdateLocalData()
         return result
 
     async def ProcessMessage(self, inputStr, personId, personName, groupId = None, onlyToMe = False):
@@ -607,6 +653,21 @@ class Bot:
         if groupId:
             groupInfoCur['messageAccu'] += 1
             groupInfoCur['messageDaily'] += 1
+
+        # 更新群成员信息
+        if groupId:
+            try:
+                assert groupId in self.memberInfoDict.keys()
+            except:
+                CreateNewGroupMemberInfo(self.memberInfoDict, groupId)
+            try:
+                assert personId in self.memberInfoDict[groupId].keys()
+            except:
+                CreateNewMemberInfo(self.memberInfoDict[groupId], personId)
+            groupMemberInfo = self.memberInfoDict[groupId][personId]
+            groupMemberInfo['activeDate'] = GetCurrentDateStr()
+            groupMemberInfo['messageDaily'] += 1
+            groupMemberInfo['messageAccu'] += 1
 
         # 黑名单检测
         if userInfoCur['credit'] < 0:
@@ -705,6 +766,11 @@ class Bot:
         else:
             groupInfoCur = None
 
+        # 检查该指令是否被该群禁用
+        if groupId:
+            if int(command.cType) in groupInfoCur['BanFunc'].keys():
+                return [CommandResult(CoolqCommandType.MESSAGE, FUNC_BAN_NOTICE)]
+
         # 统计命令次数
         userInfoCur['commandAccu'] += 1
         userInfoCur['commandDaily'] += 1
@@ -719,14 +785,9 @@ class Bot:
                 groupInfoCur['dndCommandAccu'] += 1
                 groupInfoCur['dndCommandDaily'] += 1
 
-        # 尝试读取昵称
-        try:
-            nickName = self.nickNameDict[groupId][personId]
-        except:
-            try:
-                nickName = self.nickNameDict['Private'][personId]
-            except:
-                nickName = personName
+        # 更新并尝试读取昵称
+        self.userInfoDict[personId]['name'] = personName
+        nickName = self.__GetNickName(groupId, personId)
 
         resultList, commandWeight = await self.__ProcessInput(command, personId, nickName, userInfoCur, groupId, groupInfoCur, onlyToMe)
 
@@ -855,9 +916,8 @@ class Bot:
 
         elif cType == CommandType.BOT:
             commandWeight = 3
-            if groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
-            
             subType = command.cArg[0]
+            if subType != 'show' and groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             if subType == 'show':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
             elif onlyToMe:
@@ -865,6 +925,26 @@ class Bot:
                     result = self.__BotSwitch(groupId, True)
                 else:
                     result = self.__BotSwitch(groupId, False)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+
+        elif cType == CommandType.GROUP:
+            commandWeight = 1
+            subType = command.cArg[0]
+            if groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
+            if subType == '帮助':
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, HELP_COMMAND_GROUP_STR)]
+            elif subType == '信息':
+                result = self.__GetGroupMemberInfo(groupId)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            elif subType == '查看禁用功能':
+                result = self.__GetBannedGroupFunc(groupId)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+            else:
+                funcName = command.cArg[1]
+                if subType == '启用功能':
+                    result = self.__GroupFuncSwitch(groupId, funcName, True)
+                elif subType == '禁用功能':
+                    result = self.__GroupFuncSwitch(groupId, funcName, False)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.DISMISS:
@@ -1369,8 +1449,11 @@ class Bot:
             else:
                 subType = command.cArg[0]
                 if subType == 'savedata':
-                    await self.UpdateLocalData()
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SAVE_FEED_STR)]
+                    try:
+                        await self.UpdateLocalData()
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SAVE_FEED_STR)]
+                    except Exception as e:
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'保存资料时遇到错误:\n{e}' )]
                 elif subType == 'credit':
                     try:
                         commandArgs = command.cArg[1].split(':')
@@ -1436,6 +1519,16 @@ class Bot:
         info['isRepeat'] = isRepeat
         info['isValid'] = True
         self.userInfoDict[personId]['IACommand'].append(info)
+
+    def __GetNickName(self, groupId, personId) -> str:
+        try:
+            nickName = self.nickNameDict[groupId][personId]
+        except:
+            try:
+                nickName = self.nickNameDict['Private'][personId]
+            except:
+                nickName = self.userInfoDict[personId]['name']
+        return nickName
 
     def UpdateNickName(self, groupId, personId, nickName) -> str:
         try:
@@ -1834,6 +1927,74 @@ class Bot:
         else:
             return BOT_OFF_STR
 
+    def __GroupFuncSwitch(self, groupId, funcName, activeState) -> str:
+        if funcName not in Str2CommandTypeDict.keys():
+            return '所选的功能不在可选范围内呢, 请输入.help群管理查看'
+        commandTypeDict = Str2CommandTypeDict[funcName]
+        groupInfo = self.groupInfoDict[groupId]
+        if activeState:
+            for c in commandTypeDict:
+                try:
+                    del groupInfo['BanFunc'][int(c)]
+                except:
+                    pass
+            return FUNC_ON_STR.format(funcName = funcName)
+        else:
+            for c in commandTypeDict:
+                groupInfo['BanFunc'][int(c)] = ''
+            return FUNC_OFF_STR.format(funcName = funcName)
+
+    def __GetBannedGroupFunc(self, groupId) -> str:
+        BanFuncList = []
+        bannedGroupCommand = self.groupInfoDict[groupId]['BanFunc']
+        for funcStr in Str2CommandTypeDict.keys():
+            commandTypeDict = Str2CommandTypeDict[funcStr]
+            flag = False
+            for cType in commandTypeDict:
+                if int(cType) in bannedGroupCommand:
+                    flag = True
+                    continue
+            if flag:
+                BanFuncList.append(funcStr)
+        if BanFuncList:
+            resultStr = '目前没有被禁用的功能哦~'
+        else:
+            resultStr = f'目前被禁用的功能是{BanFuncList}~'
+
+        return resultStr
+
+    def __GetGroupMemberInfo(self, groupId) -> str:
+        def GetGroupUselessRate(groupInfo):
+            prevRate = (10*groupInfo['dndCommandAccu'] + 2*groupInfo['commandAccu'])/groupInfo['messageAccu']
+            prevRate = 1 - min(prevRate, 1)
+            curRate = (10*groupInfo['dndCommandDaily'] + 2*groupInfo['commandDaily'])/groupInfo['messageDaily']
+            curRate = 1 - min(curRate, 1)
+            gamma = (min(groupInfo['days'], 30)/30) * 0.5 # 历史数据的权重, 群存在时间越久权重越高
+            finalRate = gamma*prevRate + (1-gamma)*curRate
+            finalRate = int(100*finalRate)
+            return finalRate
+        groupInfo = self.groupInfoDict[groupId]
+        memberInfo = self.memberInfoDict[groupId]
+        result = ''
+        result += f'群名称: {groupInfo["name"]}\n'
+        result += f'活跃群成员数量 {len(memberInfo)}\n'
+        result += f'好感度排名:\n'
+        memberList = []
+        for userId in memberInfo.keys():
+            try:
+                userInfo = self.userInfoDict[userId]
+                lastTime = GetCurrentDateRaw() - Str2Datetime(memberInfo[userId]['activeDate'] )
+                assert lastTime <= datetime.timedelta(days = 7)
+            except:
+                continue
+            memberList.append((self.__GetNickName(groupId, userId), userInfo['credit']))
+        memberList = sorted(memberList, key = lambda x : x[1], reverse = True)[:10]
+        for i in range(len(memberList)):
+            result += f'{i+1}. {memberList[i][0]}\n'
+        result += f'潮湿程度: {GetGroupUselessRate(groupInfo)}%'
+        return result
+
+
     @TypeAssert(times = int)
     def __DNDBuild(self, times) -> str:        
         result = ''
@@ -2196,6 +2357,8 @@ class Bot:
             return HELP_COMMAND_CHECK_STR
         elif subType == '技能':
             return HELP_COMMAND_SKILL_STR
+        elif subType == '群管理':
+            return HELP_COMMAND_GROUP_STR
         else:
             return None
 
@@ -2297,56 +2460,48 @@ def CreateNewUserInfo(userDict, personId):
 def CreateNewGroupInfo(groupDict, groupId):
     groupDict[groupId] = copy.deepcopy(groupInfoTemp)
 
-def UpdateAllUserInfo(userDict):
-    deletedUserList = []
-    deletedList = []
-    for userId in userDict.keys():
-        userInfoCur = userDict[userId]
-        if type(userInfoCur) != dict:
-            deletedUserList.append(userId)
+def CreateNewGroupMemberInfo(memberDict, groupId):
+    memberDict[groupId] = copy.deepcopy(groupMemberDictTemp)
+
+def CreateNewMemberInfo(groupMemberDict, personId):
+    groupMemberDict[personId] = copy.deepcopy(memberInfoTemp)
+
+def UpdateInfoDictByTemplate(inputDict, tempDict):
+    deleteInfoPair = []
+    deleteList = []
+    outputDict = copy.deepcopy(inputDict)
+
+    for keyId in inputDict.keys():
+        infoCur = outputDict[keyId]
+        if type(infoCur) != dict:
+            del outputDict[key]
             continue
 
-        for curK in userInfoCur.keys():
-            if not curK in userInfoTemp.keys():
-                deletedList.append((userId, curK))
+        for curK in infoCur.keys():
+            if not curK in tempDict.keys():
+                del outputDict[keyId][curK]
 
-        for k in userInfoTemp.keys():
-            if not k in userInfoCur.keys():
-                userInfoCur[k] = userInfoTemp[k]
+        for tempK in tempDict.keys():
+            if not tempK in infoCur.keys():
+                outputDict[keyId][tempK] = tempDict[tempK]
+    return outputDict
 
-        userDict[userId] = copy.deepcopy(userInfoCur)
 
-    for pair in deletedList:
-        del userDict[pair[0]][pair[1]]
+def UpdateAllUserInfo(bot):
+    outputDict = UpdateInfoDictByTemplate(bot.userInfoDict, userInfoTemp)
+    bot.userInfoDict = copy.deepcopy(outputDict)
 
-    for userId in deletedUserList:
-        del userDict[userId]
 
-def UpdateAllGroupInfo(groupDict):
-    deletedGroupList = []
-    deletedList = []
-    for groupId in groupDict.keys():
-        groupInfoCur = groupDict[groupId]
+def UpdateAllGroupInfo(bot):
+    outputDict = UpdateInfoDictByTemplate(bot.groupInfoDict, groupInfoTemp)
+    bot.groupInfoDict = copy.deepcopy(outputDict)
 
-        if type(groupInfoCur) != dict:
-            deletedGroupList.append(groupId)
-            continue
 
-        for curK in groupInfoCur.keys():
-            if not curK in groupInfoTemp.keys():
-                deletedList.append((groupId, curK))
+def UpdateAllMemberInfo(bot):
+    for groupId in bot.memberInfoDict.keys():
+        outputDict = UpdateInfoDictByTemplate(bot.memberInfoDict[groupId], memberInfoTemp)
+        bot.memberInfoDict[groupId] = copy.deepcopy(outputDict)
 
-        for k in groupInfoTemp.keys():
-            if not k in groupInfoCur.keys():
-                groupInfoCur[k] = groupInfoTemp[k]
-
-        groupDict[groupId] = copy.deepcopy(groupInfoCur)
-
-    for pair in deletedList:
-        del groupDict[pair[0]][pair[1]]
-
-    for groupId in deletedGroupList:
-        del groupDict[groupId]
 
 def UpdateDailyInfoDict(dailyDict):
     try:

@@ -9,6 +9,7 @@ from master_config import *
 
 # 环境信息
 IS_COOLQ_PRO = True
+# 平台信息, 已过时
 # if platform.system() == 'Linux':
 #   PLATFORM_NAME = 'DOCKER' # 可选为 DOCKER 或 其他任意字符串
 # else:
@@ -30,9 +31,9 @@ DAILY_CREDIT_LIMIT = 15
 # 查询最多显示的条目
 QUERY_SHOW_LIMIT = 50
 
-WINE_COOLQ_PATH = 'Z:/home/user/coolq'
-WINE_COOLQ_JOKEIMG_PATH = WINE_COOLQ_PATH + '/data/image/joke/'
-WINE_COOLQ_EMOTIMG_PATH = WINE_COOLQ_PATH + '/data/image/emotion/'
+# WINE_COOLQ_PATH = 'Z:/home/user/coolq'
+# WINE_COOLQ_JOKEIMG_PATH = WINE_COOLQ_PATH + '/data/image/joke/'
+# WINE_COOLQ_EMOTIMG_PATH = WINE_COOLQ_PATH + '/data/image/emotion/'
 
 LOCAL_DATA_PATH = os.path.join(os.path.dirname(__file__), 'data')
 LOCAL_NICKNAME_PATH = os.path.join(LOCAL_DATA_PATH, 'nick_name.json')
@@ -42,6 +43,7 @@ LOCAL_GROUPINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_info.json')
 LOCAL_USERINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'user_info.json')
 LOCAL_TEAMINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'team_info.json')
 LOCAL_DAILYINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'daily_info.json')
+LOCAL_MEMBERINFO_PATH = os.path.join(LOCAL_DATA_PATH, 'group_member_info.json')
 
 LOCAL_CUSTOM_DATA_PATH = os.path.join(os.path.dirname(__file__), 'custom_data')
 LOCAL_QUERYINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'query_info')
@@ -52,16 +54,16 @@ LOCAL_NAMEINFO_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'name.json')
 LOCAL_QUESINFO_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'question.json')
 LOCAL_EMOTINFO_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'emotion_img')
 
-if PLATFORM_NAME == 'DOCKER':
-    LOCAL_JOKEIMG_DIR_PATH = WINE_COOLQ_JOKEIMG_PATH
-    LOCAL_EMOTIMG_DIR_PATH = WINE_COOLQ_EMOTIMG_PATH
-else:
-    LOCAL_JOKEIMG_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'joke_img')
-    LOCAL_EMOTIMG_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'emotion_img')
+# if PLATFORM_NAME == 'DOCKER':
+#     LOCAL_JOKEIMG_DIR_PATH = WINE_COOLQ_JOKEIMG_PATH
+#     LOCAL_EMOTIMG_DIR_PATH = WINE_COOLQ_EMOTIMG_PATH
+# else:
+LOCAL_JOKEIMG_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'joke_img')
+LOCAL_EMOTIMG_DIR_PATH = os.path.join(LOCAL_CUSTOM_DATA_PATH, 'emotion_img')
 
 ALL_LOCAL_DATA_PATH = [LOCAL_NICKNAME_PATH, LOCAL_INITINFO_PATH, LOCAL_PCSTATE_PATH,
                        LOCAL_GROUPINFO_PATH, LOCAL_USERINFO_PATH, LOCAL_TEAMINFO_PATH,
-                       LOCAL_DAILYINFO_PATH]
+                       LOCAL_DAILYINFO_PATH, LOCAL_MEMBERINFO_PATH]
 
 ALL_LOCAL_DIR_PATH = [LOCAL_DATA_PATH, LOCAL_CUSTOM_DATA_PATH, LOCAL_QUERYINFO_DIR_PATH,
                       LOCAL_DECKINFO_DIR_PATH, LOCAL_DECKINFO_DIR_PATH, LOCAL_MENUINFO_DIR_PATH,

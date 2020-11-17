@@ -69,8 +69,8 @@ sudo cp ~/DicePP/tools/gocqhttp.conf /etc/supervisord.d/gocqhttp.conf
 supervisord -c /etc/supervisord.conf
 其他指令
 supervisorctl status all                            #查看所有进程状态
-supervisorctl stop   all                            #停止所有进程
-supervisorctl start  all                            #启动所有进程
+supervisorctl stop all                            #停止所有进程
+supervisorctl start all                            #启动所有进程
 supervisorctl restart all                           #重启所有进程
 supervisorctl reload                          #重新启动supervisor，重载配置
 

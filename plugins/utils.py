@@ -3,7 +3,7 @@ import datetime
 import os
 import numpy as np
 from collections import namedtuple
-from enum import Enum, unique
+from enum import Enum, IntEnum, unique
 
 from .type_assert import TypeAssert
 
@@ -14,12 +14,13 @@ commandKeywordList += ['记录角色卡', '角色卡模板', '角色卡模版','
 commandKeywordList += ['加入队伍', '队伍信息', '完整队伍信息', '清除队伍', '队伍点名']
 commandKeywordList += ['记录金钱', '清除金钱', '查看金钱', '队伍金钱', '金钱' ,'长休']
 commandKeywordList += ['记录笔记', '查看笔记', '清除笔记', '笔记', '答题']
+commandKeywordList += ['群管理']
 commandKeywordList += ['savedata', 'credit', 'notice', 'dp']
 commandKeywordReList = ['^([1-9]#)?..检定', '^([1-9]#)?..豁免', '^([1-9]#)?..攻击', '.*法术位', '.*hp', '^[1-9]环']
 commandKeywordReList += ['^队伍..检定']
 
 @unique
-class CommandType(Enum):
+class CommandType(IntEnum):
     MASTER = 999
     Roll = 0
     NickName = 1
@@ -52,6 +53,16 @@ class CommandType(Enum):
     TeamMoney = 28
     INDEX = 29
     Question = 30
+    GROUP = 31
+
+Str2CommandTypeDict = {'查询':{CommandType.QUERY, CommandType.INDEX},
+                       '先攻':{CommandType.INIT, CommandType.RI},
+                       '今日笑话':{CommandType.TodayJoke},
+                       '今日人品':{CommandType.JRRP},
+                       '掷骰':{CommandType.Roll},
+                       '抽卡':{CommandType.DRAW},
+                       '烹饪':{CommandType.COOK, CommandType.ORDER, CommandType.TodayMenu}}
+
 
 dndCommandDict = {CommandType.Roll, CommandType.INIT, CommandType.RI, CommandType.HP, CommandType.QUERY, CommandType.INDEX, CommandType.PC, 
                  CommandType.CHECK, CommandType.SpellSlot, CommandType.TEAM, CommandType.MONEY, CommandType.REST,
@@ -209,6 +220,7 @@ def PairSubstringList(substringList, strList) -> list:
     return possResult
 
 def DeleteInvalidInfo(targetDict, sourceKeys):
+    # 只保留键在sourceKeys中的targetDict条目
     invalidGroupId = []
     for gId in targetDict.keys():
         if not gId in sourceKeys:

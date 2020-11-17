@@ -20,7 +20,7 @@ python convert_deck.py -s 你自定义的牌堆.txt
 将生成的json文件放到plugins/custom_data/deck_info/目录下
 
 ----------- 自定义菜谱 -----------
-大概也不难，请参考conver_dish_template.txt
+大概也不难，请参考convert_dish_template.txt
 在命令行中输入以下指令转换文件
 python convert_dish.py -s 你自定义的菜谱.txt
 将生成的json文件放到plugins/custom_data/menu_info/目录下

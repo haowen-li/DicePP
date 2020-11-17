@@ -1,6 +1,7 @@
 from .info_game import MENU_CUISINE_LIST, MENU_TYPE_LIST, MENU_STYLE_LIST, MENU_KEYWORD_LIST
 from .info_game import PC_SKILL_DICT, PC_SHEET_TEMPLATE
-VERSION = '0.7.0'
+from .utils import Str2CommandTypeDict
+VERSION = '0.7.1'
 
 HELP_STR = f'Dice++ by 梨子 Ver {VERSION}\n'
 HELP_STR += '@骰娘 .bot on/off 开启或关闭骰娘\n'
@@ -20,7 +21,8 @@ FIRST_TIME_STR = '伊丽莎白来咯~\n我是D&D5E专用骰娘, 请不要把我�
 LEAVE_WARNING_STR = '不需要我的话, 我就去其他地方玩咯~\n#收拾东西准备离开'
 LEAVE_NOTICE_STR = '一只人鱼趁着夜色离开了你的队伍。'
 
-HELP_COMMAND_UPDATE_STR = '2020/11/6 v0.7.0:\n1.改动代码结构并且增加搭建说明, 开放私骰的搭建 2.修复了更新时无法正确处理过期用户的问题\n'
+HELP_COMMAND_UPDATE_STR = '2020/11/17 v0.7.1:\n1.增加了群管理功能, 包括启用/禁用特定功能, 统计群成员信息, 请输入.help群管理查看\n'
+HELP_COMMAND_UPDATE_STR += '2020/11/6 v0.7.0:\n1.改动代码结构并且增加搭建说明, 开放私骰的搭建 2.修复了更新时无法正确处理过期用户的问题\n'
 HELP_COMMAND_UPDATE_STR += '2020/11/1 v0.6.4:\n1.更改了好感度设定 2.修复了若干文本问题\n'
 HELP_COMMAND_UPDATE_STR += '2020/5/5 v0.6.3:\n1.加入了答题功能 2.增加了更多的随机姓名 3.增加了更多的今日笑话\n'
 HELP_COMMAND_UPDATE_STR += '2020/4/26 v0.6.2:\n1.实验性地于查询指令中加入了交互命令, 具体使用方法请输入.help交互 或 .help查询 查看\n'
@@ -59,7 +61,7 @@ HELP_COMMAND_STR += '.send 单方面向Master发送消息\n'
 HELP_COMMAND_STR += '.welcome 自定义入群欢迎词\n'
 HELP_COMMAND_STR += '骰娘会自动去掉大多数空格以及转换小写, 多数指令需要后接参数, 详细用法请输入.help [指令名]查询, 如.help hp'
 
-HELP_LINK_STR = 'Dice++是基于Python, NoneBot和酷Q的骰子机器人项目\n'
+HELP_LINK_STR = 'Dice++是基于Python, NoneBot和go-cqhttp的骰子机器人项目\n'
 HELP_LINK_STR += '项目地址: https://github.com/haowen-li/DicePP'
 
 HELP_IA_STR = '目前交互指令还处于测试中, 实装的功能包括: [查询]\n'
@@ -200,7 +202,7 @@ HELP_COMMAND_QUESTION_STR =  '答题功能:\n.答题 [考题]\n'
 HELP_COMMAND_QUESTION_STR += '直接输入.答题 可查看所有可用考题\n'
 HELP_COMMAND_QUESTION_STR += '开始答题后用户的所有输入都被视为回答, 请不要输入其他无关内容\n提前结束考试请输入Q'
 
-HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词: .welcome [欢迎词]\n入群欢迎词为空则代表不欢迎'
+HELP_COMMAND_WELCOME_STR = '自定义入群欢迎词: .welcome [欢迎词]\n入群欢迎词为空则代表不发送欢迎词'
 
 HELP_COMMAND_TEAM_STR =  '队伍系列指令:\n.加入队伍 [队伍名]\n.队伍信息\n.队伍点名\n.完整队伍信息\n.清除队伍\n.队伍[技能]检定\n.队伍金钱 [调整值]\n'
 HELP_COMMAND_TEAM_STR += '只有第一个加入队伍的人可以命名队伍\n'
@@ -246,3 +248,9 @@ HELP_COMMAND_CHECK_STR += '.体质豁免+4 圣武士光环\n'
 HELP_COMMAND_CHECK_STR += '.敏捷攻击优势\n'
 HELP_COMMAND_CHECK_STR += '.3#敏捷攻击\n'
 HELP_COMMAND_CHECK_STR += '.感知攻击 使用曳光弹'
+
+HELP_COMMAND_GROUP_STR = '群管理系列功能:\n'
+HELP_COMMAND_GROUP_STR += '.群管理 [启用/禁用]功能 [功能名称]\n'
+HELP_COMMAND_GROUP_STR += f'可选功能: {list(Str2CommandTypeDict.keys())}\n'
+HELP_COMMAND_GROUP_STR += '.群管理 信息\n'
+HELP_COMMAND_GROUP_STR += '只有最近7天内在群内发言的成员会被统计'

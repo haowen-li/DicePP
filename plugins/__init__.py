@@ -44,24 +44,27 @@ async def _(session: CommandSession):
         print(e)
 
 
-@on_command('pull group', only_to_me=True)
+@on_command('PULL GROUP', only_to_me=True)
 async def _(session: CommandSession):
-    botNone = nonebot.get_bot()
-    info = None
     try:
-        info = await botNone.get_group_list()
-    except CQHttpError:
-        for pId in MASTER:
-            await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
-    if info:
-        groupInfoDictUpdate = {}
-        for gInfo in info:
-            groupInfoDictUpdate[gInfo['group_id']] = gInfo['group_name']
-        commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
-        for pId in MASTER:
-            await botNone.send_private_msg(user_id=pId, message="手动拉取群信息成功! "+f'{groupInfoDictUpdate}'[:200])
-        if commandResultList:
-            await processCommandResult(None, commandResultList)
+        botNone = nonebot.get_bot()
+        info = None
+        try:
+            info = await botNone.get_group_list()
+        except CQHttpError:
+            for pId in MASTER:
+                await botNone.send_private_msg(user_id=pId, message="自动获取群信息失败!")
+        if info:
+            groupInfoDictUpdate = {}
+            for gInfo in info:
+                groupInfoDictUpdate[str(gInfo['group_id'])] = gInfo['group_name']
+            commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
+            for pId in MASTER:
+                await botNone.send_private_msg(user_id=pId, message=f'手动拉取群信息成功! 共获取到{len(groupInfoDictUpdate)}个群信息\n{groupInfoDictUpdate}'[:200])
+            if commandResultList:
+                await processCommandResult(None, commandResultList)
+    except Exception as e:
+        print(e)
 
 @processMessage.args_parser
 async def _(session: CommandSession):
@@ -95,6 +98,8 @@ async def _(session: NLPSession):
 @on_natural_language(keywords=None, only_to_me=True)
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
+    if session.msg_text == 'sudo PULL GROUP':
+        return IntentCommand(95.0, 'PULL GROUP', current_arg = {'arg':session.msg_text, 'only_to_me':True})
     return IntentCommand(91.0, 'PROCESS_MESSAGE', current_arg = {'arg':session.msg_text, 'only_to_me':True})
 
 
@@ -121,7 +126,10 @@ async def processCommandResult(session, commandResultList):
                 else:
                     botNone = nonebot.get_bot()
                 for gId in commandResult.groupIdList:
-                    await botNone.send_group_msg(group_id=gId, message=commandResult.resultStr)
+                    try:
+                        await botNone.send_group_msg(group_id=gId, message=commandResult.resultStr)
+                    except Exception as e:
+                        print(e)
             else:
                 # 如果用户列表不为空, 则对指定的用户发送消息
                 if session:
@@ -130,7 +138,10 @@ async def processCommandResult(session, commandResultList):
                     botNone = nonebot.get_bot()
                 if commandResult.personIdList:
                     for pId in commandResult.personIdList:
-                        await botNone.send_private_msg(user_id=pId, message=commandResult.resultStr)
+                        try:
+                            await botNone.send_private_msg(user_id=pId, message=commandResult.resultStr)
+                        except Exception as e:
+                            print(e)
                 # 否则原样返回
                 else:
                     if session:
@@ -145,9 +156,12 @@ async def processCommandResult(session, commandResultList):
                     botNone = nonebot.get_bot()
                 if commandResult.groupIdList:
                     for gId in commandResult.groupIdList:
-                        if commandResult.resultStr:
-                            await botNone.send_group_msg(group_id=gId, message=commandResult.resultStr)
-                        await botNone.set_group_leave(group_id = gId)
+                        try:
+                            if commandResult.resultStr:
+                                await botNone.send_group_msg(group_id=gId, message=commandResult.resultStr)
+                            await botNone.set_group_leave(group_id = gId)
+                        except Exception as e:
+                            print(e)
                 else:
                     print('未指定退群对象!')
             except:
