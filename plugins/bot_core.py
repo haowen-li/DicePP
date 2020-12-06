@@ -806,7 +806,7 @@ class Bot:
         except MasterError as e:
             if self.masterInfoDict['debug']:
                 raise e
-            resultList = [CommandResult(CoolqCommandType.MESSAGE, str(e), personIdList=MASTER)]
+            resultList = [CommandResult(CoolqCommandType.MESSAGE, f'引起错误的输入:{inputStr}\n'+str(e), personIdList=MASTER)]
             commandWeight = 0
         except UserError as e:
             resultList = [CommandResult(CoolqCommandType.MESSAGE, str(e))]
@@ -821,7 +821,7 @@ class Bot:
                                                   userInfoCur['activeDate'], userInfoCur['spamAccu'], commandWeight)
             userInfoCur['activeDate'] = dateStr
             userInfoCur['spamAccu'] = accuNum
-            if isSpam and not userId in MASTER:
+            if isSpam and userId not in MASTER:
                 userInfoCur['credit'] -= 100
                 userWarning = userInfoCur['warning']
                 if userWarning == 0:
@@ -1013,7 +1013,7 @@ class Bot:
                         else:
                             result += '\n' + tb.RemoveElemFromInit(self, groupId, name.strip())
                 else:
-                    raise MasterError('Invalid INIT subtype!')
+                    result = ''
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.RI:
