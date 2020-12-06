@@ -1,18 +1,19 @@
 import math
 
-from .tool_dice import *
-from .info_game import *
+from tool_dice import *
+import tool_battle as tb
+from info_game import *
+from utils import *
 
-def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
-    try:
-        pcState = bot.pcStateDict[groupId][personId]
-    except:
-        CreateHP(bot, groupId, personId, 0)
-        pcState = bot.pcStateDict[groupId][personId]
+def GetBasicPCState(bot, groupId: str, userId: str, isRef: bool = False, autoCreate: bool = False):
+    pcState = bot.GetBotData(BotDataT.PC, (groupId, userId), isRef = isRef, autoCreate = autoCreate)
+    return pcState
+
+def SetPlayerInfo(bot, groupId: str, userId: str, infoStr: str) -> str:
+    pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = True)
 
     # linesep = os.linesep
     linesep = '\n'
-    print(infoStr)
     infoStr = infoStr.strip()
     infoLength = len(infoStr)
     numberStrList = [str(n) for n in range(10)] + [' ']
@@ -138,7 +139,7 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
             lastIndex += index
         nickName = infoStr[index:lastIndex].strip()
         if nickName:
-            bot.UpdateNickName(groupId, personId, nickName)
+            bot.UpdateNickName(groupId, userId, nickName)
 
     if '最大法术位' in infoStr:
         index = infoStr.find('最大法术位:') + 6
@@ -149,9 +150,7 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
             lastIndex += index
         command = infoStr[index:lastIndex].strip()
         if command:
-            error, feedback = SetSpellSlot(bot, groupId, personId, command)
-            if error != 0:
-                return feedback
+            feedback = SetSpellSlot(bot, groupId, userId, command)
 
     if '金钱:' in infoStr:
         index = infoStr.find('金钱:') + 3
@@ -162,15 +161,13 @@ def SetPlayerInfo(bot, groupId, personId, infoStr) -> str:
             lastIndex += index
         command = infoStr[index:lastIndex].strip()
         if command:
-            error, feedback = SetMoney(bot, groupId, personId, command)
-            if error != 0:
-                return feedback
+            feedback = SetMoney(bot, groupId, userId, command)
     return '记录角色卡成功, 查看角色卡请输入.角色卡 或.角色卡 完整\n更多相关功能请查询.help检定, .helphp, .help法术位'
 
-def GetPlayerInfo(bot, groupId, personId, name)->str:
+def GetPlayerInfo(bot, groupId: str, userId: str, name: str)->str:
     try:
-        pcState = bot.pcStateDict[groupId][personId]
-        pcState['熟练加值']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        assert pcState['熟练加值']
     except:
         return f'{name}还没有记录角色卡呢~'
 
@@ -212,10 +209,10 @@ def GetPlayerInfo(bot, groupId, personId, name)->str:
 
     return result
 
-def GetPlayerInfoShort(bot, groupId, personId, name)->str:
+def GetPlayerInfoShort(bot, groupId: str, userId: str, name: str)->str:
     try:
-        pcState = bot.pcStateDict[groupId][personId]
-        pcState['熟练加值']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        assert pcState['熟练加值']
     except:
         return f'{name}还没有记录角色卡呢~'
 
@@ -252,10 +249,10 @@ def GetPlayerInfoShort(bot, groupId, personId, name)->str:
     except: pass
     return result
 
-def GetPlayerInfoFull(bot, groupId, personId, name)->str:
+def GetPlayerInfoFull(bot, groupId: str, userId: str, name: str)->str:
     try:
-        pcState = bot.pcStateDict[groupId][personId]
-        pcState['熟练加值']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        assert pcState['熟练加值']
     except:
         return f'{name}还没有记录角色卡呢~'
 
@@ -301,17 +298,18 @@ def GetPlayerInfoFull(bot, groupId, personId, name)->str:
 
     return result
     
-def PlayerCheck(bot, groupId, personId, item, times, diceCommand, nickName) -> (int, str):
+def PlayerCheck(bot, groupId: str, userId: str, item: str, times: int, diceCommand: str, nickName: str) -> str:
     try:
-        pcState = bot.pcStateDict[groupId][personId]
-        pcState['熟练加值']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        assert pcState['熟练加值']
     except:
-        return -1, '请先记录角色卡~'
+        raise UserError('请先记录角色卡~')
+
     if times <= 0 or times >=10:
-        return -1, '次数不合法!'
+        raise UserError('次数不合法!')
 
     if diceCommand.find('抗性') != -1 or diceCommand.find('易伤') != -1:
-        return -1, '抗性与易伤关键字不能出现在此处!'
+        raise UserError('抗性与易伤关键字不能出现在此处!')
 
     if item in PC_SKILL_SYNONYM_DICT.keys():
         item = PC_SKILL_SYNONYM_DICT[item]
@@ -320,7 +318,7 @@ def PlayerCheck(bot, groupId, personId, item, times, diceCommand, nickName) -> (
         if item in PC_ABILITY_DICT.keys():
             itemKeyword = item + '调整值'
         else:
-            return -1, f'关键字{item}无效~'
+            raise UserError(f'关键字{item}无效~')
     else:
         itemKeyword = item
 
@@ -333,10 +331,10 @@ def PlayerCheck(bot, groupId, personId, item, times, diceCommand, nickName) -> (
         if times!=1:
             completeCommand = f'{times}#{completeCommand}'
         error, resultStr, rollResult = RollDiceCommand(completeCommand)
-        if error != 0: return -1, resultStr
+        if error != 0: raise UserError(resultStr)
         checkResult = rollResult.totalValueList[0]
     else:
-        return -1, f'输入的指令有点问题呢~'
+        raise UserError(f'输入的指令有点问题呢~')
 
     result = ''
     if not '豁免' in item: #说明是属性检定
@@ -358,21 +356,24 @@ def PlayerCheck(bot, groupId, personId, item, times, diceCommand, nickName) -> (
             result += f' {failTimes}次大失败!'
 
     if item == '先攻':
-        bot.JoinInitList(groupId, personId, nickName, '0'+int2str(checkResult), isPC=True)
+        tb.AddElemToInit(bot, groupId, userId, nickName, '0'+int2str(checkResult), isPC=True)
         result += f'\n已将{nickName}加入先攻列表'
-    return 0, result
+    return result
 
-def ClearPlayerInfo(bot, groupId, personId):
+def ClearPlayerInfo(bot, groupId: str, userId: str) -> None:
     try:
-        del bot.pcStateDict[groupId][personId]
-    except:
-        pass
+        bot.DelBotData(BotDataT.PC, (groupId, userId))
+    except MasterError as e:
+        if e.errorType is not KeyError:
+            raise e
+        
 
-def UpdateHP(bot, groupId, personId, targetStr, subType, hpStr, maxhpStr, nickName) -> str:
+def UpdateHP(bot, groupId: str, userId: str, targetStr: str, subType: str, hpStr: str, maxhpStr: str, nickName: str) -> str:
+
     hp = None
     maxhp = None
     if subType != '=' and maxhpStr:
-        return '增加或减少生命值的时候不能修改最大生命值哦'
+        raise UserError('增加或减少生命值的时候不能修改最大生命值哦')
     # 先尝试解读hpStr和maxhpStr
     error, resultStrHp, rollResult = RollDiceCommand(hpStr)
     if error: return error
@@ -380,37 +381,33 @@ def UpdateHP(bot, groupId, personId, targetStr, subType, hpStr, maxhpStr, nickNa
         hp = rollResult.totalValueList[0]
     except Exception as e:
         print(e)
-        return f'无法解释生命值参数{hpStr}呢...'
+        raise UserError(f'无法解释生命值参数{hpStr}呢...')
     if hp < 0:
-        return f'hp数值{resultStrHp}为负数, 没有修改hp数值'
+        raise UserError(f'hp数值{resultStrHp}为负数, 没有修改hp数值')
 
     if maxhpStr:
         try:
             maxhp = int(maxhpStr)
             assert maxhp > 0
         except:
-            return f'无法解释最大生命值参数{maxhpStr}呢...'
+            raise UserError(f'无法解释最大生命值参数{maxhpStr}呢...') 
 
     if not targetStr: # 不指定目标说明要修改自己的生命值信息
-        try:
-            pcState = bot.pcStateDict[groupId][personId]
-            pcState['hp']
-        except:
-            CreateHP(bot, groupId, personId)
-            pcState = bot.pcStateDict[groupId][personId]
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = True)
 
-        pcState, result = ModifyHPInfo(pcState, subType, hp, maxhp, nickName, resultStrHp)
-
-        bot.pcStateDict[groupId][personId] = pcState
+        result = ModifyHPInfo(pcState, subType, hp, maxhp, nickName, resultStrHp)
     else:
         targetList = targetStr.split('/')
         result = ''
         for targetStr in targetList:
             # 尝试对先攻列中的目标修改生命值信息
             try: #查找已存在的先攻信息
-                initInfo = bot.initInfoDict[groupId]
-            except: #如未找到, 返回错误信息
-                return '只能指定在先攻列表中的其他角色, 请先建立先攻列表吧~'
+                initInfo = bot.GetBotData(BotDataT.INIT, (groupId,), isRef = True)
+            except MasterError as e: #如未找到, 返回错误信息
+                if e.errorType is KeyError:
+                    return '只能指定在先攻列表中的其他角色, 请先建立先攻列表吧~'
+                else:
+                    raise e
 
             # 尝试搜索targetStr有关的信息
             if not targetStr in initInfo['initList'].keys(): 
@@ -429,19 +426,12 @@ def UpdateHP(bot, groupId, personId, targetStr, subType, hpStr, maxhpStr, nickNa
             # 如果指定的目标是pc, 则直接修改pcStateDict然后返回
             if targetInfo['isPC']:
                 targetId = targetInfo['id']
-                try:
-                    pcState = bot.pcStateDict[groupId][targetId]
-                    pcState['hp']
-                except:
-                    CreateHP(bot, groupId, targetId)
-                    pcState = bot.pcStateDict[groupId][targetId]
+                pcState = GetBasicPCState(bot, groupId, targetId, isRef = False, autoCreate = True)
 
-                pcState, resultCur = ModifyHPInfo(pcState, subType, hp, maxhp, targetStr, resultStrHp)
-                bot.pcStateDict[groupId][targetId] = pcState
+                resultCur = ModifyHPInfo(pcState, subType, hp, maxhp, targetStr, resultStrHp)
             # 否则修改先攻列表中的信息并保存
             else:
-                targetInfo, resultCur = ModifyHPInfo(targetInfo, subType, hp, maxhp, targetStr, resultStrHp)
-                bot.initInfoDict[groupId]['initList'][targetStr] = targetInfo
+                resultCur = ModifyHPInfo(targetInfo, subType, hp, maxhp, targetStr, resultStrHp)
             if result == '':
                 result = resultCur
             else:
@@ -449,29 +439,25 @@ def UpdateHP(bot, groupId, personId, targetStr, subType, hpStr, maxhpStr, nickNa
 
     return result
 
-def CreateHP(bot, groupId, personId, hp=0, maxhp=0):
-    try:
-        assert type(bot.pcStateDict[groupId]) == dict
-    except:
-        bot.pcStateDict[groupId] = {}
-    try:
-        pcState = bot.pcStateDict[groupId][personId]
-    except:
-        pcState = {}
+def CreateHP(bot, groupId: str, userId: str, hp: int =0, maxhp: int =0) -> str:
+    #查找已存在的角色卡信息
+    pcState = bot.GetBotData(BotDataT.PC, (groupId, userId), isRef = True, autoCreate = True)
     pcState.update({'hp':hp, 'maxhp':maxhp, 'alive':True})
-    bot.pcStateDict[groupId][personId] = pcState
 
-def ClearHP(bot, groupId, personId):
+def ClearHP(bot, groupId: str, userId: str) -> str:
     try:
-        bot.pcStateDict[groupId][personId]['hp'] = 0
-        bot.pcStateDict[groupId][personId]['maxhp'] = 0
+        pcState = bot.GetBotData(BotDataT.PC, (groupId, userId))
+        pcState['hp'] = 0
+        pcState['maxhp'] = 0
     except:
         pass
 
-def ShowHP(bot, groupId, personId) -> str:
+def ShowHP(bot, groupId: str, userId: str) -> str:
     try:
-        hp = bot.pcStateDict[groupId][personId]['hp']
-        maxhp = bot.pcStateDict[groupId][personId]['maxhp']
+        pcState = bot.GetBotData(BotDataT.PC, (groupId, userId))
+        hp = pcState['hp']
+        maxhp = pcState['maxhp']
+        assert hp != 0 or maxhp != 0
         result = f'当前生命值为{hp}'
         if maxhp != 0:
             result += f'/{maxhp}'
@@ -479,14 +465,14 @@ def ShowHP(bot, groupId, personId) -> str:
     except:
         return '还没有设置生命值呢~'
 
-def SetSpellSlot(bot, groupId, personId, commandStr) -> (int, str):
+def SetSpellSlot(bot, groupId: str, userId: str, commandStr: str) -> str:
     # commandStr示例: 4/2/0/0/0/0
     maxSpellSlotList = [0]*9
     sizeStrList = commandStr.split('/')
     isValid = False
     index = 0
     if len(sizeStrList)>9:
-        return -1, '唔...法术环位好像最高只有九环呢...'
+        raise UserError('唔...法术环位好像最高只有九环呢...')
     for sizeStr in sizeStrList:
         try:
             size = int(sizeStr)
@@ -495,39 +481,33 @@ def SetSpellSlot(bot, groupId, personId, commandStr) -> (int, str):
             if size > 0:
                 isValid = True
         except:
-            return -1, f'{index+1}环法术位大小{sizeStr}无效~'
+            raise UserError(f'{index+1}环法术位大小{sizeStr}无效~')
         index += 1
+    if not isValid:
+        raise UserError('不会施法就请不要记录法术位咯~')
 
-    try:
-        assert bot.pcStateDict[groupId]
-    except:
-        bot.pcStateDict[groupId] = {}
-    try:
-        pcState = bot.pcStateDict[groupId][personId]
-    except:
-        pcState = {}
-    if isValid:
-        pcState['最大法术位'] = maxSpellSlotList
-        pcState['当前法术位'] = maxSpellSlotList.copy()
-        bot.pcStateDict[groupId][personId] = pcState
-        return 0, '法术环位已经记录好了~'
-    else:
-        return -1, '不会施法就请不要记录法术位咯~'
+    pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = True)
+    pcState['最大法术位'] = maxSpellSlotList
+    pcState['当前法术位'] = maxSpellSlotList.copy()
+    return '法术环位已经记录好了~'
+        
 
-def ClearSpellSlot(bot, groupId, personId) -> str:
+def ClearSpellSlot(bot, groupId: str, userId: str) -> str:
     try:
-        del bot.pcStateDict[groupId][personId]['最大法术位']
-        del bot.pcStateDict[groupId][personId]['当前法术位']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = False)
+        del pcState['最大法术位']
+        del pcState['当前法术位']
     except:
         pass
     return '已经将法术位信息忘记啦~'
 
-def ShowSpellSlot(bot, groupId, personId) -> str:
+def ShowSpellSlot(bot, groupId: str, userId: str) -> str:
     try:
-        maxSlotList = bot.pcStateDict[groupId][personId]['最大法术位']
-        currentSlotList = bot.pcStateDict[groupId][personId]['当前法术位']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        maxSlotList = pcState['最大法术位']
+        currentSlotList = pcState['当前法术位']
     except:
-        return '还没有施法能力哦, 请先使用 .记录法术位 命令吧~'
+        raise UserError('还没有记录施法能力哦, 请先使用 .记录法术位 命令吧~')
     result = '当前法术位'
     index = 1
     for maxSize in maxSlotList:
@@ -536,42 +516,34 @@ def ShowSpellSlot(bot, groupId, personId) -> str:
         index += 1
     return result
 
-def ModifySpellSlot(bot, groupId, personId, level, adjVal):
+def ModifySpellSlot(bot, groupId: str, userId: str, level: int, adjVal: int) -> str:
     # level in [1, 9]
     # adjVal in [-9, 9]
     try:
-        currentSlotList = bot.pcStateDict[groupId][personId]['当前法术位']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = False)
+        currentSlotList = pcState['当前法术位']
     except:
-        print('没有检测到相关信息, 请先使用 .记录法术位 命令吧~')
+        raise UserError('没有检测到相关信息, 请先使用 .记录法术位 命令吧~')
     preSlot = currentSlotList[level-1]
     if preSlot + adjVal < 0:
-        return '没有这么多法术位了...'
+        raise UserError('没有这么多法术位了...')
     currentSlotList[level-1] += adjVal
-    bot.pcStateDict[groupId][personId]['当前法术位'] = currentSlotList
+    pcState['当前法术位'] = currentSlotList
     if adjVal < 0:
         return f'{level}环法术位减少了{-1*adjVal}个 ({preSlot}->{preSlot+adjVal})'
     else:
         return f'{level}环法术位增加了{adjVal}个 ({preSlot}->{preSlot+adjVal})'
 
-def SetMoney(bot, groupId, personId, commandStr) -> (int, str):
-    error, reason, moneyList = Str2MoneyList(commandStr)
-    if error != 0:
-        return -1, reason
-    try:
-        assert bot.pcStateDict[groupId]
-    except:
-        bot.pcStateDict[groupId] = {}
-    try:
-        pcState = bot.pcStateDict[groupId][personId]
-    except:
-        pcState = {}
+def SetMoney(bot, groupId: str, userId: str, commandStr: str) -> str:
+    reason, moneyList = Str2MoneyList(commandStr)
+    pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = True)
     pcState['金钱'] = moneyList
-    bot.pcStateDict[groupId][personId] = pcState
-    return 0, '牢牢记住你的财富咯~'
+    return '牢牢记住你的财富咯~'
 
-def ShowMoney(bot, groupId, personId):
+def ShowMoney(bot, groupId: str, userId: str) -> str:
     try:
-        moneyList = bot.pcStateDict[groupId][personId]['金钱']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        moneyList = pcState['金钱']
     except:
         return '现在身无分文呢~ 请先使用 .记录金钱 命令吧~'
     result = f'{moneyList[0]}gp'
@@ -581,25 +553,30 @@ def ShowMoney(bot, groupId, personId):
         result += f' {moneyList[2]}cp'
     return result
 
-def ClearMoney(bot, groupId, personId):
+def ClearMoney(bot, groupId: str, userId: str) -> str:
     try:
-        del bot.pcStateDict[groupId][personId]['金钱']
-    except:
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = False)
+        del pcState['金钱']
+    except MasterError as e:
+        if e.errorType is not KeyError:
+            raise e
+    except KeyError:
         pass
+    except Exception as e:
+        raise MasterError('清空金钱时出现错误', type(e), e)
     return '已经将你的财富忘记啦~'
 
-def ModifyMoney(bot, groupId, personId, commandStr):
+def ModifyMoney(bot, groupId: str, userId: str, commandStr: str) -> str:
     try:
-        moneyList = bot.pcStateDict[groupId][personId]['金钱'].copy()
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = True, autoCreate = False)
+        moneyList = copy.deepcopy(pcState['金钱'])
     except:
-        return '现在身无分文呢~ 请先使用 .记录金钱 命令吧~'
-    error, reason, adjList = Str2MoneyList(commandStr)
-    if error != 0:
-        return reason
+        raise UserError('现在身无分文呢~ 请先使用 .记录金钱 命令吧~')
+    reason, adjList = Str2MoneyList(commandStr)
     totalVal = moneyList[0]*100 + moneyList[1]*10+ moneyList[0]
     adjVal = adjList[0]*100 + adjList[1]*10+ adjList[0]
     if totalVal + adjVal < 0:
-        return '余额不足, 请及时充值~'
+        raise UserError('余额不足, 请及时充值~')
     # 当前的铜币不足以支付要求的铜币, 则用银币或金币换取
     if moneyList[2] + adjList[2] < 0:
         # 加上银币
@@ -649,106 +626,94 @@ def ModifyMoney(bot, groupId, personId, commandStr):
             moneyList[1] -= spNum
     else:
         moneyList[0] = adjList[0]+moneyList[0]
-    preMoneyStr = ShowMoney(bot, groupId, personId)
-    bot.pcStateDict[groupId][personId]['金钱'] = moneyList
-    curMoneyStr = ShowMoney(bot, groupId, personId)
+    preMoneyStr = ShowMoney(bot, groupId, userId)
+    pcState['金钱'] = moneyList
+    curMoneyStr = ShowMoney(bot, groupId, userId)
     return f'的金钱{commandStr} ({preMoneyStr}->{curMoneyStr})'
 
-def JoinTeam(bot, groupId, personId, name) -> str:
+def JoinTeam(bot, groupId: str, userId: str, name: str) -> str:
     try:
-        bot.pcStateDict[groupId][personId]['熟练加值']
+        pcState = GetBasicPCState(bot, groupId, userId, isRef = False, autoCreate = False)
+        pcState['熟练加值']
     except:
-        return '必须先记录角色卡才能加入队伍~'
+        raise UserError('必须先记录角色卡才能加入队伍~')
 
-    try:
-        teamDict = bot.teamInfoDict[groupId]
-        name = teamDict['name']
-    except:
-        teamDict = {}
-        if not name:
-            name = '无名小队'
-        teamDict['name'] = name
-        teamDict['members'] = []
-    if not personId in teamDict['members']:
-        teamDict['members'].append(personId)
+    teamInfo = bot.GetBotData(BotDataT.TEAM, (groupId,), isRef = True, autoCreate = True)
+    if name:
+        teamInfo['name'] = name
+    if not userId in teamInfo['members']:
+        teamInfo['members'].append(userId)
     else:
         return f'你已经加入{name}啦~'
-    bot.teamInfoDict[groupId] = teamDict
-    return f'成功加入{name}, 当前共{len(teamDict["members"])}人。 查看队伍信息请输入 .队伍信息 或 .完整队伍信息'
+    return f'成功加入{name}, 当前共{len(teamInfo["members"])}人。 查看队伍信息请输入 .队伍信息 或 .完整队伍信息'
 
-def ClearTeam(bot, groupId) -> str:
-    try: #查找已存在的先攻信息
-        del bot.teamInfoDict[groupId]
-        # UpdateJson(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
+def ClearTeam(bot, groupId: str) -> str:
+    try: 
+        bot.DelBotData(BotDataT.TEAM, (groupId, ))
         return '队伍信息已经删除啦'
-    except: #如未找到, 返回错误信息
+    except MasterError: #如未找到, 返回错误信息
         return '无法删除不存在的队伍哦'
 
-def ShowTeam(bot, groupId) -> str:
+def ShowTeam(bot, groupId: str) -> str:
     try:
-        teamDict = bot.teamInfoDict[groupId]
-        name = teamDict['name']
+        teamInfo = bot.GetBotData(BotDataT.TEAM, (groupId,), isRef = False, autoCreate = False)
     except:
-        return '还没有创建队伍哦~'
+        raise UserError('还没有创建队伍哦~')
     result = f'{name}:'
-    for pId in teamDict['members']:
-        try:
-            nickName = bot.nickNameDict[groupId][pId]
-        except:
-            nickName = pId
-        result += f'\n{GetPlayerInfoShort(bot, groupId, pId, nickName)}'
+    for uId in teamInfo['members']:
+        nickName = bot.GetNickName(groupId, uId)
+        result += f'\n{GetPlayerInfoShort(bot, groupId, uId, nickName)}'
         
     return result
 
-def CallTeam(bot, groupId) -> str:
+def CallTeam(bot, groupId: str) -> str:
     try:
-        teamDict = bot.teamInfoDict[groupId]
-        name = teamDict['name']
-        # assert teamDict['members']
+        teamInfo = bot.GetBotData(BotDataT.TEAM, (groupId,), isRef = False, autoCreate = False)
     except:
         return '还没有创建队伍哦~'
-    result = f'{name}的成员快来呀~\n'
-    for pId in teamDict['members']:
+    result = f'{teamInfo["name"]}的成员快来呀~\n'
+    for pId in teamInfo['members']:
         result += f'[CQ:at,qq={pId}] '
     return result[:-1]
 
-def ShowTeamFull(bot, groupId) -> str:
+def ShowTeamFull(bot, groupId: str) -> str:
     try:
-        teamDict = bot.teamInfoDict[groupId]
-        name = teamDict['name']
+        teamInfo = bot.GetBotData(BotDataT.TEAM, (groupId,), isRef = False, autoCreate = False)
     except:
         return '还没有创建队伍哦~'
-    result = f'{name}的完整信息:'
+    result = f'{teamInfo["name"]}的完整信息:'
 
-    for pId in teamDict['members']:
-        try:
-            nickName = bot.nickNameDict[groupId][pId]
-        except:
-            nickName = pId
-        result += f'\n----------\n{GetPlayerInfoFull(bot, groupId, pId, nickName)}'
+    for uId in teamInfo['members']:
+        nickName = bot.GetNickName(groupId, uId)
+        result += f'\n----------\n{GetPlayerInfoFull(bot, groupId, uId, nickName)}'
     return result
 
-def LongRest(bot, groupId, personId) -> str:
+def LongRest(bot, groupId: str, userId: str) -> str:
     isValidSlot = False
     isValidHp = False
     try:
-        maxSlotList = bot.pcStateDict[groupId][personId]['最大法术位']
-        currentSlotList = bot.pcStateDict[groupId][personId]['当前法术位']
+        pcState = bot.GetBotData(BotDataT.PC, (groupId, userId), isRef = True, autoCreate = False)
+    except:
+        raise UserError('请先录入角色卡!')
+    try:
+        maxSlotList = pcState['最大法术位']
+        currentSlotList = pcState['当前法术位']
         isValidSlot = True
     except:
         pass
     try:
-        hp = bot.pcStateDict[groupId][personId]['hp']
-        maxhp = bot.pcStateDict[groupId][personId]['maxhp']
+        hp = pcState['hp']
+        maxhp = pcState['maxhp']
+        assert maxhp != 0
         isValidHp = True
     except:
         pass
     if not isValidSlot and not isValidHp:
-        return '至少要设置最大生命值和最大法术位中的一项'
+        raise UserError('至少要设置最大生命值和最大法术位中的一项!')
     result = ''
     if isValidHp:
         result = f'\n生命值: {hp}->{maxhp}'
-        bot.pcStateDict[groupId][personId]['hp'] = maxhp
+        pcState['hp'] = maxhp
     if isValidSlot:
         result += '\n法术环位:\n'
         for i in range(9):
@@ -757,10 +722,10 @@ def LongRest(bot, groupId, personId) -> str:
             else:
                 result += f'{maxSlotList[i]}/'
         result = result[:-1]
-        bot.pcStateDict[groupId][personId]['当前法术位'] = maxSlotList.copy()
+        pcState['当前法术位'] = maxSlotList.copy()
     return result
 
-def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str):
+def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> str:
     assert subType in ['=', '+', '-']
     result = ''
     preHP = stateDict['hp']
@@ -787,9 +752,9 @@ def ModifyHPInfo(stateDict, subType, hp, maxhp, name, resultStrHp) -> (dict, str
         else:
             result = f'{name}的生命值减少了{resultStrHp}\n{name}当前生命值已经是0, 无法再减少了 (0->0)'
 
-    return stateDict, result
+    return result
 
-def Str2MoneyList(commandStr) -> (int, str, list):
+def Str2MoneyList(commandStr) -> (str, list):
     moneyList = [0,0,0]
     gpIndex = commandStr.find('gp')
     spIndex = commandStr.find('sp')
@@ -797,9 +762,9 @@ def Str2MoneyList(commandStr) -> (int, str, list):
     if gpIndex == -1 and spIndex == -1 and cpIndex == -1:
         try:
             moneyList[0] = int(commandStr)
-            return 0, '', moneyList
+            return '', moneyList
         except:
-            return -1, '找不到有效的关键字["gp", "sp", "cp"]', None
+            raise UserError('找不到有效的关键字["gp", "sp", "cp"]')
     if gpIndex != -1:
         try:
             value = int(commandStr[0:gpIndex])
@@ -807,7 +772,7 @@ def Str2MoneyList(commandStr) -> (int, str, list):
             assert value >= -100000000 and value <= 100000000
             gpIndex += 2
         except:
-            return -1, f'{commandStr[0:gpIndex]}不是有效的数额', None
+            raise UserError(f'{commandStr[0:gpIndex]}不是有效的数额')
     if spIndex != -1:
         try:
             startIndex = max(gpIndex, 0)
@@ -816,7 +781,7 @@ def Str2MoneyList(commandStr) -> (int, str, list):
             assert value >= -100000000 and value <= 100000000
             spIndex += 2
         except:
-            return -1, f'{commandStr[startIndex:spIndex]}不是有效的数额', None
+            raise UserError(f'{commandStr[startIndex:spIndex]}不是有效的数额')
     if cpIndex != -1:
         try:
             startIndex = max([0, gpIndex, spIndex])
@@ -824,5 +789,5 @@ def Str2MoneyList(commandStr) -> (int, str, list):
             moneyList[2] = value
             assert value >= -100000000 and value <= 100000000
         except:
-            return -1, f'{commandStr[startIndex:cpIndex]}不是有效的数额', None
-    return 0, '', moneyList
+            raise UserError(f'{commandStr[startIndex:cpIndex]}不是有效的数额')
+    return '', moneyList

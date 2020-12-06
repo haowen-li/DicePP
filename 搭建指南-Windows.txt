@@ -11,6 +11,8 @@
 
 下载文件: 右键想存放的文件夹, 选择git bash here, 输入
 git clone https://github.com/haowen-li/DicePP.git
+如果速度过慢, 可以试试下面这条指令
+git clone https://gitclone.com/github.com/haowen-li/DicePP.git
 
 安装python依赖库:
 打开Anaconda Prompt, 逐行输入

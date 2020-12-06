@@ -1,6 +1,8 @@
 ---------------------- 基于腾讯云 Ubuntu 18.04 LTS ---------------------- 
 下载文件
 git clone https://github.com/haowen-li/DicePP.git
+如果速度过慢, 可以试试下面这条指令
+git clone https://gitclone.com/github.com/haowen-li/DicePP.git
 
 安装python3.7
 sudo apt update && sudo apt install software-properties-common

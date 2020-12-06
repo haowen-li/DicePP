@@ -18,10 +18,10 @@ if __name__ == '__main__':
             data = data.strip()
             if not data:
                 if title:
-                    if len(title) > 20:
-                        print("Title too long?"+title+"##"+content)
+                    if len(title) > 30:
+                        print("条目标题可能过长? 请确认:\n\t标题:\n"+title+"\n\t内容:\n"+content)
                     elif len(content) < 5:
-                        print("Content too small?"+title+"##"+content)
+                    	print("条目内容可能过短? 请确认:\n\t标题:\n"+title+"\n\t内容:\n"+content)
                     content = content.replace('【换行】', '\n')
                     queryDict[title] = content[:-1]
                 title = ''

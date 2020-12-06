@@ -4,44 +4,40 @@ import time
 from time import sleep
 import datetime
 import asyncio
-import os
+import os, sys
 
 import nonebot
 from nonebot import on_command, CommandSession
 from nonebot import on_natural_language, NLPSession, IntentCommand
 from nonebot import on_request, RequestSession, on_notice, NoticeSession
-from nonebot.permission import PRIVATE_FRIEND,PRIVATE_GROUP, PRIVATE_DISCUSS, PRIVATE_OTHER, PRIVATE
+from nonebot import CQHttpError
+from nonebot.permission import PRIVATE_FRIEND, PRIVATE_GROUP, PRIVATE_DISCUSS, PRIVATE_OTHER, PRIVATE
 from nonebot.permission import DISCUSS, GROUP_MEMBER, GROUP_ADMIN, GROUP_OWNER, GROUP, SUPERUSER, EVERYBODY
 
-from .bot_core import Bot, CoolqCommandType
-from .custom_config import *
+parent_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + os.path.sep + ".")
+sys.path.append(parent_path)
+
+from bot_core import Bot, CoolqCommandType
+from custom_config import *
 
 bot = Bot()
 DEBUG_MODE = False
 LIMIT_MODE = False
 
+
 @on_command('PROCESS_MESSAGE', only_to_me=True)
 async def processMessage(session: CommandSession):
     commandResultList = session.get('result')
     if DEBUG_MODE:
-        print(f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList]  for commandResult in commandResultList]}')
+        print(
+            f'Output:{[[commandResult.resultStr, commandResult.personIdList, commandResult.groupIdList] for commandResult in commandResultList]}')
     if commandResultList:
         await processCommandResult(session, commandResultList)
 
+
 @on_command('TEST', only_to_me=True)
 async def _(session: CommandSession):
-    try:
-        print('JOKE IMG PATH')
-        for i,j,k in os.walk(WINE_COOLQ_JOKEIMG_PATH):
-            print(i,j,k)
-        print('EMO IMG PATH')
-        for i,j,k in os.walk(WINE_COOLQ_EMOTIMG_PATH):
-            print(i,j,k)
-        print('COOLQ IMG PATH')
-        for i,j,k in os.walk(WINE_COOLQ_PATH):
-            print(i,j,k)
-    except Error as e:
-        print(e)
+    pass
 
 
 @on_command('PULL GROUP', only_to_me=True)
@@ -60,11 +56,14 @@ async def _(session: CommandSession):
                 groupInfoDictUpdate[str(gInfo['group_id'])] = gInfo['group_name']
             commandResultList = await bot.UpdateGroupInfo(groupInfoDictUpdate)
             for pId in MASTER:
-                await botNone.send_private_msg(user_id=pId, message=f'手动拉取群信息成功! 共获取到{len(groupInfoDictUpdate)}个群信息\n{groupInfoDictUpdate}'[:200])
+                await botNone.send_private_msg(user_id=pId,
+                                               message=f'手动拉取群信息成功! 共获取到{len(groupInfoDictUpdate)}个群信息\n{groupInfoDictUpdate}'[
+                                                       :200])
             if commandResultList:
                 await processCommandResult(None, commandResultList)
     except Exception as e:
         print(e)
+
 
 @processMessage.args_parser
 async def _(session: CommandSession):
@@ -90,17 +89,19 @@ async def _(session: CommandSession):
 
     session.state['result'] = commandResult
 
+
 @on_natural_language(keywords=None, only_to_me=False)
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
-    return IntentCommand(90.0, 'PROCESS_MESSAGE', current_arg = {'arg':session.msg_text, 'only_to_me':False})
+    return IntentCommand(90.0, 'PROCESS_MESSAGE', current_arg={'arg': session.msg_text, 'only_to_me': False})
+
 
 @on_natural_language(keywords=None, only_to_me=True)
 async def _(session: NLPSession):
     # 返回意图命令，前两个参数必填，分别表示置信度和意图命令名
     if session.msg_text == 'sudo PULL GROUP':
-        return IntentCommand(95.0, 'PULL GROUP', current_arg = {'arg':session.msg_text, 'only_to_me':True})
-    return IntentCommand(91.0, 'PROCESS_MESSAGE', current_arg = {'arg':session.msg_text, 'only_to_me':True})
+        return IntentCommand(95.0, 'PULL GROUP', current_arg={'arg': session.msg_text, 'only_to_me': True})
+    return IntentCommand(91.0, 'PROCESS_MESSAGE', current_arg={'arg': session.msg_text, 'only_to_me': True})
 
 
 # @on_natural_language(keywords={'.', '。'}, only_to_me=False)
@@ -159,13 +160,14 @@ async def processCommandResult(session, commandResultList):
                         try:
                             if commandResult.resultStr:
                                 await botNone.send_group_msg(group_id=gId, message=commandResult.resultStr)
-                            await botNone.set_group_leave(group_id = gId)
+                            await botNone.set_group_leave(group_id=gId)
                         except Exception as e:
                             print(e)
                 else:
                     print('未指定退群对象!')
             except:
                 pass
+
 
 # @nonebot.scheduler.scheduled_job(
 #     'interval',
@@ -198,6 +200,7 @@ async def _():
 )
 async def _():
     await bot.UpdateLocalData()
+
 
 # 无法正常处理Linux环境的情况, 应改用额外脚本清理
 # @nonebot.scheduler.scheduled_job(
@@ -245,6 +248,7 @@ async def _(session: RequestSession):
         await session.approve()
     # await session.approve()
 
+
 # 将函数注册为群请求处理器
 @on_request('group')
 async def _(session: RequestSession):
@@ -257,18 +261,19 @@ async def _(session: RequestSession):
             try:
                 nonebot = session.bot
                 try:
-                    strangerInfo = await nonebot.get_stranger_info(user_id = session.ctx["user_id"], no_cache = True)
+                    strangerInfo = await nonebot.get_stranger_info(user_id=session.ctx["user_id"], no_cache=True)
                     nickName = strangerInfo["nickname"]
                 except:
                     nickName = ''
                 try:
-                    groupInfo = await nonebot.get_group_info (group_id = session.ctx["group_id"])
+                    groupInfo = await nonebot.get_group_info(group_id=session.ctx["group_id"])
                     groupName = groupInfo["group_name"]
                 except:
                     groupName = ''
-                
+
                 for gId in MASTER_GROUP:
-                    await nonebot.send_group_msg(group_id=gId, message=f'经{nickName} {personId}邀请, 加入群{groupName} {groupId}')
+                    await nonebot.send_group_msg(group_id=gId,
+                                                 message=f'经{nickName} {personId}邀请, 加入群{groupName} {groupId}')
             except Exception as e:
                 try:
                     for mId in MASTER:
@@ -279,6 +284,7 @@ async def _(session: RequestSession):
         else:
             # 拒绝入群
             await session.reject('你的条件不符合哦~')
+
 
 @on_notice('group_increase')
 async def _(session: NoticeSession):

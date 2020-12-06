@@ -1,24 +1,21 @@
-import numpy as np
-import os
-import re
-import math
-import datetime
 import collections
 import copy
-import asyncio
 
-from .tool_dice import RollDiceCommand, SplitDiceCommand, SplitNumberCommand, isDiceCommand, RollResult
-from .tool_pc import *
-from .type_assert import TypeAssert
-from .utils import *
-from .utils import UpdateJsonAsync
-from .custom_config import *
-from .info_help import *
-from .info_game import *
-from .info_chat import *
-from .data_template import *
+from typing import Any, Dict, Sequence
 
-@TypeAssert(str)
+from tool_dice import RollDiceCommand, SplitDiceCommand, SplitNumberCommand, isDiceCommand
+import tool_pc as tp
+import tool_common as tc
+import tool_battle as tb
+import data_template as dt
+from utils import *
+from utils import UpdateJsonAsync
+from custom_config import *
+from info_help import *
+from info_game import *
+from info_chat import *
+
+
 async def ParseInput(inputStr):
     # 接受用户的输入, 输出一个Command类实例, 包含指令类型与对应参数
     # 如不是命令则返回None
@@ -31,20 +28,22 @@ async def ParseInput(inputStr):
         return None
     # 将符号转为英文(半角)
     inputStr = ChineseToEnglishSymbol(inputStr)
-    
+
     # 跳过'.' 并转为小写
     commandStr = inputStr[1:].strip().lower()
     # 判断指令类型, 指令后面跟着参数
     splitIndex = -1
     findCommand = False
+    commandType = ''
+    commandStrOri = ''
     # 从commandKeywordList中依次匹配命令
     for i in range(len(commandKeywordList)):
         commandKeyword = commandKeywordList[i]
         splitIndex = commandStr.find(commandKeyword)
         if splitIndex == 0:
-            commandType = commandStr[:len(commandKeyword)] # 类型
+            commandType = commandStr[:len(commandKeyword)]  # 类型
             commandStrOri = commandStr[len(commandKeyword):]
-            commandStr = commandStrOri.strip() # 参数
+            commandStr = commandStrOri.strip()  # 参数
             findCommand = True
             break
     # 无法直接找到匹配的关键字则尝试使用正则表达式判定
@@ -53,15 +52,14 @@ async def ParseInput(inputStr):
             result = re.match(commandKeywordReList[i], commandStr)
             if result:
                 index = result.span(0)[1]
-                commandType = commandStr[:index].strip() # 类型
+                commandType = commandStr[:index].strip()  # 类型
                 commandStrOri = commandStr[index:]
-                commandStr = commandStrOri.strip() # 参数
+                commandStr = commandStrOri.strip()  # 参数
                 findCommand = True
                 break
     if not findCommand:
         return None
-        
-    
+
     # 判断命令类型, 解析参数, 生成Command类的实例并返回
     # 掷骰命令
     if commandType == 'r':
@@ -75,22 +73,22 @@ async def ParseInput(inputStr):
             commandStr = commandStr[1:]
             isShort = True
         diceCommand, reason = SplitDiceCommand(commandStr)
-        return Command(CommandType.Roll,[diceCommand, reason, isHide, isShort])
+        return Command(CommandType.Roll, [diceCommand, reason, isHide, isShort])
     # 更改昵称命令
     elif commandType == 'nn':
         nickName = commandStr
-        return Command(CommandType.NickName,[nickName])
+        return Command(CommandType.NickName, [nickName])
     # 今日人品命令
     elif commandType == 'jrrp':
         return Command(CommandType.JRRP, [])
         # 先攻列表命令
     elif commandType == 'init':
         # commandStr 可能为 '', 'clr' 
-        return Command(CommandType.INIT,[commandStr])
+        return Command(CommandType.INIT, [commandStr])
     elif commandType == 'ri':
         # 参数包含两部分, 骰子表达式(加值)与名称, 名称为可选项
         diceCommand, name = SplitDiceCommand(commandStrOri)
-        return Command(CommandType.RI,[diceCommand, name])
+        return Command(CommandType.RI, [diceCommand, name])
     elif commandType == 'bot':
         if commandStr.find('on') != -1:
             return Command(CommandType.BOT, ['on'])
@@ -101,10 +99,10 @@ async def ParseInput(inputStr):
     elif commandType == '群管理':
         if commandStr.find('启用功能') != -1:
             index = commandStr.find('启用功能')
-            return Command(CommandType.GROUP, ['启用功能', commandStr[index+4:].strip()])
+            return Command(CommandType.GROUP, ['启用功能', commandStr[index + 4:].strip()])
         elif commandStr.find('禁用功能') != -1:
             index = commandStr.find('禁用功能')
-            return Command(CommandType.GROUP, ['禁用功能', commandStr[index+4:].strip()])
+            return Command(CommandType.GROUP, ['禁用功能', commandStr[index + 4:].strip()])
         elif commandStr.find('查看禁用功能') != -1:
             return Command(CommandType.GROUP, ['查看禁用功能'])
         elif commandStr.find('信息') != -1:
@@ -113,17 +111,17 @@ async def ParseInput(inputStr):
             return Command(CommandType.GROUP, ['帮助'])
     elif commandType == 'dnd':
         number, reason = SplitNumberCommand(commandStr)
-        return Command(CommandType.DND,[number, reason])
+        return Command(CommandType.DND, [number, reason])
     elif commandType == 'help':
         subType = commandStr.replace(' ', '')
-        return Command(CommandType.HELP,[subType])
+        return Command(CommandType.HELP, [subType])
     elif commandType == 'send':
-        return Command(CommandType.SEND,[commandStr])
+        return Command(CommandType.SEND, [commandStr])
     elif commandType == '查询':
         target = commandStr.replace(' ', '')
-        return Command(CommandType.QUERY,[target])
+        return Command(CommandType.QUERY, [target])
     elif commandType == '索引':
-        return Command(CommandType.INDEX,[commandStr])
+        return Command(CommandType.INDEX, [commandStr])
     elif commandType == 'dismiss':
         return Command(CommandType.DISMISS, [])
     elif commandType == 'welcome':
@@ -195,9 +193,9 @@ async def ParseInput(inputStr):
     elif commandType == '队伍金钱':
         return Command(CommandType.TeamMoney, [commandStr])
     elif commandType == '长休':
-            return Command(CommandType.REST, ['长休'])
+        return Command(CommandType.REST, ['长休'])
     elif commandType == '答题':
-            return Command(CommandType.Question, [commandStr])
+        return Command(CommandType.Question, [commandStr])
     elif commandType == 'savedata':
         return Command(CommandType.MASTER, ['savedata'])
     elif commandType == 'credit':
@@ -206,10 +204,12 @@ async def ParseInput(inputStr):
         return Command(CommandType.MASTER, ['notice', commandStr])
     elif commandType == 'dp':
         return Command(CommandType.MASTER, ['daily', commandStr])
+    elif commandType == 'debug':
+        return Command(CommandType.MASTER, ['debug', commandStr])
     elif commandType == '好感度':
         return Command(CommandType.CREDIT, [])
     elif 'hp' in commandType:
-        commandStr = commandType[:commandType.find('hp')]+commandStr
+        commandStr = commandType[:commandType.find('hp')] + commandStr
         subType = None
         targetStr = None
         hpCommand = None
@@ -218,17 +218,17 @@ async def ParseInput(inputStr):
             return Command(CommandType.HP, ['查看'])
         if commandStr == 'clr':
             return Command(CommandType.HP, ['清除'])
-        #是否显式指定了指令类型
-        for i in range(len(commandStr)): 
+        # 是否显式指定了指令类型
+        for i in range(len(commandStr)):
             if commandStr[i] in ['+', '-', '=']:
                 subType = commandStr[i]
                 targetStr = commandStr[:i].strip()
-                hpCommand = commandStr[i+1:].strip()
+                hpCommand = commandStr[i + 1:].strip()
                 break
-        #不指定指令类型则默认为'='
+        # 不指定指令类型则默认为'='
         if not subType:
             for i in range(len(commandStr)):
-                if commandStr[i] in (['d']+[str(n) for n in range(0,10)]):
+                if commandStr[i] in (['d'] + [str(n) for n in range(0, 10)]):
                     subType = '='
                     targetStr = commandStr[:i].strip()
                     hpCommand = commandStr[i:].strip()
@@ -238,7 +238,7 @@ async def ParseInput(inputStr):
         splitIndex = hpCommand.rfind('/')
         if splitIndex != -1:
             hpStr = hpCommand[:splitIndex]
-            maxhpStr = hpCommand[splitIndex+1:]
+            maxhpStr = hpCommand[splitIndex + 1:]
         else:
             hpStr = hpCommand
             maxhpStr = ''
@@ -249,23 +249,21 @@ async def ParseInput(inputStr):
         elif commandType == '记录法术位':
             return Command(CommandType.SpellSlot, ['记录', commandStr])
         elif commandType[1:5] == '环法术位':
-            level = -1
             try:
                 level = int(commandType[0])
-            except:
+            except ValueError:
                 try:
                     level = ChineseNumberToInt(commandType[0])
-                except:
+                except ValueError:
                     return None
             return Command(CommandType.SpellSlot, ['更改', level, commandStr])
         elif commandType == '法术位' or commandType == '查看法术位':
             return Command(CommandType.SpellSlot, ['查看', commandStr])
     elif '环' in commandType:
-        level = -1
         try:
             level = int(commandType[0])
             return Command(CommandType.SpellSlot, ['更改', level, commandStr])
-        except:
+        except ValueError:
             return None
     elif '检定' in commandType:
         if commandType[:2] == '队伍':
@@ -283,6 +281,7 @@ async def ParseInput(inputStr):
 
     return None
 
+
 class Bot:
     def __init__(self):
         self.nickNameDict = ReadJson(LOCAL_NICKNAME_PATH)
@@ -293,16 +292,18 @@ class Bot:
         self.teamInfoDict = ReadJson(LOCAL_TEAMINFO_PATH)
         self.dailyInfoDict = ReadJson(LOCAL_DAILYINFO_PATH)
         self.memberInfoDict = ReadJson(LOCAL_MEMBERINFO_PATH)
-        
+        self.masterInfoDict = ReadJson(LOCAL_MASTERINFO_PATH)
+
         UpdateAllGroupInfo(self)
         UpdateAllUserInfo(self)
         UpdateAllMemberInfo(self)
+        UpdateMasterInfo(self)
         self.dailyInfoDict = UpdateDailyInfoDict(self.dailyInfoDict)
 
         print(f'个人资料库加载成功!')
         # 尝试加载查询资料库
         try:
-            filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH) #读取所有文件名
+            filesPath = os.listdir(LOCAL_QUERYINFO_DIR_PATH)  # 读取所有文件名
             filesPath = sorted(filesPath)
             print(f'找到以下查询资料: {filesPath}')
             self.queryInfoDict = collections.OrderedDict()
@@ -323,12 +324,12 @@ class Bot:
             assert len(self.queryInfoDict) > 0
             # self.queryInfoDict['最长条目长度'] = max([len(k) for k in self.queryInfoDict.keys()])
             print(f'查询资料库加载成功! 共{len(self.queryInfoDict)}个条目')
-        except: 
+        except:
             print(f'查询资料库加载失败!')
             self.queryInfoDict = None
         # 尝试加载牌库
         try:
-            filesPath = os.listdir(LOCAL_DECKINFO_DIR_PATH) #读取所有文件名
+            filesPath = os.listdir(LOCAL_DECKINFO_DIR_PATH)  # 读取所有文件名
             filesPath = sorted(filesPath)
             print(f'找到以下牌堆: {filesPath}')
             self.deckDict = collections.OrderedDict()
@@ -349,8 +350,8 @@ class Bot:
             while hasCheck and not hasInvalid:
                 hasCheck = True
                 for deck in self.deckDict.keys():
-                    for relay in deckDict[deck]['relay']:
-                        if not relay in self.deckDict.keys():
+                    for relay in self.deckDict[deck]['relay']:
+                        if relay not in self.deckDict.keys():
                             invalidDeck.append([deck, f'依赖的牌堆{relay}不存在'])
                             hasInvalid = True
                 if hasInvalid:
@@ -358,7 +359,7 @@ class Bot:
                         del self.deckDict[invalid[0]]
                         print(f'移除无效牌堆:{invalid[0]}, 原因是{invalid[1]}')
                     hasInvalid = False
-                    hasCheck = False # 需要重新检查依赖
+                    hasCheck = False  # 需要重新检查依赖
 
             assert len(self.deckDict) > 0
             print(f'牌库加载成功! 共{len(self.deckDict)}个牌堆')
@@ -368,7 +369,7 @@ class Bot:
 
         # 尝试加载菜谱资料库
         try:
-            filesPath = os.listdir(LOCAL_MENUINFO_DIR_PATH) #读取所有文件名
+            filesPath = os.listdir(LOCAL_MENUINFO_DIR_PATH)  # 读取所有文件名
             print(f'找到以下菜谱: {filesPath}')
             self.menuDict = {}
             for fp in filesPath:
@@ -387,11 +388,11 @@ class Bot:
                     dishInfo = self.menuDict[dishName]
                     dishInfo['美味'] = int(dishInfo['美味'])
                     dishInfo['难度'] = int(dishInfo['难度'])
-                    assert len(dishName)<50, '名称过长'
-                    assert len(dishInfo['描述'])<400, '描述过长'
-                    assert dishInfo['美味'] >= -20 and dishInfo['美味'] <= 40, '美味数值不正确'
-                    assert dishInfo['难度'] >= -20 and dishInfo['难度'] <= 40, '难度数值不正确'
-                    assert len(dishInfo['价格'])<50
+                    assert len(dishName) < 50, '名称过长'
+                    assert len(dishInfo['描述']) < 400, '描述过长'
+                    assert -20 <= dishInfo['美味'] <= 40, '美味数值不正确'
+                    assert -20 <= dishInfo['难度'] <= 40, '难度数值不正确'
+                    assert len(dishInfo['价格']) < 50
                     for key in dishInfo['菜系']:
                         assert key in MENU_CUISINE_LIST, f'{key}不是有效的关键词'
                     for key in dishInfo['种类']:
@@ -402,7 +403,7 @@ class Bot:
                         assert key in MENU_KEYWORD_LIST, f'{key}不是有效的关键词'
                     self.menuDict[dishName] = dishInfo
                 except Exception as e:
-                    print (f'菜谱{dishName}无效 {e}')
+                    print(f'菜谱{dishName}无效 {e}')
                     invalidDish.append(dishName)
             for dishName in invalidDish:
                 del self.menuDict[dishName]
@@ -425,7 +426,7 @@ class Bot:
             assert len(self.jokeDict['word']) > 0
             assert self.jokeDict['img']
             print(f'笑话资料库加载成功! 共{len(self.jokeDict["word"])}个文字条目, {len(self.jokeDict["img"])}个图片条目')
-        except: 
+        except:
             print(f'笑话资料库加载失败!')
             self.jokeDict = None
 
@@ -438,7 +439,7 @@ class Bot:
                     name, suffix = fp.split('.')
                     assert suffix in ['jpg', 'png', 'gif']
                     absPath = os.path.join(LOCAL_EMOTIMG_DIR_PATH, fp)
-                    if PLATFORM_NAME == 'DOCKER' or os.path.exists(absPath): # 如果是Docker环境则无法直接检查有效性
+                    if PLATFORM_NAME == 'DOCKER' or os.path.exists(absPath):  # 如果是Docker环境则无法直接检查有效性
                         self.emotionDict[name] = absPath
                 except:
                     pass
@@ -470,11 +471,12 @@ class Bot:
             for k in self.questionDict.keys():
                 assert len(self.questionDict[k]) != 0
             assert len(self.questionDict) != 0
-            print(f'题库加载成功! 共{len(self.questionDict)}个条目, 分别是{[(k, len(self.questionDict[k])) for k in self.questionDict.keys()]}')
-        except:
+            print(
+                f'题库加载成功! 共{len(self.questionDict)}个条目,'
+                f' 分别是{[(k, len(self.questionDict[k])) for k in self.questionDict.keys()]}')
+        except Exception as e:
             print(f'题库加载失败!')
             self.questionDict = None
-
 
     async def UpdateLocalData(self):
         await UpdateJsonAsync(self.nickNameDict, LOCAL_NICKNAME_PATH)
@@ -485,6 +487,7 @@ class Bot:
         await UpdateJsonAsync(self.teamInfoDict, LOCAL_TEAMINFO_PATH)
         await UpdateJsonAsync(self.dailyInfoDict, LOCAL_DAILYINFO_PATH)
         await UpdateJsonAsync(self.memberInfoDict, LOCAL_MEMBERINFO_PATH)
+        await UpdateJsonAsync(self.masterInfoDict, LOCAL_MASTERINFO_PATH)
 
     async def UpdateGroupInfo(self, groupInfoDictUpdate):
         result = []
@@ -504,13 +507,14 @@ class Bot:
                     validGroupNum += 1
                     self.groupInfoDict[gId]['name'] = groupInfoDictUpdate[gId]
             resultStr = f'检测到{validGroupNum}个有效群信息, 新增{newGroupNum}个群信息, {len(invalidGroupId)}个群没有找到群信息'
-            result += [CommandResult(CoolqCommandType.MESSAGE, resultStr, personIdList = MASTER)]
+            result += [CommandResult(CoolqCommandType.MESSAGE, resultStr, personIdList=MASTER)]
             # if len(invalidGroupId) != 0:
             #     for gId in invalidGroupId:
             #         del self.groupInfoDict[gId]
-            #     result += [CommandResult(CoolqCommandType.MESSAGE, f'已删除不存在群: {invalidGroupId}', personIdList = MASTER)]
+            #     result += [CommandResult(CoolqCommandType.MESSAGE,
+            #     f'已删除不存在群: {invalidGroupId}', personIdList = MASTER)]
         except Exception as e:
-            result += [CommandResult(CoolqCommandType.MESSAGE, f'更新群信息时出现错误: {e}', personIdList = MASTER)]
+            result += [CommandResult(CoolqCommandType.MESSAGE, f'更新群信息时出现错误: {e}', personIdList=MASTER)]
         # # 清除无用信息
         # DeleteInvalidInfo(self.nickNameDict, self.groupInfoDict.keys())
         # DeleteInvalidInfo(self.initInfoDict, self.groupInfoDict.keys())
@@ -518,7 +522,7 @@ class Bot:
         # DeleteInvalidInfo(self.teamInfoDict, self.groupInfoDict.keys())
         return result
 
-    async def DailyUpdate(self, saveData = True):
+    async def DailyUpdate(self, saveData=True):
         result = []
         errorList = []
         # 逐个处理用户信息
@@ -538,9 +542,9 @@ class Bot:
                 # 最近一天有过dnd指令则增加好感度
                 if userInfoCur['dndCommandDaily'] != 0:
                     userInfoCur['credit'] += DAILY_CREDIT_FIX
-                    liveUserNum += 1 # 统计用户
+                    liveUserNum += 1  # 统计用户
                 if userInfoCur['dailyCredit'] >= DAILY_CREDIT_LIMIT:
-                    activeUserNum += 1 # 统计活跃用户
+                    activeUserNum += 1  # 统计活跃用户
                 if userInfoCur['credit'] < 0:
                     userInfoCur['credit'] = min(0, userInfoCur['credit'] + 10)
                 userInfoCur['dailyCredit'] = 0
@@ -548,13 +552,13 @@ class Bot:
                 userInfoCur['messageDaily'] = 0
                 userInfoCur['dndCommandDaily'] = 0
                 # 处理过期的IA交互信息
-                for i in range(len(userInfoCur['IACommand'])-1, -1, -1):
+                for i in range(len(userInfoCur['IACommand']) - 1, -1, -1):
                     IAInfo = userInfoCur['IACommand'][i]
                     if Str2Datetime(IAInfo['date']) < GetCurrentDateRaw():
                         userInfoCur['IACommand'].pop(i)
                 # 清除过久没有使用的用户 (不清除拉黑用户)
                 lastTime = GetCurrentDateRaw() - Str2Datetime(userInfoCur['activeDate'])
-                if lastTime >= datetime.timedelta(days = 10) and userInfoCur['credit'] >= 0:
+                if lastTime >= datetime.timedelta(days=10) and userInfoCur['credit'] >= 0:
                     userInfoCur['credit'] -= 10
                     if userInfoCur['credit'] < 0:
                         invalidUser.append(pId)
@@ -570,7 +574,7 @@ class Bot:
             try:
                 groupInfoCur = self.groupInfoDict[gId]
                 lastTime = GetCurrentDateRaw() - Str2Datetime(groupInfoCur['activeDate'])
-                if lastTime >= datetime.timedelta(days = 7):
+                if lastTime >= datetime.timedelta(days=7):
                     if groupInfoCur['warning'] <= 1:
                         groupInfoCur['warning'] += 1
                         warningGroup.append(gId)
@@ -587,12 +591,12 @@ class Bot:
                 errorList.append(f'\n处理群{gId}时的异常:{e}')
 
         if warningGroup:
-            result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR, groupIdList = warningGroup)]
+            result += [CommandResult(CoolqCommandType.MESSAGE, LEAVE_WARNING_STR, groupIdList=warningGroup)]
         if dismissGroup:
-            result += [CommandResult(CoolqCommandType.DISMISS, LEAVE_NOTICE_STR, groupIdList = dismissGroup)]
+            result += [CommandResult(CoolqCommandType.DISMISS, LEAVE_NOTICE_STR, groupIdList=dismissGroup)]
             for gId in dismissGroup:
                 del self.groupInfoDict[gId]
-        
+
         # 更新日志信息
         try:
             self.dailyInfoDict = UpdateDailyInfoDict(self.dailyInfoDict)
@@ -616,7 +620,7 @@ class Bot:
                         invalidMember.append(pId)
                         continue
                     lastTime = GetCurrentDateRaw() - Str2Datetime(memberInfoCur[pId]['activeDate'])
-                    if lastTime >= datetime.timedelta(days = 30): # 30天没有发言则彻底删除记录
+                    if lastTime >= datetime.timedelta(days=30):  # 30天没有发言则彻底删除记录
                         invalidMember.append(pId)
                         continue
                     memberInfoCur[pId]['days'] += 1
@@ -625,27 +629,31 @@ class Bot:
             except Exception as e:
                 errorList.append(f'\n处理群成员{gId}时的异常:{e}')
 
-        result += [CommandResult(CoolqCommandType.MESSAGE, f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}\n昨日发言用户:{liveUserNum} 活跃用户:{activeUserNum}', MASTER)]
+        result += [CommandResult(CoolqCommandType.MESSAGE,
+                                 f'成功更新今日数据 警告:{warningGroup} 退群:{dismissGroup}\n昨日发言用户:{liveUserNum} 活跃用户:{activeUserNum}',
+                                 MASTER)]
         if errorList:
-            result += [CommandResult(CoolqCommandType.MESSAGE, '异常信息:'+str(errorList[:10]), MASTER)]
+            result += [CommandResult(CoolqCommandType.MESSAGE, '异常信息:' + str(errorList[:10]), MASTER)]
         if saveData:
             await self.UpdateLocalData()
         return result
 
-    async def ProcessMessage(self, inputStr, personId, personName, groupId = None, onlyToMe = False):
+    async def ProcessMessage(self, inputStr, userId, personName, groupId=None, onlyToMe=False):
         # 检查个人信息是否存在
         try:
-            assert personId in self.userInfoDict.keys()
-        except:
-            CreateNewUserInfo(self.userInfoDict, personId)
-        userInfoCur = self.userInfoDict[personId]
+            assert userId in self.userInfoDict.keys()
+        except AssertionError:
+            CreateNewUserInfo(self.userInfoDict, userId)
+        userInfoCur = self.userInfoDict[userId]
 
-        if groupId: # 当是群聊信息时, 检查群聊信息是否存在
+        if groupId:  # 当是群聊信息时, 检查群聊信息是否存在
             try:
                 assert groupId in self.groupInfoDict.keys()
-            except:
+            except AssertionError:
                 CreateNewGroupInfo(self.groupInfoDict, groupId)
             groupInfoCur = self.groupInfoDict[groupId]
+        else:
+            groupInfoCur = None
 
         # 统计信息次数
         userInfoCur['messageAccu'] += 1
@@ -658,13 +666,13 @@ class Bot:
         if groupId:
             try:
                 assert groupId in self.memberInfoDict.keys()
-            except:
+            except AssertionError:
                 CreateNewGroupMemberInfo(self.memberInfoDict, groupId)
             try:
-                assert personId in self.memberInfoDict[groupId].keys()
-            except:
-                CreateNewMemberInfo(self.memberInfoDict[groupId], personId)
-            groupMemberInfo = self.memberInfoDict[groupId][personId]
+                assert userId in self.memberInfoDict[groupId].keys()
+            except AssertionError:
+                CreateNewMemberInfo(self.memberInfoDict[groupId], userId)
+            groupMemberInfo = self.memberInfoDict[groupId][userId]
             groupMemberInfo['activeDate'] = GetCurrentDateStr()
             groupMemberInfo['messageDaily'] += 1
             groupMemberInfo['messageAccu'] += 1
@@ -674,10 +682,19 @@ class Bot:
             return None
         if userInfoCur['warning'] >= 2 or userInfoCur['ban'] >= 3:
             return None
+        # 检查激活状态
+        if groupId:
+            try:
+                assert groupInfoCur['active']  # 已有记录且是激活状态并继续执行命令
+            except (KeyError, AssertionError):
+                if not groupInfoCur['active'] and not onlyToMe and inputStr.find(
+                        'bot') == -1:  # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
+                    return None
 
         # 检测彩蛋
         if groupId and userInfoCur['credit'] >= CHAT_CREDIT_LV0:
-            diffTime = Str2Datetime(groupInfoCur['chatDate'])-GetCurrentDateRaw()
+            diffTime = Str2Datetime(groupInfoCur['chatDate']) - GetCurrentDateRaw()
+            resultList = None
             if diffTime <= CHAT_LIMIT_TIME:
                 resultList = await self.ProcessChatCommand(inputStr, userInfoCur['credit'])
             if resultList:
@@ -696,9 +713,12 @@ class Bot:
                     try:
                         if IAInfo['warning']:
                             if groupId:
-                                resultList += [CommandResult(CoolqCommandType.MESSAGE, IAInfo['warning'], personIdList = [personId], groupIdList = [groupId])]
+                                resultList += [
+                                    CommandResult(CoolqCommandType.MESSAGE, IAInfo['warning'], personIdList=[userId],
+                                                  groupIdList=[groupId])]
                             else:
-                                resultList += [CommandResult(CoolqCommandType.MESSAGE, IAInfo['warning'], personIdList = [personId])]
+                                resultList += [
+                                    CommandResult(CoolqCommandType.MESSAGE, IAInfo['warning'], personIdList=[userId])]
                     except:
                         pass
                 else:
@@ -736,16 +756,16 @@ class Bot:
             # 刷屏检测
             try:
                 isSpam, dateStr, accuNum = DetectSpam(GetCurrentDateRaw(),
-                    userInfoCur['activeDate'], userInfoCur['spamAccu'], commandWeight)
+                                                      userInfoCur['activeDate'], userInfoCur['spamAccu'], commandWeight)
                 userInfoCur['activeDate'] = dateStr
                 userInfoCur['spamAccu'] = accuNum
-                if isSpam and not personId in MASTER:
+                if isSpam and userId not in MASTER:
                     userInfoCur['credit'] -= 100
                     userWarning = userInfoCur['warning']
                     if userWarning == 0:
-                        resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 黄牌警告!')]
+                        resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{personName} {userId}的刷屏行为, 黄牌警告!')]
                     elif userWarning == 1:
-                        resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 不理你了!')]
+                        resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{personName} {userId}的刷屏行为, 不理你了!')]
                         userInfoCur['ban'] += 1
                     userInfoCur['warning'] += 1
             except Exception as e:
@@ -756,15 +776,6 @@ class Bot:
         command = await ParseInput(inputStr)
         if command is None:
             return None
-        # 检查激活状态
-        if groupId:
-            try:
-                assert groupInfoCur['active'] == True # 已有记录且是激活状态并继续执行命令
-            except:
-                if groupInfoCur['active'] == False and onlyToMe == False and inputStr.find('bot') == -1: # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
-                    return None
-        else:
-            groupInfoCur = None
 
         # 检查该指令是否被该群禁用
         if groupId:
@@ -786,11 +797,20 @@ class Bot:
                 groupInfoCur['dndCommandDaily'] += 1
 
         # 更新并尝试读取昵称
-        self.userInfoDict[personId]['name'] = personName
-        nickName = self.__GetNickName(groupId, personId)
+        self.userInfoDict[userId]['name'] = personName
+        nickName = self.GetNickName(groupId, userId)
 
-        resultList, commandWeight = await self.__ProcessInput(command, personId, nickName, userInfoCur, groupId, groupInfoCur, onlyToMe)
-
+        try:
+            resultList, commandWeight = await self.__ProcessInput(command, userId, nickName, userInfoCur, groupId,
+                                                                  groupInfoCur, onlyToMe)
+        except MasterError as e:
+            if self.masterInfoDict['debug']:
+                raise e
+            resultList = [CommandResult(CoolqCommandType.MESSAGE, str(e), personIdList=MASTER)]
+            commandWeight = 0
+        except UserError as e:
+            resultList = [CommandResult(CoolqCommandType.MESSAGE, str(e))]
+            commandWeight = 3
         # 最后处理
         if len(resultList) == 0:
             return None
@@ -798,16 +818,16 @@ class Bot:
         # 刷屏检测
         try:
             isSpam, dateStr, accuNum = DetectSpam(GetCurrentDateRaw(),
-                userInfoCur['activeDate'], userInfoCur['spamAccu'], commandWeight)
+                                                  userInfoCur['activeDate'], userInfoCur['spamAccu'], commandWeight)
             userInfoCur['activeDate'] = dateStr
             userInfoCur['spamAccu'] = accuNum
-            if isSpam and not personId in MASTER:
+            if isSpam and not userId in MASTER:
                 userInfoCur['credit'] -= 100
                 userWarning = userInfoCur['warning']
                 if userWarning == 0:
-                    resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 黄牌警告!')]
+                    resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {userId}的刷屏行为, 黄牌警告!')]
                 elif userWarning == 1:
-                    resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {personId}的刷屏行为, 不理你了!')]
+                    resultList = [CommandResult(CoolqCommandType.MESSAGE, f'检测到{nickName} {userId}的刷屏行为, 不理你了!')]
                     userInfoCur['ban'] += 1
                 userInfoCur['warning'] += 1
         except Exception as e:
@@ -824,18 +844,19 @@ class Bot:
             userInfoCur['credit'] += 1
 
         return resultList
-            
+
     async def ProcessChatCommand(self, inputStr, credit):
         # 检测可能的聊天信息
         possChatList = []
 
         for keyRe in CHAT_COMMAND_COMMON.keys():
-            result = re.match(keyRe, inputStr, flags = re.I)
+            result = re.match(keyRe, inputStr, flags=re.I)
             if result:
                 possChatList.append(CHAT_COMMAND_COMMON[keyRe])
         if len(possChatList) != 0:
             possChatList = RandomSelectList(possChatList)[0]
-            possChatList = [info[1] for info in possChatList if credit>=info[0] and ((len(info))!=3 or credit<= info[2])]
+            possChatList = [info[1] for info in possChatList if
+                            credit >= info[0] and ((len(info)) != 3 or credit <= info[2])]
             if possChatList == 0:
                 return None
             result = RandomSelectList(possChatList)[0]
@@ -843,7 +864,7 @@ class Bot:
             return [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         for keyRe in CHAT_COMMAND_FUNCTION.keys():
-            result = re.match(keyRe, inputStr, flags = re.I)
+            result = re.match(keyRe, inputStr, flags=re.I)
             if result:
                 possChatList.append(CHAT_COMMAND_FUNCTION[keyRe])
         if len(possChatList) != 0:
@@ -853,9 +874,8 @@ class Bot:
                 return [CommandResult(CoolqCommandType.MESSAGE, result)]
         return None
 
-
     # 接受输入字符串，返回输出字符串
-    async def __ProcessInput(self, command, personId, nickName, userInfoCur, groupId, groupInfoCur, onlyToMe) -> list:
+    async def __ProcessInput(self, command, userId, nickName, userInfoCur, groupId, groupInfoCur, onlyToMe) -> tuple:
         # 处理命令
         commandResultList = []
         commandWeight = 1
@@ -871,7 +891,7 @@ class Bot:
             if diceCommand == '':
                 diceCommand = 'd'
             if len(reason) != 0:
-                reason = ROLL_REASON_STR.format(reason = reason)
+                reason = ROLL_REASON_STR.format(reason=reason)
             error, resultStr, rollResult = RollDiceCommand(diceCommand)
             if error:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, resultStr)]
@@ -884,9 +904,9 @@ class Bot:
                         for totalVal in rollResult.totalValueList:
                             resultStr += f'{totalVal}, '
                         resultStr = resultStr[:-2] + '}'
-                finalResult = ROLL_FEED_STR.format(reason = reason, nickName = nickName, resultStr = resultStr)
+                finalResult = ROLL_FEED_STR.format(reason=reason, nickName=nickName, resultStr=resultStr)
                 try:
-                    if (resultStr[:3] == 'D20' or resultStr[:4] == '1D20'):
+                    if resultStr[:3] == 'D20' or resultStr[:4] == '1D20':
                         if rollResult.rawResultList[0][0] == 20:
                             finalResult += N20_FEED_STR
                         elif rollResult.rawResultList[0][0] == 1:
@@ -900,69 +920,76 @@ class Bot:
                             elif resList[0] == 1:
                                 failTimes += 1
                         if succTimes != 0:
-                            finalResult += '\n' + N20_FEED_MULT_STR.format(succTimes = succTimes)
+                            finalResult += '\n' + N20_FEED_MULT_STR.format(succTimes=succTimes)
                         if failTimes != 0:
-                            finalResult += '\n' + N01_FEED_MULT_STR.format(failTimes = failTimes)
+                            finalResult += '\n' + N01_FEED_MULT_STR.format(failTimes=failTimes)
                 except:
                     pass
 
                 if isHide:
-                    if groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
-                    finalResult = HROLL_RES_STR.format(finalResult = finalResult)
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList = [personId]),
-                            CommandResult(CoolqCommandType.MESSAGE, HROLL_FEED_STR.format(nickName = nickName))]
+                    if groupId == 'Private': commandResultList += [
+                        CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
+                    finalResult = HROLL_RES_STR.format(finalResult=finalResult)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList=[userId]),
+                                          CommandResult(CoolqCommandType.MESSAGE,
+                                                        HROLL_FEED_STR.format(nickName=nickName))]
                 else:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
 
         elif cType == CommandType.BOT:
             commandWeight = 3
             subType = command.cArg[0]
-            if subType != 'show' and groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
+            if subType != 'show' and groupId == 'Private': commandResultList += [
+                CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             if subType == 'show':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
             elif onlyToMe:
                 if subType == 'on':
-                    result = self.__BotSwitch(groupId, True)
+                    result = tc.BotSwitch(self, groupId, True)
                 else:
-                    result = self.__BotSwitch(groupId, False)
+                    result = tc.BotSwitch(self, groupId, False)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.GROUP:
             commandWeight = 1
             subType = command.cArg[0]
-            if groupId == 'Private': commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
+            if groupId == 'Private': commandResultList += [
+                CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             if subType == '帮助':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, HELP_COMMAND_GROUP_STR)]
             elif subType == '信息':
-                result = self.__GetGroupMemberInfo(groupId)
+                result = tc.GetGroupSummary(self, groupId)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             elif subType == '查看禁用功能':
-                result = self.__GetBannedGroupFunc(groupId)
+                result = tc.GetBannedGroupFunc(self, groupId)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             else:
                 funcName = command.cArg[1]
                 if subType == '启用功能':
-                    result = self.__GroupFuncSwitch(groupId, funcName, True)
+                    result = tc.GroupFuncSwitch(self, groupId, funcName, True)
                 elif subType == '禁用功能':
-                    result = self.__GroupFuncSwitch(groupId, funcName, False)
+                    result = tc.GroupFuncSwitch(self, groupId, funcName, False)
+                else:
+                    result = ''
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.DISMISS:
-            if not onlyToMe: return None #'不指定我的话, 这个指令是无效的哦'
+            if not onlyToMe:
+                raise UserError('')  # '不指定我的话, 这个指令是无效的哦'
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, DISMISS_FEED_STR),
-                                  CommandResult(CoolqCommandType.DISMISS, groupIdList = [groupId])]
+                                  CommandResult(CoolqCommandType.DISMISS, groupIdList=[groupId])]
 
         elif cType == CommandType.NickName:
             newNickName = command.cArg[0]
             if len(newNickName) <= 20:
-                result = self.UpdateNickName(groupId, personId, newNickName)
+                result = self.UpdateNickName(groupId, userId, newNickName)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             else:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, NICKNAME_LEN_LIMIT_STR)]
 
         elif cType == CommandType.HELP:
             subType = str(command.cArg[0])
-            helpInfo = self.__GetHelpInfo(subType)
+            helpInfo = tc.GetHelpInfo(subType)
             if helpInfo:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, helpInfo)]
 
@@ -974,19 +1001,19 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             else:
                 if not subType:
-                    result = self.__GetInitList(groupId)
+                    result = tb.GetInitSummary(self, groupId)
                 elif subType == 'clr':
-                    result = self.__ClearInitList(groupId)
+                    result = tb.ClearInit(self, groupId)
                 elif subType[:3] == 'del':
                     nameList = subType[3:].split('/')
                     result = ''
                     for name in nameList:
                         if not result:
-                            result = self.__RemoveInitList(groupId, name.strip())
+                            result = tb.RemoveElemFromInit(self, groupId, name.strip())
                         else:
-                            result += '\n' + self.__RemoveInitList(groupId, name.strip())
+                            result += '\n' + tb.RemoveElemFromInit(self, groupId, name.strip())
                 else:
-                    return None
+                    raise MasterError('Invalid INIT subtype!')
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.RI:
@@ -1005,11 +1032,11 @@ class Bot:
                 for name in nameList:
                     initAdjSub = initAdj
                     for i in range(len(name)):
-                        if name[i] in ['+', '-'] and name[i+1:] and isDiceCommand(name[i+1:]):
+                        if name[i] in ['+', '-'] and name[i + 1:] and isDiceCommand(name[i + 1:]):
                             initAdjSub += name[i:]
                             name = name[:i]
                             break
-                    result = self.JoinInitList(groupId, personId, name, initAdjSub, isPC)
+                    result = tb.AddElemToInit(self, groupId, userId, name, initAdjSub, isPC)
                     if not finalResult:
                         finalResult = result
                     else:
@@ -1024,14 +1051,15 @@ class Bot:
                 subType = command.cArg[0]
                 if subType == '记录':
                     # Args: [targetStr, subType , hpStr, maxhpStr]
-                    result = UpdateHP(self, groupId, personId, *command.cArg[1:], nickName)
+                    result = tp.UpdateHP(self, groupId, userId, *command.cArg[1:], nickName)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '查看':
-                    result = ShowHP(self, groupId, personId)
+                    result = tp.ShowHP(self, groupId, userId)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{nickName}{result}')]
                 elif subType == '清除':
-                    ClearHP(self, groupId, personId)
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, HP_CLEAR_STR.format(nickName = nickName))]
+                    tp.ClearHP(self, groupId, userId)
+                    commandResultList += [
+                        CommandResult(CoolqCommandType.MESSAGE, HP_CLEAR_STR.format(nickName=nickName))]
 
         elif cType == CommandType.PC:
             self.dailyInfoDict['pcCommand'] += 1
@@ -1042,17 +1070,17 @@ class Bot:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             else:
                 if subType == '记录':
-                    result = SetPlayerInfo(self, groupId, personId, infoStr)
+                    result = tp.SetPlayerInfo(self, groupId, userId, infoStr)
                 elif subType == '查看':
-                    result = GetPlayerInfo(self, groupId, personId, nickName)
+                    result = tp.GetPlayerInfo(self, groupId, userId, nickName)
                 elif subType == '完整':
-                    result = GetPlayerInfoFull(self, groupId, personId, nickName)
+                    result = tp.GetPlayerInfoFull(self, groupId, userId, nickName)
                 elif subType == '清除':
-                    ClearPlayerInfo(self, groupId, personId)
-                    result = PC_CLEAR_STR.format(nickName = nickName)
+                    tp.ClearPlayerInfo(self, groupId, userId)
+                    result = PC_CLEAR_STR.format(nickName=nickName)
                 elif subType == '模板':
                     result = PC_SHEET_TEMPLATE
-            
+
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.CHECK:
@@ -1067,8 +1095,8 @@ class Bot:
                 else:
                     try:
                         times = int(itemArgs[0])
-                        assert times <= 10 and times >= 1
-                    except:
+                        assert 1 <= times <= 10
+                    except (ValueError, AssertionError):
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, CHECK_TIME_LIMIT_STR)]
                         times = None
                     item = itemArgs[1]
@@ -1076,8 +1104,8 @@ class Bot:
                 if times:
                     diceCommand = command.cArg[1]
                     reason = command.cArg[2]
-                    error, result = PlayerCheck(self, groupId, personId, item, times, diceCommand, nickName)
-                    if error == 0 and reason:
+                    result = tp.PlayerCheck(self, groupId, userId, item, times, diceCommand, nickName)
+                    if reason:
                         result = f'由于{reason}, {result}'
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
@@ -1086,38 +1114,31 @@ class Bot:
             if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             else:
-                valid = False
                 try:
                     teamName = self.teamInfoDict[groupId]['name']
                     membersList = self.teamInfoDict[groupId]['members']
                     assert len(membersList) >= 1
                     valid = True
-                except:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, TEAM_NEED_STR)]
-                if valid:
-                    item = command.cArg[0]
-                    diceCommand = command.cArg[1]
-                    reason = command.cArg[2]
-                    times = 1
+                except AssertionError:
+                    raise UserError(TEAM_NEED_STR)
 
-                    finalResult = f'{teamName}进行队伍{item}检定'
-                    if reason:
-                        finalResult = f'由于{reason}, {finalResult}'
-                    errorInfo = None
-                    for memberId in membersList:
-                        try:
-                            nickName = self.nickNameDict[groupId][memberId]
-                        except:
-                            nickName = memberId
-                        error, result = PlayerCheck(self, groupId, memberId, item, times, diceCommand, nickName)
-                        if error != 0:
-                            errorInfo = result
-                            break
-                        finalResult += f'\n{result}'
+                item = command.cArg[0]
+                diceCommand = command.cArg[1]
+                reason = command.cArg[2]
+                times = 1
 
-                    if errorInfo:
-                        finalResult = errorInfo
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
+                finalResult = f'{teamName}进行队伍{item}检定'
+                if reason:
+                    finalResult = f'由于{reason}, {finalResult}'
+                errorInfo = None
+                for memberId in membersList:
+                    nickName = self.GetNickName(groupId, memberId)
+                    result = tp.PlayerCheck(self, groupId, memberId, item, times, diceCommand, nickName)
+                    finalResult += f'\n{result}'
+
+                if errorInfo:
+                    finalResult = errorInfo
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
 
         elif cType == CommandType.SpellSlot:
             self.dailyInfoDict['slotCommand'] += 1
@@ -1127,20 +1148,21 @@ class Bot:
                 # Args: [subType, *args]
                 subType = command.cArg[0]
                 if subType == '记录':
-                    error, result = SetSpellSlot(self, groupId, personId, command.cArg[1])
+                    result = tp.SetSpellSlot(self, groupId, userId, command.cArg[1])
                 elif subType == '查看':
-                    result = nickName + ShowSpellSlot(self, groupId, personId)
+                    result = nickName + tp.ShowSpellSlot(self, groupId, userId)
                 elif subType == '更改':
                     level = command.cArg[1]
                     try:
                         assert command.cArg[2][0] in ['+', '-']
                         adjVal = int(command.cArg[2])
-                        assert adjVal > -10 and adjVal < 10
-                    except:
-                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SPELL_SLOT_ADJ_INVALID_STR.format(val = command.cArg[2]))]
-                    result = nickName + ModifySpellSlot(self, groupId, personId, level, adjVal)
+                        assert -10 < adjVal < 10
+                    except (AssertionError, ValueError):
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE,
+                                                            SPELL_SLOT_ADJ_INVALID_STR.format(val=command.cArg[2]))]
+                    result = nickName + tp.ModifySpellSlot(self, groupId, userId, level, adjVal)
                 elif subType == '清除':
-                    result = ClearSpellSlot(self, groupId, personId)
+                    result = tp.ClearSpellSlot(self, groupId, userId)
 
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
@@ -1151,13 +1173,15 @@ class Bot:
             else:
                 subType = command.cArg[0]
                 if subType == '记录':
-                    error, result = SetMoney(self, groupId, personId, command.cArg[1])
+                    error, result = tp.SetMoney(self, groupId, userId, command.cArg[1])
                 elif subType == '清除':
-                    result = ClearMoney(self, groupId, personId)
+                    result = tp.ClearMoney(self, groupId, userId)
                 elif subType == '更改':
-                    result = nickName + ModifyMoney(self, groupId, personId, command.cArg[1])
+                    result = nickName + tp.ModifyMoney(self, groupId, userId, command.cArg[1])
                 elif subType == '查看':
-                    result = nickName + '当前的财富:' + ShowMoney(self, groupId, personId)
+                    result = nickName + '当前的财富:' + tp.ShowMoney(self, groupId, userId)
+                else:
+                    result = ''
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.TeamMoney:
@@ -1165,26 +1189,20 @@ class Bot:
             if groupId == 'Private':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
             else:
-                valid = False
                 try:
                     teamName = self.teamInfoDict[groupId]['name']
                     membersList = self.teamInfoDict[groupId]['members']
                     assert len(membersList) >= 1
-                    valid = True
-                except:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, TEAM_NEED_STR)]
-                if valid:
-                    modifier = command.cArg[0]
-                    finalResult = f'{teamName}{modifier}:'
-                    for memberId in membersList:
-                        try:
-                            nickName = self.nickNameDict[groupId][memberId]
-                        except:
-                            nickName = memberId
-                        result = nickName + ModifyMoney(self, groupId, memberId, modifier)
-                        finalResult += f'\n{result}'
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
+                except (KeyError, AssertionError):
+                    raise UserError(TEAM_NEED_STR)
 
+                modifier = command.cArg[0]
+                finalResult = f'{teamName}{modifier}:'
+                for memberId in membersList:
+                    nickName = self.GetNickName(groupId, memberId)
+                    result = nickName + tp.ModifyMoney(self, groupId, memberId, modifier)
+                    finalResult += f'\n{result}'
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult)]
 
         elif cType == CommandType.NOTE:
             self.dailyInfoDict['noteCommand'] += 1
@@ -1200,13 +1218,15 @@ class Bot:
                     else:
                         index = info[0]
                         content = info[1]
-                    result = self.__SetNote(groupId, index, content)
+                    result = tc.SetNote(self, groupId, index, content)
                 elif subType == '清除':
                     index = command.cArg[1]
-                    result = self.__ClearNote(groupId, index)
+                    result = tc.ClearNote(self, groupId, index)
                 elif subType == '查看':
                     index = command.cArg[1]
-                    result = self.__ShowNote(groupId, index)
+                    result = tc.ShowNote(self, groupId, index)
+                else:
+                    result = ''
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.TEAM:
@@ -1216,21 +1236,21 @@ class Bot:
             else:
                 subType = command.cArg[0]
                 if subType == '加入':
-                    result = JoinTeam(self, groupId, personId, command.cArg[1])
+                    result = tp.JoinTeam(self, groupId, userId, command.cArg[1])
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '清除':
-                    result = ClearTeam(self, groupId)
+                    result = tp.ClearTeam(self, groupId)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '查看':
-                    result = ShowTeam(self, groupId)
+                    result = tp.ShowTeam(self, groupId)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '点名':
-                    result = CallTeam(self, groupId)
+                    result = tp.CallTeam(self, groupId)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
                 elif subType == '完整':
-                    result = ShowTeamFull(self, groupId)
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[personId]),
-                            CommandResult(CoolqCommandType.MESSAGE, TEAM_INFO_FEED_STR)]
+                    result = tp.ShowTeamFull(self, groupId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[userId]),
+                                          CommandResult(CoolqCommandType.MESSAGE, TEAM_INFO_FEED_STR)]
 
         elif cType == CommandType.REST:
             if groupId == 'Private':
@@ -1238,34 +1258,36 @@ class Bot:
             else:
                 subType = command.cArg[0]
                 if subType == '长休':
-                    result = LongRest(self, groupId, personId)
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, nickName+result)]
+                    result = tp.LongRest(self, groupId, userId)
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, nickName + result)]
 
         elif cType == CommandType.SEND:
             commandWeight = 4
-            if len(command.cArg[0]) < 10 or len(command.cArg[0])>100:
+            if len(command.cArg[0]) < 10 or len(command.cArg[0]) > 100:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SEND_LEN_LIMIT_STR)]
             else:
                 if groupId != 'Private':
-                    message = f'来自群{groupId} 用户{personId}的信息: {command.cArg[0]}'
+                    message = f'来自群{groupId} 用户{userId}的信息: {command.cArg[0]}'
                 else:
-                    message = f'来自用户{personId}的信息: {command.cArg[0]}'
+                    message = f'来自用户{userId}的信息: {command.cArg[0]}'
                 feedback = SEND_FEED_STR
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, message, personIdList=MASTER),
-                        CommandResult(CoolqCommandType.MESSAGE, feedback)]
+                                      CommandResult(CoolqCommandType.MESSAGE, feedback)]
 
         elif cType == CommandType.Question:
             commandWeight = 4
             if not command.cArg[0]:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, EXAM_LIST_STR.format(val = list(self.questionDict.keys())))]
+                commandResultList += [
+                    CommandResult(CoolqCommandType.MESSAGE, EXAM_LIST_STR.format(val=list(self.questionDict.keys())))]
             else:
                 possKey = PairSubstring(command.cArg[0].strip(), self.questionDict.keys())
                 if len(possKey) == 0:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, EXAM_MISS_STR)]
                 elif len(possKey) > 1:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, EXAM_MULT_STR.format(possKey = possKey))]
+                    commandResultList += [
+                        CommandResult(CoolqCommandType.MESSAGE, EXAM_MULT_STR.format(possKey=possKey))]
                 else:
-                    result = self.__StartExam(possKey[0], personId, groupId)
+                    result = tc.StartExam(self, possKey[0], groupId, userId)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.WELCOME:
@@ -1275,7 +1297,7 @@ class Bot:
                 info = command.cArg[0].strip()
                 groupInfoCur['welcome'] = info
                 if info:
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, WELCOME_FEED_STR+'\n'+info)]
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, WELCOME_FEED_STR + '\n' + info)]
                 else:
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, WELCOME_CLEAR_STR)]
 
@@ -1284,63 +1306,64 @@ class Bot:
             times = 1
             target = None
             try:
-                assert len(temp) <= 2 and len(temp) >= 1
+                assert 1 <= len(temp) <= 2
                 if len(temp) == 1:
                     target = temp[0].strip()
                 else:
                     times = int(temp[0])
                     target = temp[1].strip()
-            except:
+            except (AssertionError, ValueError):
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, NAME_FORMAT_STR)]
-            if target != None:
+            if target is not None:
                 if times > 10 or times <= 0:
                     result = NAME_LIMIT_STR
                 else:
-                    result = GenerateName(self.nameInfoDict, target, times)
+                    result = tc.GenerateName(self.nameInfoDict, target, times)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
-
 
         elif cType == CommandType.JRRP:
             commandWeight = 2
             date = GetCurrentDateRaw()
-            value = self.__GetJRRP(personId, date)
+            value = tc.GetJRRP(userId, date)
             if not userInfoCur['seenJRRP']:
                 userInfoCur['seenJRRP'] = True
                 self.dailyInfoDict['jrrpCommand'] += 1
-                answer = JRRP_FEED_STR.format(nickName = nickName, value = value)
+                answer = JRRP_FEED_STR.format(nickName=nickName, value=value)
                 if value >= 80:
                     answer += JRRP_GOOD_STR
                 elif value <= 20:
-                    gift = GIFT_LIST[np.random.randint(0,len(GIFT_LIST))]
-                    answer += JRRP_BAD_STR.format(gift = gift)
+                    gift = GIFT_LIST[np.random.randint(0, len(GIFT_LIST))]
+                    answer += JRRP_BAD_STR.format(gift=gift)
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, answer)]
             else:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JRRP_REPEAT_STR.format(value = value))]
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JRRP_REPEAT_STR.format(value=value))]
 
         elif cType == CommandType.DND:
             commandWeight = 3
             try:
                 times = int(command.cArg[0])
-                assert times > 0 and times <= 10
-            except:
+                assert 0 < times <= 10
+            except AssertionError:
+                times = 1
+            except ValueError:
                 times = 1
             reason = command.cArg[1]
-            result = self.__DNDBuild(times)
-            result = DND_FEED_STR.format(nickName = nickName, reason = reason, result = result)
+            result = tc.DNDBuild(times)
+            result = DND_FEED_STR.format(nickName=nickName, reason=reason, result=result)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.QUERY:
             self.dailyInfoDict['queryCommand'] += 1
             commandWeight = 3
             targetStr = str(command.cArg[0])
-            queryResult = self.__QueryInfo(targetStr, personId, groupId)
+            queryResult = tc.QueryInfo(self, targetStr, userId, groupId)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, queryResult)]
 
         elif cType == CommandType.INDEX:
             self.dailyInfoDict['queryCommand'] += 1
             commandWeight = 3
             targetStr = str(command.cArg[0])
-            queryResult = self.__IndexInfo(targetStr, personId, groupId)
+            queryResult = tc.IndexInfo(self, targetStr, userId, groupId)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, queryResult)]
 
         elif cType == CommandType.DRAW:
@@ -1356,7 +1379,7 @@ class Bot:
             else:
                 targetStr = args[1]
                 timesStr = args[0]
-            drawResult = self.__DrawInfo(targetStr, timesStr)
+            drawResult = tc.DrawInfo(self, targetStr, timesStr)
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, drawResult)]
 
         elif cType == CommandType.COOK:
@@ -1364,24 +1387,18 @@ class Bot:
             commandWeight = 4
             cookAdj = command.cArg[0]
             keywordList = command.cArg[1]
-            error, cookResult = self.__CookCheck(cookAdj, keywordList)
-            if error == -1:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
-            else:
-                cookResult = COOK_FEED_STR.format(nickName = nickName, cookResult = cookResult)
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
+            cookResult = tc.CookCheck(self, cookAdj, keywordList)
+            cookResult = COOK_FEED_STR.format(nickName=nickName, cookResult=cookResult)
+            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, cookResult)]
 
         elif cType == CommandType.ORDER:
             self.dailyInfoDict['cookCommand'] += 1
             commandWeight = 4
             number = command.cArg[0]
             keywordList = command.cArg[1]
-            error, orderResult = self.__OrderDish(number, keywordList)
-            if error == -1:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
-            else:
-                orderResult = ORDER_FEED_STR.format(nickName = nickName, orderResult = orderResult)
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
+            orderResult = tc.OrderDish(self, number, keywordList)
+            orderResult = ORDER_FEED_STR.format(nickName=nickName, orderResult=orderResult)
+            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, orderResult)]
 
         elif cType == CommandType.TodayMenu:
             if not userInfoCur['seenJRCD']:
@@ -1389,62 +1406,55 @@ class Bot:
                 self.dailyInfoDict['cookCommand'] += 1
                 commandWeight = 4
                 date = GetCurrentDateRaw()
-                result = self.__GetTodayMenu(personId, date)
+                result = tc.GetTodayMenu(self, userId, date)
                 result = f'{nickName}的{result}'
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList = [personId])]
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result, personIdList=[userId])]
             else:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, MENU_LIMIT_STR)]
 
         elif cType == CommandType.TodayJoke:
             flag = ''
-            if True:
-                if command.cArg[0] == 0 and userInfoCur['seenJoke'][1] != 0:
-                    flag = '今'
-                    userInfoCur['seenJoke'][1] = 0
-                elif command.cArg[0] == -1 and userInfoCur['seenJoke'][0] != 0:
-                    flag = '昨'
-                    userInfoCur['seenJoke'][0] = 0
-                elif command.cArg[0] == 1 and userInfoCur['seenJoke'][2] != 0:
-                    flag = '明'
-                    userInfoCur['seenJoke'][2] = 0
-                if flag:
-                    self.dailyInfoDict['jokeCommand'] += 1
-                    commandWeight = 2
-                    date = GetCurrentDateRaw() + command.cArg[0] * datetime.timedelta(days = 1)
-                    result = self.__GetTodayJoke(personId, date)
-                    result = JOKE_FEED_STR.format(nickName = nickName, flag = flag, result = result)
-                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
-                else:
-                    if command.cArg[0] == -1:
-                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JOKE_LIMIT_LAST_STR)]
-                    elif command.cArg[0] == 0:
-                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JOKE_LIMIT_TODAY_STR)]
-                    elif command.cArg[0] == 1:
-                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JOKE_LIMIT_NEXT_STR)]
+            if command.cArg[0] == 0 and userInfoCur['seenJoke'][1] != 0:
+                flag = '今'
+                userInfoCur['seenJoke'][1] = 0
+            elif command.cArg[0] == -1 and userInfoCur['seenJoke'][0] != 0:
+                flag = '昨'
+                userInfoCur['seenJoke'][0] = 0
+            elif command.cArg[0] == 1 and userInfoCur['seenJoke'][2] != 0:
+                flag = '明'
+                userInfoCur['seenJoke'][2] = 0
+            if flag:
+                self.dailyInfoDict['jokeCommand'] += 1
+                commandWeight = 2
+                date = GetCurrentDateRaw() + command.cArg[0] * datetime.timedelta(days=1)
+                result = tc.GetTodayJoke(self, userId, date)
+                result = JOKE_FEED_STR.format(nickName=nickName, flag=flag, result=result)
+                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
             else:
-                commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '今日笑话功能将在收到足够数量的投稿后恢复~敬请期待吧~')]
-                
+                if command.cArg[0] == -1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JOKE_LIMIT_LAST_STR)]
+                elif command.cArg[0] == 0:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JOKE_LIMIT_TODAY_STR)]
+                elif command.cArg[0] == 1:
+                    commandResultList += [CommandResult(CoolqCommandType.MESSAGE, JOKE_LIMIT_NEXT_STR)]
 
         elif cType == CommandType.CREDIT:
             if userInfoCur['seenCredit']:
                 result = CREDIT_REPEAT_FEED
             else:
-                try:
-                    credit = userInfoCur['credit']
-                    level = 0
-                    for i in CREDIT_LEVEL_FEED.keys():
-                        if credit >= i and i > level:
-                            level = i
-                    result = RandomSelectList(CREDIT_LEVEL_FEED[level])[0]
-                    result = result.format(name=nickName)
-                    result = InsertEmotion(result, self.emotionDict)
-                    userInfoCur['seenCredit'] = True
-                except:
-                    result = ERROR2MASTER_STR
+                credit = userInfoCur['credit']
+                level = 0
+                for i in CREDIT_LEVEL_FEED.keys():
+                    if level < i <= credit:
+                        level = i
+                result = RandomSelectList(CREDIT_LEVEL_FEED[level])[0]
+                result = result.format(name=nickName)
+                result = InsertEmotion(result, self.emotionDict)
+                userInfoCur['seenCredit'] = True
             commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
         elif cType == CommandType.MASTER:
-            if personId not in MASTER:
+            if userId not in MASTER:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, MASTER_LIMIT_STR)]
             else:
                 subType = command.cArg[0]
@@ -1453,19 +1463,25 @@ class Bot:
                         await self.UpdateLocalData()
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SAVE_FEED_STR)]
                     except Exception as e:
-                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'保存资料时遇到错误:\n{e}' )]
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'保存资料时遇到错误:\n{e}')]
                 elif subType == 'credit':
                     try:
                         commandArgs = command.cArg[1].split(':')
                         targetId = commandArgs[0].strip()
-                        if len(commandArgs) > 1: # 修改
+                        if len(commandArgs) > 1:  # 修改
                             value = int(commandArgs[1])
                             self.userInfoDict[targetId]['credit'] += value
-                            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}'),
-                                                  CommandResult(CoolqCommandType.MESSAGE, f'对你的好感度{int2str(value)}, 现在是{self.userInfoDict[targetId]["credit"]}',
-                                                   personIdList=[targetId])]
-                        else: # 查看
-                            commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'{targetId}的好感度是{self.userInfoDict[targetId]["credit"]}')]
+                            commandResultList += [CommandResult(CoolqCommandType.MESSAGE,
+                                                                f'{targetId}的好感度{int2str(value)},'
+                                                                f' 现在是{self.userInfoDict[targetId]["credit"]}'),
+                                                  CommandResult(CoolqCommandType.MESSAGE,
+                                                                f'对你的好感度{int2str(value)},'
+                                                                f' 现在是{self.userInfoDict[targetId]["credit"]}',
+                                                                personIdList=[targetId])]
+                        else:  # 查看
+                            commandResultList += [CommandResult(CoolqCommandType.MESSAGE,
+                                                                f'{targetId}的好感度是'
+                                                                f'{self.userInfoDict[targetId]["credit"]}')]
                     except Exception as e:
                         commandResultList += [CommandResult(CoolqCommandType.MESSAGE, f'好感度调整失败, 原因是:\n{e}')]
                 elif subType == 'notice':
@@ -1478,7 +1494,8 @@ class Bot:
                     result += f'全部指令:{self.dailyInfoDict["totalCommand"]}\n投骰指令:{self.dailyInfoDict["rollCommand"]}\n'
                     result += f'先攻指令:{self.dailyInfoDict["initCommand"]}\n人品指令:{self.dailyInfoDict["jrrpCommand"]}\n'
                     result += f'笑话指令:{self.dailyInfoDict["jokeCommand"]}\n查询指令:{self.dailyInfoDict["queryCommand"]} '
-                    result += f'成功:{self.dailyInfoDict["querySucc"]} 失败:{self.dailyInfoDict["queryFail"]} 多结果:{self.dailyInfoDict["queryMult"]}\n'
+                    result += f'成功:{self.dailyInfoDict["querySucc"]}' \
+                              f' 失败:{self.dailyInfoDict["queryFail"]} 多结果:{self.dailyInfoDict["queryMult"]}\n'
                     result += f'抽卡指令:{self.dailyInfoDict["drawCommand"]}\n角色卡指令:{self.dailyInfoDict["pcCommand"]}\n'
                     result += f'金钱指令:{self.dailyInfoDict["moneyCommand"]}\n生命值指令:{self.dailyInfoDict["hpCommand"]}\n'
                     result += f'检定指令:{self.dailyInfoDict["checkCommand"]}\n法术位指令:{self.dailyInfoDict["slotCommand"]}\n'
@@ -1486,6 +1503,14 @@ class Bot:
                     result += f'笔记指令:{self.dailyInfoDict["noteCommand"]}\n'
                     result += f'交互指令:{self.dailyInfoDict["IACommand"]}'
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
+                elif subType == 'debug':
+                    flag = command.cArg[1].lower()
+                    if flag == 'true' or flag == '1' or flag == 'on':
+                        self.masterInfoDict['debug'] = True
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '开启debug模式(错误信息将会直接在命令行中显示')]
+                    else:
+                        self.masterInfoDict['debug'] = False
+                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE, '关闭debug模式(错误信息将会发送给Master')]
 
         return commandResultList, commandWeight
 
@@ -1495,55 +1520,170 @@ class Bot:
             CreateNewGroupInfo(self.groupInfoDict, groupId)
             self.groupInfoDict[groupId]['inviter'] = inviterId
             return True
-        except:
+        except (AssertionError, MasterError, KeyError):
             return False
-        
-    def RegisterIACommand(self, personId, groupId, funcName, argsList, IAType = -1, expireTime = IA_EXPIRE_TIME, expireWarning = '', isRepeat = False):
-        # 查找已有的同类交互指令并删除
-        for i in range(len(self.userInfoDict[personId]['IACommand'])-1, -1, -1):
-            if self.userInfoDict[personId]['IACommand'][i]['groupId'] == groupId and self.userInfoDict[personId]['IACommand'][i]['IAType'] == IAType:
-                self.userInfoDict[personId]['IACommand'].pop(i)
-                break
 
-        if len(self.userInfoDict[personId]['IACommand']) >= IA_LIMIT_NUM:
-            self.userInfoDict[personId]['IACommand'].pop(0)
-        
-        info = {}
-        info['name'] = funcName
-        info['date'] = Datetime2Str(GetCurrentDateRaw()+expireTime)
-        info['personId'] = personId
-        info['groupId'] = groupId
-        info['args'] = argsList
-        info['IAType'] = IAType
-        info['warning'] = expireWarning
-        info['isRepeat'] = isRepeat
-        info['isValid'] = True
-        self.userInfoDict[personId]['IACommand'].append(info)
-
-    def __GetNickName(self, groupId, personId) -> str:
+    def GetBotData(self, botDataT: BotDataT, args: Sequence[Any] = (), isRef=False, autoCreate=False) -> Dict:
+        # 从外部获取信息, isRef决定给出的是引用还是复制
+        # 在获取不到信息且autoCreate=False时会抛出一个MasterError异常
+        # 若获取不到信息且autoCreate=True, 会自动调用CreateBotData并返回新建的信息
+        # 正常情况下, USER, GROUP, GROUP_MEMBER是必然存在的
+        output = None
         try:
-            nickName = self.nickNameDict[groupId][personId]
-        except:
+            if botDataT == BotDataT.USER:
+                output = self.userInfoDict[args[0]]
+            elif botDataT == BotDataT.GROUP:
+                output = self.groupInfoDict[args[0]]
+            elif botDataT == BotDataT.GROUP_MEMBER:
+                if len(args) == 1:
+                    output = self.memberInfoDict[args[0]]
+                elif len(args) == 2:
+                    output = self.memberInfoDict[args[0]][args[1]]
+            elif botDataT == BotDataT.INIT:
+                output = self.initInfoDict[args[0]]
+            elif botDataT == BotDataT.PC:
+                if len(args) == 1:
+                    output = self.pcStateDict[args[0]]
+                elif len(args) == 2:
+                    output = self.pcStateDict[args[0]][args[1]]
+            elif botDataT == BotDataT.TEAM:
+                output = self.teamInfoDict[args[0]]
+            elif botDataT == BotDataT.QUES:
+                output = self.questionDict
+            elif botDataT == BotDataT.QUERY:
+                output = self.queryInfoDict
+            elif botDataT == BotDataT.QUERY_SYN:
+                output = self.querySynDict
+            elif botDataT == BotDataT.DECK:
+                output = self.deckDict
+            elif botDataT == BotDataT.DISH:
+                output = self.menuDict
+            elif botDataT == BotDataT.JOKE:
+                output = self.jokeDict
+            else:
+                raise MasterError(f'尝试获取信息时给定的类型{botDataT}不在可用范围之内')
+        except MasterError as e:
+            raise e
+        except KeyError as e:
+            if autoCreate:
+                try:
+                    self.CreateBotData(botDataT, args)
+                    output = self.GetBotData(botDataT, args, isRef)
+                    return output
+                except Exception as e:
+                    errorInfo = f'自动创建{BotDataT2Str(botDataT)}信息失败, 参数为{args}'
+                    raise MasterError(errorInfo, type(e), rawError=e)
+            else:
+                errorInfo = f'获取{BotDataT2Str(botDataT)}信息失败, 参数为{args}'
+                raise MasterError(errorInfo, type(e), rawError=e)
+
+        except Exception as e:
+            errorInfo = f'获取{BotDataT2Str(botDataT)}信息失败, 参数为{args}'
+            raise MasterError(errorInfo, type(e), rawError=e)
+
+        if output is None:
+            errorInfo = f'获取{BotDataT2Str(botDataT)}信息失败, 参数为{args}, 输出为None'
+            raise MasterError(errorInfo)
+
+        if isRef:
+            return output
+        else:
+            return copy.deepcopy(output)
+
+    def DelBotData(self, botDataT: BotDataT, args: Sequence[Any]):
+        # 删除给定的信息, 失败会抛出一个MasterError异常
+        try:
+            if botDataT == BotDataT.USER:
+                del self.userInfoDict[args[0]]
+            elif botDataT == BotDataT.GROUP:
+                del self.groupInfoDict[args[0]]
+            elif botDataT == BotDataT.GROUP_MEMBER:
+                if len(args) == 1:
+                    del self.memberInfoDict[args[0]]
+                elif len(args) == 2:
+                    del self.memberInfoDict[args[0]][args[1]]
+            elif botDataT == BotDataT.INIT:
+                del self.initInfoDict[args[0]]
+            elif botDataT == BotDataT.PC:
+                if len(args) == 1:
+                    del self.pcStateDict[args[0]]
+                elif len(args) == 2:
+                    del self.pcStateDict[args[0]][args[1]]
+            elif botDataT == BotDataT.TEAM:
+                del self.teamInfoDict[args[0]]
+            else:
+                raise MasterError(f'尝试删除信息时给定的类型{botDataT}不在可用范围之内')
+        except MasterError as e:
+            raise e
+        except Exception as e:
+            errorInfo = f'获取{BotDataT2Str(botDataT)}信息失败, 参数为{args}'
+            raise MasterError(errorInfo, type(e), rawError=e)
+
+    def CreateBotData(self, botDataT: BotDataT, args: Sequence[Any]):
+        try:
+            if botDataT == BotDataT.USER:
+                self.userInfoDict[args[0]] = copy.deepcopy(dt.userInfoTemp)
+            elif botDataT == BotDataT.GROUP:
+                self.groupInfoDict[args[0]] = copy.deepcopy(dt.groupInfoTemp)
+            elif botDataT == BotDataT.GROUP_MEMBER:
+                if len(args) == 1:
+                    self.memberInfoDict[args[0]] = copy.deepcopy(dt.groupMemberDictTemp)
+                elif len(args) == 2:
+                    if args[0] not in self.memberInfoDict.keys():
+                        self.memberInfoDict[args[0]] = copy.deepcopy(dt.groupMemberDictTemp)
+                    self.memberInfoDict[args[0]][args[1]] = copy.deepcopy(dt.memberInfoTemp)
+                else:
+                    raise MasterError(f'创建{BotDataT2Str(botDataT)}信息的参数{args}不合法')
+            elif botDataT == BotDataT.INIT:
+                self.initInfoDict[args[0]] = copy.deepcopy(dt.initDictTemp)
+            elif botDataT == BotDataT.PC:
+                if len(args) == 1:
+                    self.pcStateDict[args[0]] = copy.deepcopy(dt.groupPcDictTemp)
+                elif len(args) == 2:
+                    if args[0] not in self.pcStateDict.keys():
+                        self.pcStateDict[args[0]] = copy.deepcopy(dt.groupPcDictTemp)
+                    self.pcStateDict[args[0]][args[1]] = copy.deepcopy(dt.pcInfoBasicTemp)
+                else:
+                    raise MasterError(f'创建{BotDataT2Str(botDataT)}信息的参数{args}不合法')
+            elif botDataT == BotDataT.TEAM:
+                self.teamInfoDict[args[0]] = copy.deepcopy(dt.teamInfoTemp)
+            else:
+                raise MasterError(f'尝试删除信息时给定的类型{botDataT}不在可用范围之内')
+        except MasterError as e:
+            raise e
+        except Exception as e:
+            errorInfo = f'创建{BotDataT2Str(botDataT)}信息失败, 参数为{args}'
+            raise MasterError(errorInfo, type(e), rawError=e)
+
+    def GetNickName(self, groupId: str, userId: str) -> str:
+        try:
+            nickName = self.nickNameDict[groupId][userId]
+        except KeyError:
             try:
-                nickName = self.nickNameDict['Private'][personId]
-            except:
-                nickName = self.userInfoDict[personId]['name']
+                nickName = self.nickNameDict['Private'][userId]
+            except KeyError:
+                try:
+                    nickName = self.userInfoDict[userId]['name']
+                except Exception as e:
+                    raise MasterError(f'获取昵称失败, 群号为{groupId}, 姓名为{userId}', type(e))
+        except Exception as e:
+            raise MasterError(f'获取昵称失败, 群号为{groupId}, 姓名为{userId}', type(e))
         return nickName
 
-    def UpdateNickName(self, groupId, personId, nickName) -> str:
+    def UpdateNickName(self, groupId: str, userId: str, nickName: str) -> str:
         try:
             assert type(self.nickNameDict[groupId]) == dict
-        except:
+        except (KeyError, AssertionError):
             self.nickNameDict[groupId] = {}
 
-        if nickName: # 如果指定了昵称, 则更新昵称
+        if nickName:  # 如果指定了昵称, 则更新昵称
             imposterList = []
             for strCur in NAME2TITLE.keys():
                 if nickName.find(strCur) != -1:
                     imposterList.append(strCur)
             if imposterList:
                 return f'{imposterList[0]}是{NAME2TITLE[imposterList[0]]}哦~请换个名字吧!'
-            self.nickNameDict[groupId][personId] = nickName
+            self.nickNameDict[groupId][userId] = nickName
             # 尝试修改先攻列表
             try:
                 initList = self.initInfoDict[groupId]['initList']
@@ -1552,568 +1692,83 @@ class Bot:
                     # 先移除可能的原本角色
                     previousName = None
                     for itemName in initList.keys():
-                        if initList[itemName]['id'] == personId and initList[itemName]['isPC']:
+                        if initList[itemName]['id'] == userId and initList[itemName]['isPC']:
                             previousName = itemName
                             break
                     if previousName:
                         del initList[previousName]
-                    #再修改所有权
-                    initList[nickName]['id'] = personId
+                    # 再修改所有权
+                    initList[nickName]['id'] = userId
                     initList[nickName]['isPC'] = True
                 else:
-                    #在先攻列表中搜索该pc控制的角色
+                    # 在先攻列表中搜索该pc控制的角色
                     previousName = None
                     for itemName in initList.keys():
-                        if initList[itemName]['id'] == personId and initList[itemName]['isPC']:
+                        if initList[itemName]['id'] == userId and initList[itemName]['isPC']:
                             previousName = itemName
                             break
-                    #如果找到, 就新建一份并且删除原有的记录
+                    # 如果找到, 就新建一份并且删除原有的记录
                     if previousName:
                         initList[nickName] = initList[previousName]
                         del initList[previousName]
                 self.initInfoDict[groupId]['initList'] = initList
-                # UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
-            except:
+            except KeyError:
                 pass
 
-            return NN_FEED_STR.format(nickName = nickName)
-        else: # 否则移除原有的昵称
+            return NN_FEED_STR.format(nickName=nickName)
+        else:  # 否则移除原有的昵称
             try:
-                del self.nickNameDict[groupId][personId]
-            except:
+                del self.nickNameDict[groupId][userId]
+            except KeyError:
                 pass
             return NN_RESET_STR
 
-    def __SetNote(self, groupId, index, content) -> str:
-        try:
-            currentGroupInfo = self.groupInfoDict[groupId]
-        except:
-            return ERROR2MASTER_STR
-        if content[0] == '+':
-            try:
-                newContent = currentGroupInfo['note'][index]+'。'+content[1:]
-            except:
-                newContent = content[1:]
-            content = newContent
-        if not index:
-            index = '临时记录'
-        if len(currentGroupInfo['note']) > 20:
-            return NOTE_NUM_LIMIT_STR
-        if len(content) > 300:
-            return NOTE_LEN_LIMIT_STR
-        totalWords = 0
-        for k in currentGroupInfo['note'].keys():
-            totalWords += len(currentGroupInfo['note'][k])
-        if totalWords + len(content) > 2000:
-            return NOTE_TOTAL_LIMIT_STR
-        currentGroupInfo['note'][index] = content
-        return NOTE_FEED_STR.format(index = index)
+    def RegisterIACommand(self, userId, groupId, funcName, argsList, IAType=-1, expireTime=IA_EXPIRE_TIME,
+                          expireWarning='', isRepeat=False):
+        # 查找已有的同类交互指令并删除
+        for i in range(len(self.userInfoDict[userId]['IACommand']) - 1, -1, -1):
+            if self.userInfoDict[userId]['IACommand'][i]['groupId'] == groupId and \
+                    self.userInfoDict[userId]['IACommand'][i]['IAType'] == IAType:
+                self.userInfoDict[userId]['IACommand'].pop(i)
+                break
 
-    def __ClearNote(self, groupId, index) -> str:
-        try:
-            currentGroupInfo = self.groupInfoDict[groupId]
-        except:
-            return ERROR2MASTER_STR
+        if len(self.userInfoDict[userId]['IACommand']) >= IA_LIMIT_NUM:
+            self.userInfoDict[userId]['IACommand'].pop(0)
 
-        if not index:
-            index = '临时记录'
-        if index == '所有笔记':
-            currentGroupInfo['note'] = {}
-            return NOTE_CLEAR_ALL_STR
-        else:
-            if not index in currentGroupInfo['note'].keys():
-                resList = PairSubstring(index, currentGroupInfo['note'].keys())
-                if len(resList) == 1:
-                    index = resList[0]
-                elif len(resList) > 1:
-                    return NOTE_MULT_INDEX_STR.format(resList = resList)
-                else:
-                    return NOTE_MISS_STR
-            del currentGroupInfo['note'][index]
-            return NOTE_CLEAR_STR.format(index = index)
-
-    def __ShowNote(self, groupId, index) -> str:
-        try:
-            currentGroupInfo = self.groupInfoDict[groupId]
-        except:
-            return ERROR2MASTER_STR
-
-        result = ''
-        if not index:
-            result = '所有笔记:\n'
-            for k in currentGroupInfo['note'].keys():
-                result += f'{k}:{currentGroupInfo["note"][k]}\n'
-            result = result[:-1]
-        else:
-            if not index in currentGroupInfo['note'].keys():
-                resList = PairSubstring(index, currentGroupInfo['note'].keys())
-                if len(resList) == 1:
-                    index = resList[0]
-                elif len(resList) > 1:
-                    return NOTE_MULT_INDEX_STR.format(resList = resList)
-                else:
-                    return NOTE_MISS_STR
-            result = f'{index}:{currentGroupInfo["note"][index]}\n'
-        return result
-
-
-    def __GetJRRP(self, personId, date) -> int:
-        seed = 0
-        temp = 1
-        seed += date.year + date.month*13 + date.day*6
-        for c in personId:
-            seed += ord(c) * temp
-            temp += 3
-            if temp > 10:
-                temp = -4
-        seed = int(seed)
-        np.random.seed(seed)
-        value = np.random.randint(0,101)
-        return value
-
-    def __GetInitList(self, groupId) -> str:
-        try: #查找已存在的先攻信息
-            initInfo = self.initInfoDict[groupId]
-        except: #如未找到, 返回错误信息
-            return INIT_MISS_STR
-        
-        sortedInfo = sorted(initInfo['initList'].items(), key = lambda i: i[1]['init'], reverse=True)
-        result = '先攻列表:'
-        index = 1
-        for info in sortedInfo:
-            result += f'\n{index}.{info[0]} 先攻{info[1]["init"]} '
-
-            # 获取生命值信息
-            if info[1]['isPC']:
-                try:
-                    personId = info[1]['id']
-                    pcState = self.pcStateDict[groupId][personId]
-                    hp = pcState['hp']
-                    maxhp = pcState['maxhp']
-                    alive = pcState['alive']
-                except:
-                    hp = 0
-                    maxhp = 0
-                    alive = True
-            else:
-                hp = info[1]['hp']
-                maxhp = info[1]['maxhp']
-                alive = info[1]['alive']
-            if not alive:
-                result += f'昏迷/死亡'
-            elif hp > 0 and maxhp > 0:
-                result += f'HP:{hp}/{maxhp}'
-            elif hp > 0 and maxhp == 0:
-                result += f'HP:{hp}'
-            elif hp < 0 and maxhp == 0:
-                result += f'已损失HP:{-1*hp}'
-            index += 1
-        return result
-    
-    def __ClearInitList(self, groupId) -> str:
-        try: #查找已存在的先攻信息
-            del self.initInfoDict[groupId]
-            # UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
-            return INIT_CLEAR_STR
-        except: #如未找到, 返回错误信息
-            return INIT_CLEAR_FAIL_STR
-
-    def __RemoveInitList(self, groupId, name) -> str:
-        try: #查找已存在的先攻信息
-            initInfo = self.initInfoDict[groupId]
-        except: #如未找到, 返回错误信息
-            return INIT_MISS_STR
-
-        if not name in initInfo['initList'].keys():
-            possName = []
-            for k in initInfo['initList'].keys():
-                if k.find(name) != -1:
-                    possName.append(k)
-            if len(possName) == 0:
-                return INIT_REMOVE_FAIL_STR.format(name = name)
-            elif len(possName) > 1:
-                return INIT_REMOVE_MULT_STR.format(val = [ n for n in possName])
-            else:
-                name = possName[0]
-
-        del initInfo['initList'][name]
-        self.initInfoDict[groupId] = initInfo
-        # UpdateJson(self.initInfoDict, LOCAL_INITINFO_PATH)
-        return INIT_REMOVE_STR.format(name = name)
-   
-    def JoinInitList(self, groupId, personId, name, initAdj, isPC) -> str:
-        try: #查找已存在的先攻信息
-            initInfo = self.initInfoDict[groupId]
-        except: #如未找到, 就创建一个新的先攻信息
-            initInfo = {'date': GetCurrentDateStr(), 'initList':{}}
-
-        if initAdj.find('抗性') != -1 or initAdj.find('易伤') != -1:
-            return '抗性与易伤关键字不能出现在此处!'
-            
-        #initAdj 有两种情况, 一是调整值, 二是固定值
-        if not initAdj or initAdj[0] in ['+','-'] or initAdj[:2] in ['优势','劣势']: #通过符号判断
-            error, resultStr, rollResult = RollDiceCommand('d20'+initAdj)
-        else:
-            error, resultStr, rollResult = RollDiceCommand(initAdj)
-        if error: return resultStr
-        initResult = rollResult.totalValueList[0]
-            
-        hp, maxhp = (0, 0)
-        name = name.lower()
-        flag = True
-        # 处理重复投先攻的情况
-        if not isPC and name.find('#') != -1:
-            index = name.find('#')
-            if isDiceCommand(name[:index]):
-                error, resultStrMulti, rollResultMulti = RollDiceCommand(name[:index])
-                try:
-                    assert error == 0, f'对象次数投骰时出现错误:{resultStrMulti}'
-                    number = rollResultMulti.totalValueList[0]
-                    assert number <= 10, '重复次数超过10次!'
-                    first = ord('a')
-                    nameListStr = ''
-                    for n in range(number):
-                        nameMulti = name[index+1:] + chr(first+n)
-                        nameListStr += nameMulti + ' '
-                        initInfo['initList'][nameMulti] = {'id':personId, 'init':initResult, 'hp':hp, 'maxhp':maxhp, 'alive':True, 'isPC':isPC}
-                    result = f'{nameListStr.strip()}先攻:{resultStr}'
-                    flag = False
-                except Exception as e:
-                    flag = False
-                    result = f'关于{name}的先攻指令不正确:{e}'
-        if flag:
-            initInfo['initList'][name] = {'id':personId, 'init':initResult, 'hp':hp, 'maxhp':maxhp, 'alive':True, 'isPC':isPC}
-            result = f'{name}先攻:{resultStr}'
-        try:
-            if GetCurrentDateRaw() - Str2Datetime(initInfo['date']) > datetime.timedelta(hours=1):
-                result += '\n' + INIT_WARN_STR
-            initInfo['date'] = GetCurrentDateStr()
-        except:
-            pass
-        self.initInfoDict[groupId] = initInfo
-        return result
-
-    def __CookCheck(self, cookAdj, keywordList)->(int, str):
-        #第一个返回值是执行状况, -1为异常, 0为正常
-        result = ''
-        #cookAdj 有两种情况, 一是调整值, 二是固定值
-        if not cookAdj or cookAdj[0] in ['+','-'] or cookAdj[:2] in ['优势','劣势']: #通过符号判断
-            error, resultStr, rollResult = RollDiceCommand('d20'+cookAdj)
-        else:
-            error, resultStr, rollResult = RollDiceCommand(cookAdj)
-        if error: return -1, resultStr
-        cookValue = rollResult.totalValueList[0]
-
-        try:
-            assert self.menuDict
-        except:
-            return -1, INFO_MISS_STR.format(val = '菜谱')
-
-        possDish = []
-        if keywordList:
-            if len(keywordList) > 5:
-                return -1, f'至多指定5个关键词噢~'
-            for key in keywordList:
-                if not key in MENU_KEYWORD_LIST:
-                    return -1, f'{key}不是有效的关键词, 请查看.help烹饪'
-            possDish, delKeyList = self.__FindDishList(keywordList)
-            if len(possDish) == 0:
-                return -1, f'想不到满足要求的食物呢...'
-            if len(delKeyList) != 0:
-                result += f'在无视了关键词{delKeyList}后, '
-        else:
-            possDish = list(self.menuDict.keys())
-
-        SetNumpyRandomSeed()
-        dishName = RandomSelectList(possDish)[0]
-        result += f'于{len(possDish)}个备选中选择了{dishName}\n'
-        dishInfo = self.menuDict[dishName]
-
-        deliValue = 0
-        result += f'在检定时掷出了{resultStr} '
-        if cookValue >= dishInfo['难度']:
-            if cookValue >= dishInfo['难度']+10:
-                result += '完美!\n'
-                deliValue += 10
-            elif cookValue >= dishInfo['难度']+5:
-                result += '非常成功\n'
-                deliValue += 5
-            else:
-                result += '比较成功\n'
-        else:
-            if cookValue <= dishInfo['难度'] - 10:
-                result += '大失败!\n'
-                if keywordList:
-                    possDish, delKeyList = self.__FindDishList(['黑暗']+keywordList)
-                else:
-                    possDish, delKeyList = self.__FindDishList(['黑暗'])
-                dishName = RandomSelectList(possDish)[0]
-                dishInfo = self.menuDict[dishName]
-                result += f'{RandomSelectList(COOK_FAIL_STR_LIST)[0]} 在原来的基础上略加调整, 制作出了{dishName}\n'
-                deliValue -= 10
-            elif cookValue <= dishInfo['难度'] - 5:
-                result += '非常失败!\n'
-                deliValue -= 8
-            else:
-                result += '比较失败!\n'
-                deliValue -= 5
-        deliValue += dishInfo['美味']
-        result += dishInfo['描述'] + '\n成品会因检定结果有所改变。\n'
-        result += f'美味程度:{deliValue}'
-        return 0, result
-
-    def __OrderDish(self, numberStr, keywordList)->(int,str):
-        result = ''
-        number = 1
-        if numberStr:
-            error, resultStr, rollResult = RollDiceCommand(numberStr)
-            if error: return -1, resultStr
-            number = rollResult.totalValueList[0]
-            if number < 1:
-                return -1, ORDER_LIMIT_MIN_STR
-            if number > 5:
-                return -1, ORDER_LIMIT_MAX_STR
-        try:
-            assert self.menuDict
-        except:
-            return -1, INFO_MISS_STR.format(val = '菜谱')
-
-        possDish = []
-        if keywordList:
-            if len(keywordList) > 5:
-                return -1, f'至多指定5个关键词噢~'
-            for key in keywordList:
-                if not key in MENU_KEYWORD_LIST:
-                    return -1, ORDER_INVALID_STR.format(key = key)
-            possDish, delKeyList = self.__FindDishList(keywordList)
-            if len(possDish) == 0:
-                return -1, ORDER_FAIL_ALL_STR
-            if len(delKeyList) != 0:
-                result += ORDER_FAIL_PART_STR.format(delKeyList = delKeyList)
-        else:
-            possDish = list(self.menuDict.keys())
-
-        SetNumpyRandomSeed()
-        dishNameList = RandomSelectList(possDish, number)
-        result += ORDER_FEED_P2_STR.format(num1 = len(possDish), num2 = len(dishNameList))
-        for dishName in dishNameList:
-            dishInfo = self.menuDict[dishName]
-            result += f'{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-        return 0, result[:-1]
-
-    def __FindDishList(self, keywordList) -> (list, list):
-        possDish = []
-        delKeyList = []
-        while len(keywordList) > 0:
-            for dishName in self.menuDict.keys():
-                isValid = True
-                for key in keywordList:
-                    if not key in self.menuDict[dishName]['关键词']:
-                        isValid = False
-                        break
-                if isValid:
-                    possDish.append(dishName)
-            if len(possDish) == 0: # 如果没有找到一个合适的菜肴, 尝试删掉最后一个关键词
-                delKeyList.append(keywordList.pop())
-            else:
-                break # 停止寻找
-        return possDish, delKeyList
-
-    def __BotSwitch(self, groupId, activeState) -> str:
-        self.groupInfoDict[groupId]['active'] = activeState
-        # UpdateJson(self.groupInfoDict, LOCAL_GROUPINFO_PATH)
-        if activeState:
-            return BOT_ON_STR
-        else:
-            return BOT_OFF_STR
-
-    def __GroupFuncSwitch(self, groupId, funcName, activeState) -> str:
-        if funcName not in Str2CommandTypeDict.keys():
-            return '所选的功能不在可选范围内呢, 请输入.help群管理查看'
-        commandTypeDict = Str2CommandTypeDict[funcName]
-        groupInfo = self.groupInfoDict[groupId]
-        if activeState:
-            for c in commandTypeDict:
-                try:
-                    del groupInfo['BanFunc'][int(c)]
-                except:
-                    pass
-            return FUNC_ON_STR.format(funcName = funcName)
-        else:
-            for c in commandTypeDict:
-                groupInfo['BanFunc'][int(c)] = ''
-            return FUNC_OFF_STR.format(funcName = funcName)
-
-    def __GetBannedGroupFunc(self, groupId) -> str:
-        BanFuncList = []
-        bannedGroupCommand = self.groupInfoDict[groupId]['BanFunc']
-        for funcStr in Str2CommandTypeDict.keys():
-            commandTypeDict = Str2CommandTypeDict[funcStr]
-            flag = False
-            for cType in commandTypeDict:
-                if int(cType) in bannedGroupCommand:
-                    flag = True
-                    continue
-            if flag:
-                BanFuncList.append(funcStr)
-        if BanFuncList:
-            resultStr = '目前没有被禁用的功能哦~'
-        else:
-            resultStr = f'目前被禁用的功能是{BanFuncList}~'
-
-        return resultStr
-
-    def __GetGroupMemberInfo(self, groupId) -> str:
-        def GetGroupUselessRate(groupInfo):
-            prevRate = (10*groupInfo['dndCommandAccu'] + 2*groupInfo['commandAccu'])/groupInfo['messageAccu']
-            prevRate = 1 - min(prevRate, 1)
-            curRate = (10*groupInfo['dndCommandDaily'] + 2*groupInfo['commandDaily'])/groupInfo['messageDaily']
-            curRate = 1 - min(curRate, 1)
-            gamma = (min(groupInfo['days'], 30)/30) * 0.5 # 历史数据的权重, 群存在时间越久权重越高
-            finalRate = gamma*prevRate + (1-gamma)*curRate
-            finalRate = int(100*finalRate)
-            return finalRate
-        groupInfo = self.groupInfoDict[groupId]
-        memberInfo = self.memberInfoDict[groupId]
-        result = ''
-        result += f'群名称: {groupInfo["name"]}\n'
-        result += f'活跃群成员数量 {len(memberInfo)}\n'
-        result += f'好感度排名:\n'
-        memberList = []
-        for userId in memberInfo.keys():
-            try:
-                userInfo = self.userInfoDict[userId]
-                lastTime = GetCurrentDateRaw() - Str2Datetime(memberInfo[userId]['activeDate'] )
-                assert lastTime <= datetime.timedelta(days = 7)
-            except:
-                continue
-            memberList.append((self.__GetNickName(groupId, userId), userInfo['credit']))
-        memberList = sorted(memberList, key = lambda x : x[1], reverse = True)[:10]
-        for i in range(len(memberList)):
-            result += f'{i+1}. {memberList[i][0]}\n'
-        result += f'潮湿程度: {GetGroupUselessRate(groupInfo)}%'
-        return result
-
-
-    @TypeAssert(times = int)
-    def __DNDBuild(self, times) -> str:        
-        result = ''
-        for i in range(times):
-            error, resultStr, rollResult = RollDiceCommand(f'6#4d6k3')
-            result += f'力量:{rollResult.rawResultList[0][0]}  敏捷:{rollResult.rawResultList[1][0]}  体质:{rollResult.rawResultList[2][0]}  '
-            result += f'智力:{rollResult.rawResultList[3][0]}  感知:{rollResult.rawResultList[4][0]}  魅力:{rollResult.rawResultList[5][0]}'
-            result += f'  共计:{sum(rollResult.totalValueList)}'
-            if i != (times-1) and times != 1:
-                result += '\n'
-        return result
-
-    @TypeAssert(targetStr = str)
-    def __QueryInfo(self, targetStr, personId, groupId) -> str:
-        if not self.queryInfoDict:
-            return INFO_MISS_STR.format(val = '查询')
-        
-        if not targetStr:
-            return QUERY_NOTICE_STR.format(num = len(self.queryInfoDict))
-
-        try:
-            result = self.queryInfoDict[targetStr]
-            self.dailyInfoDict['querySucc'] += 1
-            return result
-        except:
-            # 尝试替换同义词
-            if targetStr in self.querySynDict.keys():
-                targetStr = self.querySynDict[targetStr]
-                result = self.queryInfoDict[targetStr]
-                self.dailyInfoDict['querySucc'] += 1
-                return result
-
-            # 无法直接找到结果, 尝试搜索
-            keywordList = [k for k in targetStr.split('/') if k]
-            if len(keywordList) > 5:
-                return QUERY_KEY_LIMIT_STR
-            possResult = PairSubstringList(keywordList, self.queryInfoDict.keys())
-
-            if len(possResult) > 1:
-                result = ''
-                for i in range(min(len(possResult), QUERY_SHOW_LIMIT)):
-                    result += f'{i+1}.{possResult[i]} '
-                if len(possResult) <= QUERY_SHOW_LIMIT:
-                    result = QUERY_MULT_SHORT_STR.format(info = result[:-1])
-                else:
-                    result = QUERY_MULT_LONG_STR.format(info = result[:-1], num = len(possResult))
-                self.dailyInfoDict['queryMult'] += 1
-                self.RegisterIACommand(personId, groupId, 'IA_QueryInfoWithIndex', [targetStr], 0, isRepeat = True)
-                return result
-            elif len(possResult) == 1:
-                result = str(self.queryInfoDict[possResult[0]])
-                result = QUERY_FEED_COMP_STR.format(key = possResult[0], result = result)
-                self.dailyInfoDict['querySucc'] += 1
-                return result
-            else:
-                self.dailyInfoDict['queryFail'] += 1
-                return QUERY_MISS_STR
+        info = dict()
+        info['name'] = funcName
+        info['date'] = Datetime2Str(GetCurrentDateRaw() + expireTime)
+        info['personId'] = userId
+        info['groupId'] = groupId
+        info['args'] = argsList
+        info['IAType'] = IAType
+        info['warning'] = expireWarning
+        info['isRepeat'] = isRepeat
+        info['isValid'] = True
+        self.userInfoDict[userId]['IACommand'].append(info)
 
     def IA_QueryInfoWithIndex(self, IAInfo, index) -> str:
         targetStr = IAInfo['args'][0]
         try:
             index = int(index)
-            assert index > 0 and index <= QUERY_SHOW_LIMIT
-        except:
-            return None
+            assert 0 < index <= QUERY_SHOW_LIMIT
+        except (ValueError, AssertionError):
+            return ''
         keywordList = [k for k in targetStr.split('/') if k]
         possResult = PairSubstringList(keywordList, self.queryInfoDict.keys())
         try:
             assert index <= len(possResult)
-            return self.queryInfoDict[possResult[index-1]]
-        except:
-            return None
-
-
-    @TypeAssert(targetStr = str)
-    def __IndexInfo(self, targetStr, personId, groupId) -> str:
-        if not self.queryInfoDict:
-            return INFO_MISS_STR.format(val = '查询')
-        
-        if not targetStr:
-            return QUERY_NOTICE_STR.format(num = len(self.queryInfoDict))
-
-        possResult = []
-        keywordList = [k for k in targetStr.split('/') if k]
-        if len(keywordList) > 5:
-            return QUERY_KEY_LIMIT_STR
-
-        # 开始索引
-        for item in self.queryInfoDict:
-            valid = True
-            itemInfo = item.lower() + self.queryInfoDict[item].lower()
-            for k in keywordList:
-                if not k in itemInfo:
-                    valid = False
-                    break
-            if valid:
-                possResult.append(item)
-        if len(possResult) == 0:
-            return INDEX_MISS_STR.format(keywordList = keywordList)
-        elif len(possResult) == 1:
-            return QUERY_FEED_COMP_STR.format(key = possResult[0], result = self.queryInfoDict[possResult[0]])
-        else:
-            result = ''
-            for i in range(min(len(possResult), QUERY_SHOW_LIMIT)):
-                result += f'{i+1}.{possResult[i]} '
-            if len(possResult) <= QUERY_SHOW_LIMIT:
-                result = QUERY_MULT_SHORT_STR.format(info = result[:-1])
-            else:
-                result = QUERY_MULT_LONG_STR.format(info = result[:-1], num = len(possResult))
-            self.RegisterIACommand(personId, groupId, 'IA_IndexInfoWithIndex', [targetStr], 0, isRepeat = True)
-            return result
+            return self.queryInfoDict[possResult[index - 1]]
+        except AssertionError:
+            return ''
 
     def IA_IndexInfoWithIndex(self, IAInfo, index) -> str:
         targetStr = IAInfo['args'][0]
         try:
             index = int(index)
-            assert index > 0 and index <= QUERY_SHOW_LIMIT
-        except:
-            return None
+            assert 0 < index <= QUERY_SHOW_LIMIT
+        except (ValueError, AssertionError):
+            return ''
         keywordList = [k for k in targetStr.split('/') if k]
         possResult = []
         # 开始索引
@@ -2121,83 +1776,19 @@ class Bot:
             valid = True
             itemInfo = item.lower() + self.queryInfoDict[item].lower()
             for k in keywordList:
-                if not k in itemInfo:
+                if k not in itemInfo:
                     valid = False
                     break
             if valid:
                 possResult.append(item)
         try:
             assert index <= len(possResult)
-            return self.queryInfoDict[possResult[index-1]]
-        except:
-            return None
+            return self.queryInfoDict[possResult[index - 1]]
+        except AssertionError:
+            return ''
 
-    @TypeAssert(targetStr = str)
-    def __DrawInfo(self, targetStr, timesStr = '1') -> str:
-        if not self.deckDict:
-            return INFO_MISS_STR.format(val = '牌堆')
-        if not targetStr:
-            return DRAW_NOTICE_STR.format(num = len(self.deckDict), val = list(self.deckDict.keys()))
-
-        try:
-            times = int(timesStr)
-            assert times >= 1
-            assert times <= 10
-        except:
-            return DRAW_NUM_LIMIT_STR
-
-        try:
-            targetDeck = self.deckDict[targetStr]
-            result = DrawFromDeck(targetDeck, self.deckDict, times = times)
-            result = DRAW_FEED_STR.format(targetStr = targetStr, result = result)
-            return result
-        except:
-            # 无法直接找到结果, 尝试搜索
-            possResult = []
-            keywordList = [k for k in targetStr.split('/') if k]
-            if len(keywordList) > 5:
-                return QUERY_KEY_LIMIT_STR
-
-            # 开始逐个搜索
-            for k in self.deckDict.keys():
-                isPoss = True
-                for keyword in keywordList:
-                    if k.find(keyword) == -1:
-                        isPoss = False
-                        break
-                if isPoss:
-                    possResult.append(k)
-
-            if len(possResult) > 1:
-                if len(possResult) <= 30:
-                    result = DRAW_MULT_SHORT_STR.format(info = possResult)
-                else:
-                    result = DRAW_MULT_LONG_STR.format(info = possResult[:30], num = len(possResult))
-                return result
-            elif len(possResult) == 1:
-                result = DrawFromDeck(self.deckDict[possResult[0]], self.deckDict, times = times)
-                result = DRAW_FEED_STR.format(targetStr = possResult[0], result = result)
-                return result
-            else:
-                return QUERY_MISS_STR
-
-    def __StartExam(self, examKey, personId, groupId, questionNum = 10) -> str:
-        if not examKey in self.questionDict.keys():
-            return EXAM_MISS_STR.format(key = examKey)
-
-        size = len(self.questionDict[examKey])
-        questionNum = min(size, questionNum)
-        questionIndexList = np.random.permutation(size)[:questionNum].tolist()
-        examState = [0,0,0] # 当前序号, 正确, 错误数量
-        self.RegisterIACommand(personId, groupId, 'IA_AnserQuestion', [examKey, questionIndexList, examState], 1, datetime.timedelta(seconds = 120), EXAM_EXPIRE_STR)
-        result = f'{examKey}考试开始啦, 下面是从{size}道题中为你随机选择的{questionNum}道题~\n'
-        result += '判断题输入T/F 或 Y/N回答, 选择题请输入序号。答案是大小写都可以\n每道题只有2分钟的有效时间, 错过了就请重新开始吧~\n'
-        result += '输入Q即可中止考试\n'
-        result += f'听好咯, 第一道题目是:\n{self.questionDict[examKey][questionIndexList[0]][0]}'
-        return result
-
-    def IA_AnserQuestion(self, IAInfo, answer) -> str:
-        personId = IAInfo['personId']
+    def IA_AnswerQuestion(self, IAInfo, answer) -> str:
+        userId = IAInfo['personId']
         groupId = IAInfo['groupId']
         examKey, questionIndexList, examState = IAInfo['args']
         questionInfo = self.questionDict[examKey][questionIndexList[examState[0]]]
@@ -2205,7 +1796,7 @@ class Bot:
         if answer == 'Q':
             return f'那么考试就到这里咯~ 你总共答对了{examState[1]}道题, 答错了{examState[2]}道题'
         groundTruth = questionInfo[1]
-        explaination = questionInfo[2]
+        quesExp = questionInfo[2]
         isCorrect = False
         if groundTruth == 'T' or groundTruth == 'F':
             if groundTruth == 'T' and (answer == 'T' or answer == 'Y'):
@@ -2219,309 +1810,108 @@ class Bot:
             result += EXAM_TRUE_STR
             examState[1] += 1
         else:
-            result += EXAM_FALSE_STR.format(answer = groundTruth)
+            result += EXAM_FALSE_STR.format(answer=groundTruth)
             examState[2] += 1
-        if explaination:
-            result += f'解析: {explaination}\n\n'
+        if quesExp:
+            result += f'解析: {quesExp}\n\n'
 
         examState[0] += 1
         if examState[0] < len(questionIndexList):
-            self.RegisterIACommand(personId, groupId, 'IA_AnserQuestion', [examKey, questionIndexList, examState], 1, datetime.timedelta(seconds = 120), EXAM_EXPIRE_STR)
-            result += f'\n下一道题来咯!\n第{examState[0]+1}题:{self.questionDict[examKey][questionIndexList[examState[0]]][0]}'
+            self.RegisterIACommand(userId, groupId, 'IA_AnswerQuestion', [examKey, questionIndexList, examState], 1,
+                                   datetime.timedelta(seconds=120), EXAM_EXPIRE_STR)
+            result += f'\n下一道题来咯!\n第{examState[0] + 1}题:'
+            result += self.questionDict[examKey][questionIndexList[examState[0]]][0]
         else:
-            result += f'\n考试结束咯, 你答对了{len(questionIndexList)}道题中的{examState[1]}道, 正确率为{100*examState[1]/len(questionIndexList)}%~'
-        return result
-
-    def __GetTodayMenu(self, personId, date) -> str:
-        seed = 0
-        temp = 1
-        seed += date.year + date.month*13 + date.day*6
-        for c in personId:
-            seed += ord(c) * temp
-            temp += 3
-            if temp > 10:
-                temp = -4
-        seed = int(seed)
-        np.random.seed(seed)
-
-        try:
-            assert self.menuDict
-        except:
-            return INFO_MISS_STR.format(val = '菜谱')
-
-        result = ''
-        todayCuisine = RandomSelectList(MENU_CUISINE_LIST)[0]
-        todayStyle = RandomSelectList(MENU_STYLE_LIST)[0]
-        result += f'今日菜单主题是{todayCuisine}与{todayStyle}噢~\n'
-        usedDishList = []
-        for typeStr in MENU_TYPE_LIST:
-            possDish, delKeyList = self.__FindDishList([typeStr, todayCuisine, todayStyle])
-            if len(possDish) != 0 and len(delKeyList) <= 1:
-                dishName = RandomSelectList(possDish, 1)[0]
-                if dishName in usedDishList:
-                    continue
-                usedDishList.append(dishName)
-                dishInfo = self.menuDict[dishName]
-                result += f'{typeStr}:{dishName} {dishInfo["价格"]}\n{dishInfo["描述"]}\n'
-
-        return result[:-1]
-
-    def __GetTodayJoke(self, personId, date) -> str:
-        seed = 0
-        temp = 1
-        seed += date.year + date.month*13 + date.day*6
-        for c in personId:
-            seed += ord(c) * temp
-            temp += 3
-            if temp > 10:
-                temp = -4
-        seed = int(seed)
-        np.random.seed(seed)
-
-        try:
-            assert self.jokeDict
-        except:
-            return INFO_MISS_STR.format(val = '笑话')
-
-        wordSize = len(self.jokeDict['word'])
-        imgSize = len(self.jokeDict['img'])
-        index = np.random.randint(wordSize+imgSize)
-        if index < wordSize or IS_COOLQ_PRO == False:
-            jokeCur = RandomSelectList(self.jokeDict['word'], 1)[0]
-        else:
-            index = index - wordSize
-            fileName = self.jokeDict['img'][index]
-            absPath = os.path.join(LOCAL_JOKEIMG_DIR_PATH, fileName)
-            jokeCur = f'[CQ:image,file=file:///{absPath}]'
-        return jokeCur
-
-    @TypeAssert(subType = str)
-    def __GetHelpInfo(self, subType) -> str:
-        if subType == '':
-            return HELP_STR
-        elif subType == '指令':
-            return HELP_COMMAND_STR
-        elif subType == '链接':
-            return HELP_LINK_STR
-        elif subType == '协议':
-            return HELP_AGREEMENT_STR
-        elif subType == '更新':
-            return HELP_COMMAND_UPDATE_STR
-        elif subType == '交互':
-            return HELP_IA_STR
-        elif subType == 'r':
-            return HELP_COMMAND_R_STR
-        elif subType == 'nn':
-            return HELP_COMMAND_NN_STR
-        elif subType == 'ri':
-            return HELP_COMMAND_RI_STR
-        elif subType == 'dnd':
-            return HELP_COMMAND_DND_STR
-        elif subType == 'init':
-            return HELP_COMMAND_INIT_STR
-        elif subType == 'welcome':
-            return HELP_COMMAND_WELCOME_STR
-        elif subType == 'name':
-            return HELP_COMMAND_NAME_STR
-        elif subType == '查询':
-            return HELP_COMMAND_QUERY_STR
-        elif subType == 'hp':
-            return HELP_COMMAND_HP_STR
-        elif '法术位' in subType:
-            return HELP_COMMAND_SpellSlot_STR
-        elif '金钱' in subType:
-            return HELP_COMMAND_Money_STR
-        elif subType == '长休':
-            return HELP_COMMAND_LONGREST_STR
-        elif subType == '笔记':
-            return HELP_COMMAND_NOTE_STR
-        elif subType == 'jrrp':
-            return HELP_COMMAND_JRRP_STR
-        elif subType == 'send':
-            return HELP_COMMAND_SEND_STR
-        elif subType == 'draw':
-            return HELP_COMMAND_DRAW_STR
-        elif subType == '烹饪':
-            return HELP_COMMAND_COOK_STR
-        elif subType == '点菜':
-            return HELP_COMMAND_ORDER_STR
-        elif subType == '答题':
-            return HELP_COMMAND_QUESTION_STR
-        elif subType == '今日菜单':
-            return HELP_COMMAND_MENU_STR
-        elif '角色卡' in subType or '人物卡' in subType:
-            return HELP_COMMAND_PC_STR
-        elif '队伍' in subType:
-            return HELP_COMMAND_TEAM_STR
-        elif '检定' in subType:
-            return HELP_COMMAND_CHECK_STR
-        elif subType == '技能':
-            return HELP_COMMAND_SKILL_STR
-        elif subType == '群管理':
-            return HELP_COMMAND_GROUP_STR
-        else:
-            return None
-
-    def GetWelcome(self, groupId) -> str:
-        result = ''
-        try:
-            groupId = str(groupId)
-            result = self.groupInfoDict[groupId]['welcome']
-        except Exception as e:
-            print(e)
+            result += (f'\n考试结束咯, 你答对了{len(questionIndexList)}道题中的{examState[1]}道'
+                       f', 正确率为{100 * examState[1] / len(questionIndexList)}%~')
         return result
 
 
+def CreateNewUserInfo(userDict, userId):
+    userDict[userId] = copy.deepcopy(dt.userInfoTemp)
 
-def DrawFromDeck(deck, allDeck, deep=1, times = 1) -> str:
-    result = ''
-    if times < 1:
-        return '抽卡次数不能为0'
-    if times > 10:
-        return '抽卡上限为10'
-    if deep > 5:
-        return '达到迭代上限: 5'
-    for t in range(times):
-        for d in range(deep):
-            result += '  '
-        if times != 1:
-            result += f'\n第{t+1}次:'
-        randWeight = np.random.randint(deck['totalWeight'])+1
-        selectedItem = None
-        for item in deck['list']:
-            randWeight -= item['weight']
-            if randWeight <= 0:
-                selectedItem = item
-                break
-        if not selectedItem:
-            return f'未知的错误发生了: 权重总值不正确'
-        for c in item['content']:
-            if c[0] == 'TEXT':
-                result += c[1]
-            elif c[0] == 'ROLL':
-                error, resultStr, rollResult = RollDiceCommand(c[1])
-                if error: # 不应该发生的情况
-                    return f'牌堆信息存在错误: 投骰表达式不正确 {resultStr} raw:{selectedItem["raw"]}'
-                result += resultStr
-            elif c[0] == 'DRAW':
-                args = c[1].split('/')
-                target = args[0]
-                try:
-                    drawTimes = args[1]
-                    error, resultStr, rollResult = RollDiceCommand(drawTimes)
-                    assert error == 0
-                    drawTimes = rollResult.totalValueList[0]
-                    timeStr = resultStr + '次\n'
-                except:
-                    timeStr = ''
-                    drawTimes = 1
-                newResult = DrawFromDeck(allDeck[target], allDeck, deep+1, drawTimes)
-                result += f'抽取{target} {timeStr}{newResult}\n'
-            else: # 不应该发生的情况
-                return f'该段信息存在错误: 关键词错误 {c} raw:{selectedItem["raw"]}'
-
-        if selectedItem['end']:
-            result += '\n抽取终止'
-            break
-    return result.strip()
-
-def GenerateName(nameInfoDict, target, times):
-    if not nameInfoDict:
-        return INFO_MISS_STR.format(val = '姓名')
-    if not target:
-        return f'当前可选的姓名有:{list(nameInfoDict["meta"].keys())}'
-    if not target in nameInfoDict['meta'].keys():
-        targetList = target.split('/')
-        possTarget = PairSubstringList(targetList, nameInfoDict['meta'].keys())
-        if len(possTarget) == 0:
-            return f'无法找到与{target}相关的姓名库~'
-        elif len(possTarget) > 1:
-            return f'找到多个相关的姓名库: {possTarget}'
-        else:
-            target = possTarget[0]
-
-    # 正式开始生成
-    result = f'随机{target}姓名:'
-    for i in range(times):
-        detailInfo = RandomSelectList(nameInfoDict['meta'][target])[0] # 示例: ['达马拉人', 0, 2]
-        chinesePart = ''
-        englishPart = ''
-        for i in range(1, len(detailInfo)):
-            tempInfo = RandomSelectList(nameInfoDict['info'][detailInfo[0]][detailInfo[i]])[0]
-            englishPart += tempInfo[0] + '·'
-            chinesePart += tempInfo[1] + '·'
-        result += f'\n{chinesePart[:-1]} ({englishPart[:-1]})'
-    return result
-        
-
-def CreateNewUserInfo(userDict, personId):
-    userDict[personId] = copy.deepcopy(userInfoTemp)
 
 def CreateNewGroupInfo(groupDict, groupId):
-    groupDict[groupId] = copy.deepcopy(groupInfoTemp)
+    groupDict[groupId] = copy.deepcopy(dt.groupInfoTemp)
+
 
 def CreateNewGroupMemberInfo(memberDict, groupId):
-    memberDict[groupId] = copy.deepcopy(groupMemberDictTemp)
+    memberDict[groupId] = copy.deepcopy(dt.groupMemberDictTemp)
 
-def CreateNewMemberInfo(groupMemberDict, personId):
-    groupMemberDict[personId] = copy.deepcopy(memberInfoTemp)
+
+def CreateNewMemberInfo(groupMemberDict, userId):
+    groupMemberDict[userId] = copy.deepcopy(dt.memberInfoTemp)
+
 
 def UpdateInfoDictByTemplate(inputDict, tempDict):
-    deleteInfoPair = []
-    deleteList = []
     outputDict = copy.deepcopy(inputDict)
 
     for keyId in inputDict.keys():
         infoCur = outputDict[keyId]
         if type(infoCur) != dict:
-            del outputDict[key]
+            del outputDict[keyId]
             continue
 
         for curK in infoCur.keys():
-            if not curK in tempDict.keys():
+            if curK not in tempDict.keys():
                 del outputDict[keyId][curK]
 
         for tempK in tempDict.keys():
-            if not tempK in infoCur.keys():
+            if tempK not in infoCur.keys():
                 outputDict[keyId][tempK] = tempDict[tempK]
     return outputDict
 
 
+def UpdateDictByTemplate(inputDict, tempDict):
+    outputDict = copy.deepcopy(inputDict)
+
+    for curK in inputDict.keys():
+        if curK not in tempDict.keys():
+            del outputDict[curK]
+
+    for tempK in tempDict.keys():
+        if tempK not in inputDict.keys():
+            outputDict[tempK] = tempDict[tempK]
+    return outputDict
+
+
 def UpdateAllUserInfo(bot):
-    outputDict = UpdateInfoDictByTemplate(bot.userInfoDict, userInfoTemp)
-    bot.userInfoDict = copy.deepcopy(outputDict)
+    bot.userInfoDict = UpdateInfoDictByTemplate(bot.userInfoDict, dt.userInfoTemp)
 
 
 def UpdateAllGroupInfo(bot):
-    outputDict = UpdateInfoDictByTemplate(bot.groupInfoDict, groupInfoTemp)
-    bot.groupInfoDict = copy.deepcopy(outputDict)
+    bot.groupInfoDict = UpdateInfoDictByTemplate(bot.groupInfoDict, dt.groupInfoTemp)
 
 
 def UpdateAllMemberInfo(bot):
     for groupId in bot.memberInfoDict.keys():
-        outputDict = UpdateInfoDictByTemplate(bot.memberInfoDict[groupId], memberInfoTemp)
-        bot.memberInfoDict[groupId] = copy.deepcopy(outputDict)
+        bot.memberInfoDict[groupId] = UpdateInfoDictByTemplate(bot.memberInfoDict[groupId], dt.memberInfoTemp)
+
+
+def UpdateMasterInfo(bot):
+    bot.masterInfoDict = UpdateDictByTemplate(bot.masterInfoDict, dt.masterInfoTemp)
 
 
 def UpdateDailyInfoDict(dailyDict):
     try:
         assert (GetCurrentDateRaw() - Str2Datetime(dailyDict['date'])) < datetime.timedelta(days=1)
         for k in dailyDict.keys():
-            assert k in dailyInfoTemp.keys()
-    except:
-        dailyDict = copy.deepcopy(dailyInfoTemp)
+            assert k in dt.dailyInfoTemp.keys()
+    except (AssertionError, KeyError):
+        dailyDict = copy.deepcopy(dt.dailyInfoTemp)
         dailyDict['date'] = GetCurrentDateStr()
-    for k in dailyInfoTemp.keys():
-        if not k in dailyDict.keys():
-            dailyDict[k] = copy.deepcopy(dailyInfoTemp[k])
+    for k in dt.dailyInfoTemp.keys():
+        if k not in dailyDict.keys():
+            dailyDict[k] = copy.deepcopy(dt.dailyInfoTemp[k])
     return dailyDict
 
-def DetectSpam(currentDate, lastDateStr, accuNum, weight = 1) -> (bool, str, int):
+
+def DetectSpam(currentDate, lastDateStr, accuNum, weight=1) -> (bool, str, int):
     lastDate = Str2Datetime(lastDateStr)
     if currentDate - lastDate > MESSAGE_LIMIT_TIME:
         return False, Datetime2Str(currentDate), 0
     else:
         if accuNum + weight < MESSAGE_LIMIT_NUM:
-            return False, lastDateStr, accuNum+weight
+            return False, lastDateStr, accuNum + weight
         else:
-            return True, lastDateStr, accuNum+weight
+            return True, lastDateStr, accuNum + weight
