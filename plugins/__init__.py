@@ -18,6 +18,7 @@ parent_path = os.path.abspath(os.path.dirname(os.path.abspath(__file__)) + os.pa
 sys.path.append(parent_path)
 
 from bot_core import Bot, CoolqCommandType
+from utils import CommandResult
 from custom_config import *
 
 bot = Bot()
@@ -84,8 +85,10 @@ async def _(session: CommandSession):
         #         uname = memberInfo['card']
         # except Exception as e:
         #     print(e)
-
-    commandResult = await bot.ProcessMessage(content, uid, uname, groupId, onlyToMe)
+    try:
+        commandResult = await bot.ProcessMessage(content, uid, uname, groupId, onlyToMe)
+    except Exception as e:
+        commandResult = CommandResult(CoolqCommandType.MESSAGE, str(e), personIdList=MASTER)
 
     session.state['result'] = commandResult
 

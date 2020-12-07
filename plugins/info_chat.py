@@ -146,7 +146,7 @@ CHAT_COMMAND_COMMON = {'the shadow.*': [(CHAT_CREDIT_LV0, 'The shadow! (激动�
                                     (CHAT_CREDIT_LV4, '$完全搞懂了$玩家手册我完全搞懂了, 找时间带团吧~'),
                                     (CHAT_CREDIT_LV4, '$没有思考$你们走进房间, 房间里全是公主和小马...'),
                                     (CHAT_CREDIT_LV4, '$看书$高大的留着长长白胡须的老人, 戴着歪向一边的尖顶帽子, 穿着污损的灰色长袍, 身边有七只金丝雀...'), ],
-                       '赞.?': [(CHAT_CREDIT_LV2, '$点赞$'), (CHAT_CREDIT_LV3, '$双重点赞$')]
+                       '赞.+': [(CHAT_CREDIT_LV2, '$点赞$'), (CHAT_CREDIT_LV4, '$双重点赞$')]
                        }
 
 GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',
@@ -200,7 +200,7 @@ SPELL_SLOT_ADJ_INVALID_STR = '{val}是无效的法术位调整值~ 合法范围:
 SEND_LEN_LIMIT_STR = '请不要随便骚扰Master哦~ (信息长度限制为10~100)'  # 给Master发送的信息超过范围后的提示
 SEND_FEED_STR = '已将信息转发给Master了~'  # 给Master发送信息后的提示
 EXAM_LIST_STR = '当前可用的题库是: {val}'  # 题库列表
-EXAM_MISS_STR = '找不到这个题库哦~'  # 找不到题库
+# EXAM_MISS_STR = '找不到这个题库哦~'  # 找不到题库
 EXAM_MULT_STR = '想找的是哪一个题库呢?\n{possKey}'  # 找到多个题库
 WELCOME_FEED_STR = '已将入群欢迎词设为:'  # 设置入群关键词
 WELCOME_CLEAR_STR = '已经关闭入群欢迎'  # 关闭入群关键词

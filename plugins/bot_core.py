@@ -1173,7 +1173,7 @@ class Bot:
             else:
                 subType = command.cArg[0]
                 if subType == '记录':
-                    error, result = tp.SetMoney(self, groupId, userId, command.cArg[1])
+                    result = tp.SetMoney(self, groupId, userId, command.cArg[1])
                 elif subType == '清除':
                     result = tp.ClearMoney(self, groupId, userId)
                 elif subType == '更改':
