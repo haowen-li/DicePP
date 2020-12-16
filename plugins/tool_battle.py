@@ -105,30 +105,30 @@ def AddElemToInit(bot, groupId: str, userId: str, name: str, initAdj: str, isPC:
 
     hp, maxhp = (0, 0)
     name = name.lower()
-    flag = True
     # 处理重复投先攻的情况
     if not isPC and name.find('#') != -1:
         index = name.find('#')
-        if isDiceCommand(name[:index]):
-            error, resultStrMulti, rollResultMulti = RollDiceCommand(name[:index])
+        if index == (len(name)-1):
+            raise UserError('先攻条目的名称不能为空!')
+        prefixN, subfixN = name[:index], name[index + 1:]
+        if isDiceCommand(prefixN):
+            error, resultStrMulti, rollResultMulti = RollDiceCommand(prefixN)
+            first = ord('a')
             try:
                 assert error == 0, f'对象次数投骰时出现错误:{resultStrMulti}'
                 number = rollResultMulti.totalValueList[0]
                 assert number <= 10, '重复次数超过10次!'
-                first = ord('a')
                 nameListStr = ''
                 for n in range(number):
-                    nameMulti = name[index + 1:] + chr(first + n)
+                    nameMulti = subfixN + chr(first + n)
                     nameListStr += nameMulti + ' '
                     initInfo['initList'][nameMulti] = copy.deepcopy(dt.initInfoTemp)
                     initInfo['initList'][nameMulti].update(
                         {'id': userId, 'init': initResult, 'hp': hp, 'maxhp': maxhp, 'alive': True, 'isPC': isPC})
                 result = f'{nameListStr.strip()}先攻:{resultStr}'
-                flag = False
             except Exception as e:
-                flag = False
                 raise UserError(f'关于{name}的先攻指令不正确:{e}')
-    if flag:
+    else:
         initInfo['initList'][name] = copy.deepcopy(dt.initInfoTemp)
         initInfo['initList'][name].update(
             {'id': userId, 'init': initResult, 'hp': hp, 'maxhp': maxhp, 'alive': True, 'isPC': isPC})

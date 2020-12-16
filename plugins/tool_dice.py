@@ -72,6 +72,8 @@ def RollDiceCommand(diceCommand) -> (int, str, list):
     length = 0  # 用于记录在diceCommand的哪个部分插入默认骰
     defaultDiceType = '20'
     for i in range(len(diceList)):
+        if len(diceList[i]) == 0:
+            return -1, f'{diceCommand}含有非法表达式!', None
         length += len(diceList[i])
         if diceList[i][-1] == 'D':
             diceList[i] += defaultDiceType
