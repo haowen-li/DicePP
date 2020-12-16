@@ -779,7 +779,7 @@ class Bot:
 
         # 检查该指令是否被该群禁用
         if groupId:
-            if int(command.cType) in groupInfoCur['BanFunc'].keys():
+            if str(int(command.cType)) in groupInfoCur['BanFunc'].keys():
                 return [CommandResult(CoolqCommandType.MESSAGE, FUNC_BAN_NOTICE)]
 
         # 统计命令次数

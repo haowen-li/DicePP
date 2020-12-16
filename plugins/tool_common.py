@@ -56,13 +56,13 @@ def GroupFuncSwitch(bot, groupId: str, funcName: str, activeState: bool) -> str:
     if activeState:
         for c in commandTypeDict:
             try:
-                del groupInfo['BanFunc'][int(c)]
+                del groupInfo['BanFunc'][str(int(c))]
             except KeyError:
                 pass
         return FUNC_ON_STR.format(funcName=funcName)
     else:
         for c in commandTypeDict:
-            groupInfo['BanFunc'][int(c)] = ''
+            groupInfo['BanFunc'][str(int(c))] = ''
         return FUNC_OFF_STR.format(funcName=funcName)
 
 
@@ -73,8 +73,8 @@ def GetBannedGroupFunc(bot, groupId: str) -> str:
     for funcStr in Str2CommandTypeDict.keys():
         commandTypeDict = Str2CommandTypeDict[funcStr]
         flag = False
-        for cType in commandTypeDict:
-            if int(cType) in bannedGroupCommand:
+        for c in commandTypeDict:
+            if str(int(c)) in bannedGroupCommand:
                 flag = True
                 continue
         if flag:
