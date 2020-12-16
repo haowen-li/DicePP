@@ -1,7 +1,7 @@
 import collections
 import copy
 
-from typing import Any, Dict, Sequence
+from typing import Any, Dict, Sequence, List
 
 from tool_dice import RollDiceCommand, SplitDiceCommand, SplitNumberCommand, isDiceCommand
 import tool_pc as tp
@@ -638,7 +638,7 @@ class Bot:
             await self.UpdateLocalData()
         return result
 
-    async def ProcessMessage(self, inputStr, userId, personName, groupId=None, onlyToMe=False):
+    async def ProcessMessage(self, inputStr, userId, personName, groupId=None, onlyToMe=False) -> List[CommandResult]:
         # 检查个人信息是否存在
         try:
             assert userId in self.userInfoDict.keys()

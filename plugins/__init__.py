@@ -88,7 +88,7 @@ async def _(session: CommandSession):
     try:
         commandResult = await bot.ProcessMessage(content, uid, uname, groupId, onlyToMe)
     except Exception as e:
-        commandResult = CommandResult(CoolqCommandType.MESSAGE, str(e), personIdList=MASTER)
+        commandResult = [CommandResult(CoolqCommandType.MESSAGE, str(e), personIdList=MASTER)]
 
     session.state['result'] = commandResult
 
