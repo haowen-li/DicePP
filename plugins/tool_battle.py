@@ -120,7 +120,7 @@ def AddElemToInit(bot, groupId: str, userId: str, name: str, initAdj: str, isPC:
                 for n in range(number):
                     nameMulti = name[index + 1:] + chr(first + n)
                     nameListStr += nameMulti + ' '
-                    initInfo['initList'][nameMulti] = dt.initInfoTemp
+                    initInfo['initList'][nameMulti] = copy.deepcopy(dt.initInfoTemp)
                     initInfo['initList'][nameMulti].update(
                         {'id': userId, 'init': initResult, 'hp': hp, 'maxhp': maxhp, 'alive': True, 'isPC': isPC})
                 result = f'{nameListStr.strip()}先攻:{resultStr}'

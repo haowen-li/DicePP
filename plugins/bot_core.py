@@ -806,7 +806,8 @@ class Bot:
         except MasterError as e:
             if self.masterInfoDict['debug']:
                 raise e
-            resultList = [CommandResult(CoolqCommandType.MESSAGE, f'引起错误的输入:{inputStr}\n'+str(e), personIdList=MASTER)]
+            resultList = [
+                CommandResult(CoolqCommandType.MESSAGE, f'引起错误的输入:{inputStr}\n' + str(e), personIdList=MASTER)]
             commandWeight = 0
         except UserError as e:
             resultList = [CommandResult(CoolqCommandType.MESSAGE, str(e))]
@@ -888,11 +889,14 @@ class Bot:
             reason = command.cArg[1]
             isHide = command.cArg[2]
             isShort = command.cArg[3]
+            if isHide and groupId == 'Private':
+                raise UserError(GROUP_COMMAND_ONLY_STR)
             if diceCommand == '':
                 diceCommand = 'd'
             if len(reason) != 0:
                 reason = ROLL_REASON_STR.format(reason=reason)
             error, resultStr, rollResult = RollDiceCommand(diceCommand)
+
             if error:
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, resultStr)]
             else:
@@ -927,8 +931,6 @@ class Bot:
                     pass
 
                 if isHide:
-                    if groupId == 'Private': commandResultList += [
-                        CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
                     finalResult = HROLL_RES_STR.format(finalResult=finalResult)
                     commandResultList += [CommandResult(CoolqCommandType.MESSAGE, finalResult, personIdList=[userId]),
                                           CommandResult(CoolqCommandType.MESSAGE,
@@ -939,8 +941,8 @@ class Bot:
         elif cType == CommandType.BOT:
             commandWeight = 3
             subType = command.cArg[0]
-            if subType != 'show' and groupId == 'Private': commandResultList += [
-                CommandResult(CoolqCommandType.MESSAGE, GROUP_COMMAND_ONLY_STR)]
+            if subType != 'show' and groupId == 'Private':
+                raise UserError(GROUP_COMMAND_ONLY_STR)
             if subType == 'show':
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, SHOW_STR)]
             elif onlyToMe:
