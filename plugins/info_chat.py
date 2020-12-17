@@ -99,17 +99,18 @@ NAME2TITLE = {'梨子': '伊丽莎白最喜欢的水果',
               '困囿四囝': '幽默地精的保护者',
               '邪恶勇者': '黑暗料理之王',
               '牧龙人': '精精牧龙人',
-              '冰棒': '是想被娘化之后调教成乖巧女仆的卖萌人嘤嘤怪qwq',
+              '冰棒': '是不律不喷不吵不参战的猫娘小女仆',
               '小花': '对所有怪物和魔法物品了如指掌的花族王子',
               '花作噫': '正在学习5E的苦力作者',
               '血橙': '喜欢双头生物的奇怪VUP',
+              '橙子': 'XP奇怪的VUP',
               '惠惠': ('惠惠，血色契约的缔造者，亘古魔力的驾驭者，亦是破碎生死契定的命运操弄者，手握世界真理之人。'
                      '掌控一切，毁灭一切。被称作“爆裂の魔王”，“红之使魔”以及“终焉的魔法师”。'
                      '现世所存的最后一位红魔族，终将重塑多元宇宙，重订秩序之人。'),
               'Farevell': '自暴自弃的百合JK'
               }
 
-CHAT_COMMAND_COMMON = {'the shadow.*': [(CHAT_CREDIT_LV0, 'The shadow! (激动地)'),
+CHAT_COMMAND_COMMON = {'the shadow.?': [(CHAT_CREDIT_LV0, 'The shadow! (激动地)'),
                                         (CHAT_CREDIT_LV1, 'The shadow? (疑惑地)'),
                                         (CHAT_CREDIT_LV1, 'The shadow. (坚定地)'),
                                         (CHAT_CREDIT_LV2, 'The shadow! (惊恐地)'),
@@ -146,7 +147,7 @@ CHAT_COMMAND_COMMON = {'the shadow.*': [(CHAT_CREDIT_LV0, 'The shadow! (激动�
                                     (CHAT_CREDIT_LV4, '$完全搞懂了$玩家手册我完全搞懂了, 找时间带团吧~'),
                                     (CHAT_CREDIT_LV4, '$没有思考$你们走进房间, 房间里全是公主和小马...'),
                                     (CHAT_CREDIT_LV4, '$看书$高大的留着长长白胡须的老人, 戴着歪向一边的尖顶帽子, 穿着污损的灰色长袍, 身边有七只金丝雀...'), ],
-                       '赞.+': [(CHAT_CREDIT_LV2, '$点赞$'), (CHAT_CREDIT_LV4, '$双重点赞$')]
+                       '赞.?': [(CHAT_CREDIT_LV2, '$点赞$'), (CHAT_CREDIT_LV4, '$双重点赞$')]
                        }
 
 GIFT_LIST = ['秘制蜜汁小鱼干', '吹起来很好听的小螺号', '特别美味的大青蟹',

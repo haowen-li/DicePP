@@ -88,7 +88,8 @@ async def _(session: CommandSession):
     try:
         commandResult = await bot.ProcessMessage(content, uid, uname, groupId, onlyToMe)
     except Exception as e:
-        errorInfo = f'引起错误的指令:{content}, 错误内容：{str(e)}. 来自群{groupId}的{uname} {uid}'
+        errorInfo = f'未被捕获的错误!\n引起错误的指令:{content}, 错误内容：{type(e)}{str(e)}. 来自群{groupId}的{uname} {uid}' \
+                    f'\n输入.debug 1可以停止报告错误信息'
         commandResult = [CommandResult(CoolqCommandType.MESSAGE, errorInfo, personIdList=MASTER)]
 
     session.state['result'] = commandResult

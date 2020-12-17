@@ -679,9 +679,9 @@ class Bot:
 
         # 黑名单检测
         if userInfoCur['credit'] < 0:
-            return None
+            return []
         if userInfoCur['warning'] >= 2 or userInfoCur['ban'] >= 3:
-            return None
+            return []
         # 检查激活状态
         if groupId:
             try:
@@ -689,7 +689,7 @@ class Bot:
             except (KeyError, AssertionError):
                 if not groupInfoCur['active'] and not onlyToMe and inputStr.find(
                         'bot') == -1:  # 已有记录且是非激活状态, 且不是单独指令, 则不执行命令
-                    return None
+                    return []
 
         # 检测彩蛋
         if groupId and userInfoCur['credit'] >= CHAT_CREDIT_LV0:
@@ -775,7 +775,7 @@ class Bot:
         # 检测命令(以.开头)
         command = await ParseInput(inputStr)
         if command is None:
-            return None
+            return []
 
         # 检查该指令是否被该群禁用
         if groupId:
@@ -800,21 +800,23 @@ class Bot:
         self.userInfoDict[userId]['name'] = personName
         nickName = self.GetNickName(groupId, userId)
 
+        # 处理输入
         try:
             resultList, commandWeight = await self.__ProcessInput(command, userId, nickName, userInfoCur, groupId,
                                                                   groupInfoCur, onlyToMe)
         except MasterError as e:
             if self.masterInfoDict['debug']:
                 raise e
+            errorInfo = f'引起错误的输入:{inputStr}\n' + str(e) + '\n输入.debug 1可以停止报告错误信息'
             resultList = [
-                CommandResult(CoolqCommandType.MESSAGE, f'引起错误的输入:{inputStr}\n' + str(e), personIdList=MASTER)]
+                CommandResult(CoolqCommandType.MESSAGE, errorInfo, personIdList=MASTER)]
             commandWeight = 0
         except UserError as e:
             resultList = [CommandResult(CoolqCommandType.MESSAGE, str(e))]
             commandWeight = 3
         # 最后处理
         if len(resultList) == 0:
-            return None
+            return []
 
         # 刷屏检测
         try:
@@ -858,7 +860,7 @@ class Bot:
             possChatList = RandomSelectList(possChatList)[0]
             possChatList = [info[1] for info in possChatList if
                             credit >= info[0] and ((len(info)) != 3 or credit <= info[2])]
-            if possChatList == 0:
+            if len(possChatList) == 0:
                 return None
             result = RandomSelectList(possChatList)[0]
             result = InsertEmotion(result, self.emotionDict)
@@ -1082,6 +1084,8 @@ class Bot:
                     result = PC_CLEAR_STR.format(nickName=nickName)
                 elif subType == '模板':
                     result = PC_SHEET_TEMPLATE
+                else:
+                    raise UserError('指令不正确, 请输入.help 角色卡 查看帮助')
 
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 
@@ -1160,11 +1164,12 @@ class Bot:
                         adjVal = int(command.cArg[2])
                         assert -10 < adjVal < 10
                     except (AssertionError, ValueError):
-                        commandResultList += [CommandResult(CoolqCommandType.MESSAGE,
-                                                            SPELL_SLOT_ADJ_INVALID_STR.format(val=command.cArg[2]))]
+                        raise UserError(SPELL_SLOT_ADJ_INVALID_STR.format(val=command.cArg[2]))
                     result = nickName + tp.ModifySpellSlot(self, groupId, userId, level, adjVal)
                 elif subType == '清除':
                     result = tp.ClearSpellSlot(self, groupId, userId)
+                else:
+                    raise UserError('不正确的指令, 请输入.help 法术位 查看帮助')
 
                 commandResultList += [CommandResult(CoolqCommandType.MESSAGE, result)]
 

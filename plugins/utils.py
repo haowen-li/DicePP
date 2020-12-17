@@ -281,7 +281,8 @@ def SetNumpyRandomSeed():
 
 
 def RandomSelectList(inputList, num=1):
-    assert num >= 1
+    assert num >= 1, '随机抽取的数量必须大于等于1'
+    assert inputList, '不能抽取空列表'
     length = len(inputList)
     if num == 1:
         return [inputList[np.random.randint(length)]]
