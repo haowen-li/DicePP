@@ -2,7 +2,12 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="1bcafe81-000a-435c-97db-697e94600ad3" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/.name" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.name" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugins/tool_battle.py" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/tool_battle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugins/tool_pc.py" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/tool_pc.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/plugins/utils.py" beforeDir="false" afterPath="$PROJECT_DIR$/plugins/utils.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/test.ipynb" beforeDir="false" afterPath="$PROJECT_DIR$/test.ipynb" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />

@@ -122,11 +122,9 @@ def BotDataT2Str(botDataT: BotDataT):
 china_tz = datetime.timezone(datetime.timedelta(hours=8), '北京时间')
 
 
-class Command():
+class Command:
     # 命令类, 用来存放命令类型和参数
     def __init__(self, cType, cArg):
-        #         assert isinstance(cType, CommandType), f'Type of {cType} is not {CommandType}'
-        #         assert isinstance(cArg, list)
         self.cType = cType
         self.cArg = cArg
 
@@ -142,7 +140,7 @@ class Command():
         return True
 
 
-class CommandResult():
+class CommandResult:
     def __init__(self, coolqCommand, resultStr=None, personIdList=None, groupIdList=None):
         self.coolqCommand = coolqCommand
         self.resultStr = resultStr

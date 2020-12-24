@@ -25,11 +25,11 @@ def GetInitSummary(bot, groupId: str) -> str:
         if info[1]['isPC']:
             try:
                 personId = info[1]['id']
-                pcState = bot.GetBotData(BotDataT.INIT, (groupId, personId))
+                pcState = bot.GetBotData(BotDataT.PC, (groupId, personId))
                 hp = pcState['hp']
                 maxhp = pcState['maxhp']
                 alive = pcState['alive']
-            except:
+            except (MasterError, KeyError):
                 hp = 0
                 maxhp = 0
                 alive = True
@@ -72,7 +72,7 @@ def RemoveElemFromInit(bot, groupId: str, name: str) -> str:
             raise e
 
     # 如果没有在先攻列表中找到指定的名字, 尝试搜索名字
-    if not name in initInfo['initList'].keys():
+    if name not in initInfo['initList'].keys():
         possName = []
         for k in initInfo['initList'].keys():
             if k.find(name) != -1:
@@ -128,6 +128,8 @@ def AddElemToInit(bot, groupId: str, userId: str, name: str, initAdj: str, isPC:
                 result = f'{nameListStr.strip()}先攻:{resultStr}'
             except Exception as e:
                 raise UserError(f'关于{name}的先攻指令不正确:{e}')
+        else:
+            raise UserError(f'{prefixN}不是有效的掷骰表达式!')
     else:
         initInfo['initList'][name] = copy.deepcopy(dt.initInfoTemp)
         initInfo['initList'][name].update(

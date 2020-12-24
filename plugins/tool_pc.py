@@ -502,7 +502,7 @@ def SetSpellSlot(bot, groupId: str, userId: str, commandStr: str) -> str:
             assert 0 <= size < 100
             if size > 0:
                 isValid = True
-        except (MasterError, IndexError, AssertionError):
+        except (ValueError, IndexError, AssertionError):
             raise UserError(f'{index + 1}环法术位大小{sizeStr}无效~')
         index += 1
     if not isValid:
