@@ -129,7 +129,10 @@ def SetPlayerInfo(bot, groupId: str, userId: str, infoStr: str) -> str:
         hpList = [p.strip() for p in infoStr[index:lastIndex].split('/') if p.strip()]
         try:
             pcState['hp'] = int(hpList[0])
-            pcState['maxhp'] = int(hpList[1])
+            if len(hpList) == 1:
+                pcState['maxhp'] = int(hpList[0])
+            else:
+                pcState['maxhp'] = int(hpList[1])
         except ValueError:
             return f'{infoStr[index:lastIndex]} 不是有效的生命值信息'
 
