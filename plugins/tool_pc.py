@@ -601,7 +601,7 @@ def ModifyMoney(bot, groupId: str, userId: str, commandStr: str) -> str:
     try:
         pcState = GetBasicPCState(bot, groupId, userId, isRef=True, autoCreate=False)
         moneyList = copy.deepcopy(pcState['金钱'])
-    except MasterError:
+    except (MasterError, KeyError):
         raise UserError('现在身无分文呢~ 请先使用 .记录金钱 命令吧~')
     reason, adjList = Str2MoneyList(commandStr)
     totalVal = moneyList[0] * 100 + moneyList[1] * 10 + moneyList[0]
